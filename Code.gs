@@ -253,8 +253,8 @@ function linkSheets(folderId, nameOnReport=false) {
     Logger.log(satSheetIds.student);
     Logger.log(satSheetIds.admin);
     SpreadsheetApp.openById(satSheetIds.admin).getSheetByName('Student responses').getRange('B1').setValue(satSheetIds.student);
-    SpreadsheetApp.openById(satSheetIds.student).getSheetByName('Question bank data').getRange('I2').setValue('=iferror(importrange("' + satSheetIds.admin + '","Question bank data!I2:I"),"")');
-    SpreadsheetApp.openById(satSheetIds.student).getSheetById(0).getRange('D1').setValue('=importrange("' + satSheetIds.admin + '","Question bank data!V1")');
+    // SpreadsheetApp.openById(satSheetIds.student).getSheetByName('Question bank data').getRange('I2').setValue('=iferror(importrange("' + satSheetIds.admin + '","Question bank data!I2:I"),"")');
+    // SpreadsheetApp.openById(satSheetIds.student).getSheets()[0].getRange('D1').setValue('=importrange("' + satSheetIds.admin + '","Question bank data!V1")');
   }
   Logger.log('actSheetIds.student: ' + actSheetIds.student);
   Logger.log('actSheetIds.admin: ' + actSheetIds.admin);
@@ -265,6 +265,18 @@ function linkSheets(folderId, nameOnReport=false) {
   while (subFolders.hasNext()) {
     var subFolder = subFolders.next();
     linkSheets(subFolder.getId(), nameOnReport);
+  }
+}
+
+function isEmptyFolder(folderId) {
+  const folders = DriveApp.getFolderById(folderId).getFolders();
+  const files = DriveApp.getFolderById(folderId).getFiles();
+
+  if (folders.hasNext() || files.hasNext()) {
+    return false;
+  }
+  else {
+    return true;
   }
 }
 
@@ -351,19 +363,6 @@ function generateClassTestAnalysis(folderId, aggSsId) {
   const aggStudentAnswers = aggSheet.getRange(2, 12, aggSheet.getLastRow());
   const upperAggAnswers = aggStudentAnswers.getDisplayValues().map(row => row.map(col => (col) ? col.toUpperCase() : col));
   aggStudentAnswers.setValues(upperAggAnswers);
-}
-
-
-function isEmptyFolder(folderId) {
-  const folders = DriveApp.getFolderById(folderId).getFolders();
-  const files = DriveApp.getFolderById(folderId).getFiles();
-
-  if (folders.hasNext() || files.hasNext()) {
-    return false;
-  }
-  else {
-    return true;
-  }
 }
 
 
@@ -1278,4 +1277,82 @@ function sortFoldersByDateCreated() {
     return vA - vB
   });
   Logger.log(arr);
+}
+
+
+// Rev sheet setup functions
+
+function getAllRowHeights() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName('Rev sheet backend');
+  var rwIds = sh.getRange('M802:M').getValues();
+  var mathIds = sh.getRange('P2:P').getValues();
+
+  // rwHeights = [];
+  // for (var r=0; r < rwIds.length; r++) {
+  //   var id = rwIds[r][0];
+    
+  //   var height = calculateRowHeight(id, 820, 'rw');
+  //   rwHeights.push([height]);
+  //   if((r+1) % 100 === 0) {
+  //     var slice = rwHeights.slice(r-99,r+1);
+  //     sh.getRange(800+r-97,15,100).setValues(slice);
+  //     Logger.log(slice);
+  //   }
+  // };
+
+  mathHeights = [];
+  for (var m=0; m < mathIds.length; m++) {
+    var id = mathIds[m][0];
+    
+    var height = calculateRowHeight(id, 820, 'math');
+    mathHeights.push([height]);
+    if((m+1) % 100 === 0) {
+      var slice = mathHeights.slice(m-99,m+1);
+      sh.getRange(m-97,18,100).setValues(slice);
+      Logger.log(slice);
+    }
+  };
+}
+
+function calculateRowHeight(questionId, containerWidth, subject) {
+  var questionUrl = 'https://www.openpathtutoring.com/static/img/concepts/sat/' + subject.toLowerCase() + '/' + encodeURIComponent(questionId) + ".jpg";
+  var urlOptions = {muteHttpExceptions: true};
+  
+  // Add exponential backoff retry logic
+  var maxRetries = 4;
+  var retryCount = 0;
+  var questionImg;
+
+  while (retryCount < maxRetries) {
+    try {
+      questionImg = UrlFetchApp.fetch(questionUrl, urlOptions);
+      break; // Success - exit retry loop
+    } catch (e) {
+      retryCount++;
+      if (retryCount === maxRetries) {
+        SpreadsheetApp.getUi().alert('Failed to fetch image after ' + maxRetries + ' attempts: ' + e.message);
+        return;
+      }
+      // Exponential backoff: wait 2^retryCount * 1000 milliseconds
+      Utilities.sleep(Math.pow(2, retryCount) * 1000);
+      Logger.log('Retry ' + retryCount);
+    }
+  }
+
+  var questionBlob = questionImg.getBlob();
+  var questionSize = ImgApp.getSize(questionBlob);
+
+  if (subject.toLowerCase() === 'rw') {
+    var whitespace = 40;
+  }
+  else {
+    var whitespace = 60;
+  }
+
+  var rowHeight = questionSize.height / questionSize.width * containerWidth + whitespace;
+
+  Logger.log(questionId + ' rowHeight: ' + rowHeight);
+
+  return Math.round(rowHeight);
 }
