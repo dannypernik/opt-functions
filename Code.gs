@@ -8,7 +8,13 @@ function NewSatFolder(sourceFolderId, parentFolderId, nameOnReport=false) {
   }
 
   var ui = SpreadsheetApp.getUi();
-  var studentName = ui.prompt('Student name:', ui.ButtonSet.OK_CANCEL).getResponseText();
+  var prompt = ui.prompt('Student name:', ui.ButtonSet.OK_CANCEL);
+  if(prompt.getSelectedButton() == ui.Button.CANCEL) {
+    return;
+  }
+  else {
+    var studentName = prompt.getResponseText();
+  }
 
   const newFolder = DriveApp.getFolderById(parentFolderId).createFolder(studentName);
   const newFolderId = newFolder.getId();
@@ -37,7 +43,13 @@ function NewActFolder(sourceFolderId, parentFolderId, nameOnReport=false) {
   }
 
   var ui = SpreadsheetApp.getUi();
-  var studentName = ui.prompt('Student name:', ui.ButtonSet.OK_CANCEL).getResponseText();
+  var prompt = ui.prompt('Student name:', ui.ButtonSet.OK_CANCEL);
+  if(prompt.getSelectedButton() == ui.Button.CANCEL) {
+    return;
+  }
+  else {
+    var studentName = prompt.getResponseText();
+  }
 
   const newFolder = DriveApp.getFolderById(parentFolderId).createFolder(studentName);
   const newFolderId = newFolder.getId();
@@ -69,7 +81,13 @@ function NewTestPrepFolder(sourceFolderId, parentFolderId, nameOnReport=false) {
   }
 
   var ui = SpreadsheetApp.getUi();
-  var studentName = ui.prompt('Student name:', ui.ButtonSet.OK_CANCEL).getResponseText();
+  var prompt = ui.prompt('Student name:', ui.ButtonSet.OK_CANCEL);
+  if(prompt.getSelectedButton() == ui.Button.CANCEL) {
+    return;
+  }
+  else {
+    var studentName = prompt.getResponseText();
+  }
 
   const newFolder = DriveApp.getFolderById(parentFolderId).createFolder(studentName);
   const newFolderId = newFolder.getId();
@@ -368,7 +386,14 @@ function generateClassTestAnalysis(folderId, aggSsId) {
 
 function newClient() {
   var ui = SpreadsheetApp.getUi();
-  var clientName = ui.prompt('Tutor or Business name:', ui.ButtonSet.OK_CANCEL).getResponseText();
+  var prompt = ui.prompt('Tutor or Business name:', ui.ButtonSet.OK_CANCEL);
+  if(prompt.getSelectedButton() == ui.Button.CANCEL) {
+    return;
+  }
+  else {
+    var clientName = prompt.getResponseText();
+  }
+
   //var clientName = '-test'
   var useCustomStyle = ui.alert(
     'Apply custom styles?',
