@@ -633,19 +633,20 @@ function styleClientFolder(clientFolder=null, customStyles={}) {
     var tertiaryColor = ui.prompt('Tertiary background color', ui.ButtonSet.OK_CANCEL).getResponseText();
     var fontColor = ui.prompt('Font color (leave blank to use primary color)', ui.ButtonSet.OK_CANCEL).getResponseText();
     var imgUrl = ui.prompt('Image URL', ui.ButtonSet.OK_CANCEL).getResponseText();
-    var img = '';
-    if (imgUrl) {
-      img = SpreadsheetApp
-            .newCellImage()
-            .setSourceUrl(imgUrl)
-            .build();
+    // var img = '';
+    // if (imgUrl) {
+    //   img = SpreadsheetApp
+    //         .newCellImage()
+    //         .setSourceUrl(imgUrl)
+    //         .build();
       
-      customStyles.img = img
-    }
+    //   customStyles.img = img
+    // }
     customStyles.primaryColor = primaryColor;
     customStyles.secondaryColor = secondaryColor;
     customStyles.tertiaryColor = tertiaryColor;
     customStyles.fontColor = fontColor;
+    customStyles.img = imgUrl;
   }
   else {
     var primaryColor = customStyles.primaryColor;
@@ -693,19 +694,20 @@ function styleClientSheets(
     var tertiaryColor = ui.prompt('Tertiary background color', ui.ButtonSet.OK_CANCEL).getResponseText();
     var fontColor = ui.prompt('Font color (leave blank to use primary color)', ui.ButtonSet.OK_CANCEL).getResponseText();
     var imgUrl = ui.prompt('Image URL', ui.ButtonSet.OK_CANCEL).getResponseText();
-    var img = '';
-    if (imgUrl) {
-      img = SpreadsheetApp
-            .newCellImage()
-            .setSourceUrl(imgUrl)
-            .build();
-      
-      customStyles.img = img
-    }
+    // var img = '';
+    // if (imgUrl) {
+    //   img = SpreadsheetApp
+    //         .newCellImage()
+    //         .setSourceUrl(imgUrl)
+    //         .build();
+    //   customStyles.img = img;
+       
+    // }
     customStyles.primaryColor = primaryColor;
     customStyles.secondaryColor = secondaryColor;
     customStyles.tertiaryColor = tertiaryColor;
     customStyles.fontColor = fontColor;
+    customStyles.img = imgUrl;
   } else {
     var primaryColor = customStyles.primaryColor;
     var secondaryColor = customStyles.secondaryColor;
@@ -791,7 +793,7 @@ function styleClientSheets(
         sh.getRange(correctRange).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
         
         const imgCell = sh.getRange('B3');
-        imgCell.setValue(img);
+        imgCell.setValue('=image("'+ customStyles.img + '")');
 
         applyConditionalFormatting(sh, customStyles);
       }
@@ -813,8 +815,10 @@ function styleClientSheets(
 
       shName = sh.getName().toLowerCase();
 
+      // practice SAT answer sheets
       if (satTestSheets.includes(shName)) {
         sh.getRangeList(['B2:L4', 'B33:L35']).setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
+        sh.getRangeList(['E5:E', 'I5:I']).setFontColor('white');
       }
       // check for SAT analysis sheets after checking exact match
       else if (shName.includes('analysis') || shName.includes('opportunity')) {
@@ -830,7 +834,7 @@ function styleClientSheets(
         }
         
         const imgCell = sh.getRange('B2');
-        imgCell.setValue(img);
+        imgCell.setValue('=image("'+ customStyles.img + '")');
 
         applyConditionalFormatting(sh, customStyles);
       }
@@ -946,30 +950,32 @@ function applyConditionalFormatting(
   }
 
   if (sheet.getName().toLowerCase().includes('opportunity')) {
-    var totalRange = 'C7:I70'
+    var subtotalStart = 'B';
+    var domainStart = 'C';
   }
   else {
-    var totalRange = 'B7:I70'
+    var subtotalStart = 'C';
+    var domainStart = 'D'
   }
   var grandTotalRule = SpreadsheetApp.newConditionalFormatRule()
         .whenFormulaSatisfied('=$B7="Grand total"')
         .setBold(true)
         .setBackground(customStyles.primaryColor)
         .setFontColor(customStyles.primaryContrastColor)
-        .setRanges([sheet.getRange(totalRange)]);
+        .setRanges([sheet.getRange('B7:I70')]);
   
   var subTotalRule = SpreadsheetApp.newConditionalFormatRule()
-        .whenFormulaSatisfied('=right($C7,5)="Total"')
+        .whenFormulaSatisfied('=right($' + subtotalStart + '7,5)="Total"')
         .setBold(true)
         .setBackground(customStyles.secondaryColor)
         .setFontColor(customStyles.secondaryContrastColor)
-        .setRanges([sheet.getRange('C7:I70')]);
+        .setRanges([sheet.getRange(subtotalStart + '7:I70')]);
   
   var domainTotalRule = SpreadsheetApp.newConditionalFormatRule()
-        .whenFormulaSatisfied('=right($C7,5)="Total"')
-        .setBackground(customStyles.tertiaryContrastColor)
+        .whenFormulaSatisfied('=right($' + domainStart + '7,5)="Total"')
+        .setBackground(customStyles.tertiaryColor)
         .setFontColor(customStyles.tertiaryContrastColor)
-        .setRanges([sheet.getRange('D7:I70')]);
+        .setRanges([sheet.getRange(domainStart + '7:I70')]);
   
   var backgroundColorRule = SpreadsheetApp.newConditionalFormatRule()
         .whenFormulaSatisfied('=sum($F7:$I7)>0')
