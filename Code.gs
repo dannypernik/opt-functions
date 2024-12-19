@@ -54,7 +54,6 @@ function NewActFolder(sourceFolderId, parentFolderId, nameOnReport=false) {
   const newFolder = DriveApp.getFolderById(parentFolderId).createFolder(studentName);
   const newFolderId = newFolder.getId();
 
-  Logger.log('nameOnReport: ' + nameOnReport);
   if (nameOnReport) {
     nameOnReport = studentName;
   }
@@ -91,7 +90,6 @@ function NewTestPrepFolder(sourceFolderId, parentFolderId, nameOnReport=false) {
 
   const newFolder = DriveApp.getFolderById(parentFolderId).createFolder(studentName);
   const newFolderId = newFolder.getId();
-  Logger.log('nameOnReport: ' + nameOnReport);
 
   if (nameOnReport) {
     nameOnReport = studentName;
@@ -248,8 +246,9 @@ function linkSheets(folderId, nameOnReport=false) {
         if (nameOnReport) {
           for (i in ss.getSheets()) {
             var s = ss.getSheets()[i];
-            if (s.getName().toLowerCase().includes('analysis') || s.getName().toLowerCase().includes('opportunity')) {
-              s.getRange('D5').setValue('for ' + nameOnReport)
+            var sName = s.getName().toLowerCase();
+            if (sName.includes('analysis') || sName.includes('opportunity')) {
+              s.getRange('D4').setValue('for ' + nameOnReport)
             }
           }
         }
@@ -394,7 +393,6 @@ function newClient() {
     var clientName = prompt.getResponseText();
   }
 
-  //var clientName = '-test'
   var useCustomStyle = ui.alert(
     'Apply custom styles?',
     ui.ButtonSet.YES_NO
@@ -402,6 +400,7 @@ function newClient() {
 
   let primaryColor = '#134f5c';
   let secondaryColor = '#f6b26b';
+  let tertiaryColor = '#efefef'
   let fontColor = '';
   var isCustom = false;
   var imgUrl = '';
@@ -409,6 +408,7 @@ function newClient() {
   if (useCustomStyle === ui.Button.YES) {
     primaryColor = ui.prompt('Primary background color', ui.ButtonSet.OK_CANCEL).getResponseText();
     secondaryColor = ui.prompt('Secondary background color', ui.ButtonSet.OK_CANCEL).getResponseText();
+    tertiaryColor = ui.prompt('Tertiary background color', ui.ButtonSet.OK_CANCEL).getResponseText();
     fontColor = ui.prompt('Font color (leave blank to use primary color)', ui.ButtonSet.OK_CANCEL).getResponseText();
     imgUrl = ui.prompt('Image URL', ui.ButtonSet.OK_CANCEL).getResponseText();
     isCustom = true;
@@ -426,10 +426,11 @@ function newClient() {
           .build();
   }
 
-  const customStyles = {
+  var customStyles = {
     'isActive': isCustom,
     'primaryColor': primaryColor,
     'secondaryColor': secondaryColor,
+    'tertiaryColor': tertiaryColor,
     'fontColor': fontColor,
     'img': img
   };
@@ -472,7 +473,6 @@ function createClientFolder(sourceFolder, newFolder, clientName, customStyles) {
     const newFile = file.makeCopy(fileName, newFolder);
     SpreadsheetApp.flush();
 
-    // Process the user's response.
     if (customStyles.isActive && newFile.getMimeType() === 'application/vnd.google-apps.spreadsheet') {
       Logger.log('Custom style true');
 
@@ -611,14 +611,26 @@ function setClientDataUrls(folderId) {
 }
 
 
-function styleClientSheets(
-  ss = SpreadsheetApp.getActiveSpreadsheet(),
-  customStyles={}) {
+function styleClientFolder(clientFolder=null, customStyles={}) {
+  var ui = SpreadsheetApp.getUi();
+  if(clientFolder) {
+    var clientFolderId = clientFolder.getId();
+  }
+  else {
+    var prompt = ui.prompt('Client folder ID', ui.ButtonSet.OK_CANCEL);
+    if(prompt.getSelectedButton() == ui.Button.CANCEL) {
+      return;
+    }
+    else {
+      var clientFolderId = prompt.getResponseText();
+      clientFolder = DriveApp.getFolderById(clientFolderId);
+    }
+  }
 
   if (Object.keys(customStyles).length === 0) {
-    var ui = SpreadsheetApp.getUi();
     var primaryColor = ui.prompt('Primary background color', ui.ButtonSet.OK_CANCEL).getResponseText();
     var secondaryColor = ui.prompt('Secondary background color', ui.ButtonSet.OK_CANCEL).getResponseText();
+    var tertiaryColor = ui.prompt('Tertiary background color', ui.ButtonSet.OK_CANCEL).getResponseText();
     var fontColor = ui.prompt('Font color (leave blank to use primary color)', ui.ButtonSet.OK_CANCEL).getResponseText();
     var imgUrl = ui.prompt('Image URL', ui.ButtonSet.OK_CANCEL).getResponseText();
     var img = '';
@@ -632,10 +644,72 @@ function styleClientSheets(
     }
     customStyles.primaryColor = primaryColor;
     customStyles.secondaryColor = secondaryColor;
+    customStyles.tertiaryColor = tertiaryColor;
+    customStyles.fontColor = fontColor;
+  }
+  else {
+    var primaryColor = customStyles.primaryColor;
+    var secondaryColor = customStyles.secondaryColor;
+    var tertiaryColor = customStyles.tertiaryColor;
+    var fontColor = customStyles.fontColor;
+  }
+
+  if (fontColor === '') {
+    fontColor = primaryColor;
+  }
+
+  var folders = clientFolder.getFolders();
+  var files = clientFolder.getFiles();
+
+  while (files.hasNext()) {
+    var file = files.next();
+
+    if (file.getMimeType() === 'application/vnd.google-apps.spreadsheet') {
+      styleClientSheets(SpreadsheetApp.openById(file.getId()), customStyles);
+    }
+  }
+
+  while (folders.hasNext()) {
+    var folder = folders.next();
+    styleClientFolder(folder, customStyles);
+  }
+
+  var htmlOutput = HtmlService
+    .createHtmlOutput('<a href="https://drive.google.com/drive/u/0/folders/' + clientFolderId + '" target="_blank" onclick="google.script.host.close()">Client folder</a>')
+    .setWidth(250) //optional
+    .setHeight(50); //optional
+  SpreadsheetApp.getUi().showModalDialog(htmlOutput, "Styling complete");
+}
+
+
+function styleClientSheets(
+  ss = SpreadsheetApp.getActiveSpreadsheet(),
+  customStyles={}) {
+
+  if (Object.keys(customStyles).length === 0) {
+    var ui = SpreadsheetApp.getUi();
+    var primaryColor = ui.prompt('Primary background color', ui.ButtonSet.OK_CANCEL).getResponseText();
+    var secondaryColor = ui.prompt('Secondary background color', ui.ButtonSet.OK_CANCEL).getResponseText();
+    var tertiaryColor = ui.prompt('Tertiary background color', ui.ButtonSet.OK_CANCEL).getResponseText();
+    var fontColor = ui.prompt('Font color (leave blank to use primary color)', ui.ButtonSet.OK_CANCEL).getResponseText();
+    var imgUrl = ui.prompt('Image URL', ui.ButtonSet.OK_CANCEL).getResponseText();
+    var img = '';
+    if (imgUrl) {
+      img = SpreadsheetApp
+            .newCellImage()
+            .setSourceUrl(imgUrl)
+            .build();
+      
+      customStyles.img = img
+    }
+    customStyles.primaryColor = primaryColor;
+    customStyles.secondaryColor = secondaryColor;
+    customStyles.tertiaryColor = tertiaryColor;
     customStyles.fontColor = fontColor;
   } else {
     var primaryColor = customStyles.primaryColor;
     var secondaryColor = customStyles.secondaryColor;
+    var tertiaryColor = customStyles.tertiaryColor;
     var fontColor = customStyles.fontColor;
   }
 
@@ -656,21 +730,32 @@ function styleClientSheets(
     primaryContrastColor = fontColor;
   }
   else {
-    primaryContrastColor = 'black'
+    primaryContrastColor = 'black';
   }
 
   if (isDark(secondaryColor)) {
-    var secondaryContrastColor = 'white'
+    var secondaryContrastColor = 'white';
   }
   else if (isDark(fontColor)) {
     secondaryContrastColor = fontColor;
   }
   else {
-    secondaryContrastColor = 'black'
+    secondaryContrastColor = 'black';
+  }
+
+  if (isDark(tertiaryColor)) {
+    var tertiaryContrastColor = 'white'
+  }
+  else if (isDark(fontColor)) {
+    tertiaryContrastColor = fontColor;
+  }
+  else {
+    tertiaryContrastColor = 'black';
   }
 
   customStyles.primaryContrastColor = primaryContrastColor;
   customStyles.secondaryContrastColor = secondaryContrastColor;
+  customStyles.tertiaryContrastColor = tertiaryContrastColor;
 
   if (ssName.includes('act admin answer analysis') || ssName.includes('act student answer sheet')) {
     for (let i in ss.getSheets()) {
@@ -722,9 +807,9 @@ function styleClientSheets(
 
     for (let i in ss.getSheets()) {
       const sh = ss.getSheets()[i];
-      const shRange = sh.getRange(1, 1, sh.getMaxRows(), sh.getMaxColumns());
-      // shRange.setBackground('white');
-      // shRange.setFontColor(fontColor);
+      const shRange = sh.getRange(1, 2, sh.getMaxRows(), sh.getMaxColumns()-2);
+      shRange.setBackground('white');
+      shRange.setFontColor(fontColor);
 
       shName = sh.getName().toLowerCase();
 
@@ -732,25 +817,28 @@ function styleClientSheets(
         sh.getRangeList(['B2:L4', 'B33:L35']).setBackground(primaryColor).setFontColor('white').setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
       }
       // check for SAT analysis sheets after checking exact match
-      else if (satTestSheets.some(item => shName.includes(item)) || shName.includes('opportunity')) {
-        Logger.log(shName + ' identified as analysis sheet');
-        sh.getRange('A1:K8').setBackground(primaryColor).setFontColor('white').setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-        sh.getRange('F7:J7').setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+      else if (shName.includes('analysis') || shName.includes('opportunity')) {
+        if(shName === 'rev analysis') {
+          sh.getRange('A1:K7').setBackground(primaryColor).setFontColor('white').setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+        }
+        else {
+          sh.getRange('A1:K6').setBackground(primaryColor).setFontColor('white').setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+        }
         
-        const imgCell = sh.getRange('B3');
+        const imgCell = sh.getRange('B2');
         imgCell.setValue(img);
 
         applyConditionalFormatting(sh, customStyles);
       }
 
       else if (shName === 'reading & writing') {
-        styleSatWorksheets(sh, 6, 11, primaryColor)
+        styleSatWorksheets(sh, 6, 11, customStyles)
       }
       else if (shName === 'math') {
-        styleSatWorksheets(sh, 9, 11, primaryColor)
+        styleSatWorksheets(sh, 9, 11, customStyles)
       }
       else if (shName === 'slt uniques') {
-        styleSatWorksheets(sh, 1, 7, primaryColor)
+        styleSatWorksheets(sh, 1, 7, customStyles)
       }
       else if (satDataSheets.includes(shName)) {
         sh.getRange(1, 1, 1, sh.getMaxColumns()).setBackground(primaryColor).setFontColor(primaryContrastColor);
@@ -762,59 +850,77 @@ function styleClientSheets(
   }
 }
 
-function styleSatWorksheets(sh, rowOffset, headerWidth, primaryColor) {
+function styleSatWorksheets(
+  sh=SpreadsheetApp.openById('1FW_3GIWmytdrgBdfSuIl2exy9hIAnQoG8IprF8k9uEY').getSheetByName('Math'),
+  rowOffset=10,
+  headerCols=11,
+  customStyles={
+    'primaryColor': '#134f5c',
+    'primaryContrastColor': 'white',
+  }
+  ) {
   const cats = [
-    'reading & writing', // styles header in SLT Uniques sheet
-    'area and volume',
-    'boundaries',
-    'central ideas and details',
-    'circles',
-    'command of evidence',
-    'cross-text connections',
-    'distributions',
-    'equivalent expressions',
-    'form, structure, and sense',
-    'inferences',
-    'linear equations in one variable',
-    'linear equations in two variables',
-    'linear functions',
-    'linear inequalities',
-    'lines, angles, and triangles',
-    'models and scatterplots',
-    'nonlinear equations and systems',
-    'nonlinear functions',
-    'observational studies and experiments',
-    'percentages',
-    'probability',
-    'ratios, rates, proportions, and units',
-    'systems of linear equations',
-    'right triangles and trigonometry',
-    'sample statistics and margin of error',
-    'words in context',
-    'transitions',
-    'rhetorical synthesis',
-    'text, structure, and purpose'
+    'Area and volume',
+    'Reading & Writing', // styles header in SLT Uniques
+    'Boundaries',
+    'Central ideas and details',
+    'Circles',
+    'Command of evidence',
+    'Cross-text connections',
+    'Distributions',
+    'Equivalent expressions',
+    'Form, structure, and sense',
+    'Inferences',
+    'Linear equations in one variable',
+    'Linear equations in two variables',
+    'Linear functions',
+    'Linear inequalities',
+    'Lines, angles, and triangles',
+    'Models and scatterplots',
+    'Nonlinear equations and systems',
+    'Nonlinear functions',
+    'Observational studies and experiments',
+    'Percentages',
+    'Probability',
+    'Ratios, rates, proportions, and units',
+    'Systems of linear equations',
+    'Right triangles and trigonometry',
+    'Sample statistics and margin of error',
+    'Words in context',
+    'Transitions',
+    'Rhetorical synthesis',
+    'Text, structure, and purpose',
   ]
+  var conceptRows = []
+
+  sh.getRange(1,5,sh.getMaxRows()).setFontColor('white');
+  sh.getRange(1,9,sh.getMaxRows()).setFontColor('white');
 
   const colVals = sh.getRange(rowOffset, 2, sh.getMaxRows() - rowOffset).getValues();
 
-  for (var row = 1; row < sh.getLastRow() - rowOffset; row++) {
-    Logger.log(colVals[row][0])
-    if (cats.includes(colVals[row][0].toLowerCase())) {
-      const highlightRange = sh.getRange(row + rowOffset, 2, 3, headerWidth);
-      highlightRange.setBackground(primaryColor).setFontColor('white').setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
-    };
+  for (let x = 0; x < colVals.length; x++) {
+    if(cats.includes(colVals[x][0])) {
+      var row = x + rowOffset;
+      conceptRows.push(row);
+    }
+  }
+  for(r in conceptRows) {
+      const highlightRange = sh.getRange(conceptRows[r], 2, 3, headerCols);
+      highlightRange.setBackground(customStyles.primaryColor).setFontColor(customStyles.primaryContrastColor).setBorder(true, true, true, true, true, true, customStyles.primaryColor, SpreadsheetApp.BorderStyle.SOLID);
   }
 }
 
-function applyConditionalFormatting(sheet=SpreadsheetApp.openById('1XoMGHjanL9w1xSqS6Q1kdvZnJHPXgLJgph4cWxFDx7A').getSheetByName('SAT3 analysis'), // SpreadsheetApp.getActiveSpreadsheet().getActiveSheet(),
+function applyConditionalFormatting(
+  sheet=SpreadsheetApp.openById('1XoMGHjanL9w1xSqS6Q1kdvZnJHPXgLJgph4cWxFDx7A').getSheetByName('SAT3 analysis'), // SpreadsheetApp.getActiveSpreadsheet().getActiveSheet(),
   customStyles={
     'isActive': true,
     'primaryColor': '#1c4d65',
     'secondaryColor': '#f6b26b',
+    'tertiaryColor': '#efefef',
     'fontColor': 'black',
     'primaryContrastColor': 'white',
-    'secondaryContrastColor': 'white' 
+    'secondaryContrastColor': 'white',
+    'tertiaryContrastColor': 'black'
   })
   
   {
@@ -836,31 +942,37 @@ function applyConditionalFormatting(sheet=SpreadsheetApp.openById('1XoMGHjanL9w1
   }
 
   if (sheet.getName().toLowerCase().includes('opportunity')) {
-    var totalRange = 'C9:J62'
+    var totalRange = 'C7:I70'
   }
   else {
-    var totalRange = 'B9:J62'
+    var totalRange = 'B7:I70'
   }
   var grandTotalRule = SpreadsheetApp.newConditionalFormatRule()
-        .whenFormulaSatisfied('=$B9="Grand total"')
+        .whenFormulaSatisfied('=$B7="Grand total"')
         .setBold(true)
         .setBackground(customStyles.primaryColor)
         .setFontColor(customStyles.primaryContrastColor)
         .setRanges([sheet.getRange(totalRange)]);
   
   var subTotalRule = SpreadsheetApp.newConditionalFormatRule()
-        .whenFormulaSatisfied('=right($C9,5)="Total"')
+        .whenFormulaSatisfied('=right($C7,5)="Total"')
         .setBold(true)
         .setBackground(customStyles.secondaryColor)
         .setFontColor(customStyles.secondaryContrastColor)
-        .setRanges([sheet.getRange('C9:I62')]);
+        .setRanges([sheet.getRange('C7:I70')]);
   
   var domainTotalRule = SpreadsheetApp.newConditionalFormatRule()
-        .whenFormulaSatisfied('=right($C9,5)="Total"')
-        .setBackground('#efefef')
-        .setRanges([sheet.getRange('D9:I62')]);
+        .whenFormulaSatisfied('=right($C7,5)="Total"')
+        .setBackground(customStyles.tertiaryContrastColor)
+        .setFontColor(customStyles.tertiaryContrastColor)
+        .setRanges([sheet.getRange('D7:I70')]);
+  
+  var backgroundColorRule = SpreadsheetApp.newConditionalFormatRule()
+        .whenFormulaSatisfied('=sum($F7:$I7)>0')
+        .setBackground('#f4f6f8')
+        .setRanges([sheet.getRange('B7:I70')]);
 
-  newRules.push(grandTotalRule, subTotalRule, domainTotalRule);
+  newRules.push(grandTotalRule, subTotalRule, domainTotalRule, backgroundColorRule);
   sheet.clearConditionalFormatRules();
   sheet.setConditionalFormatRules(newRules);
 }
