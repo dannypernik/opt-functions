@@ -773,14 +773,14 @@ function styleClientSheets(
       const isTestSheet = /^\d+$/.test(shName)
 
       if (isTestSheet) {
-        sh.getRange('A1:P4').setBackground(primaryColor).setFontColor('white').setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
+        sh.getRange('A1:P4').setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
 
         sh.getRangeList(['B3', 'F3', 'J3', 'N3']).setBorder(true, true, true, true, true, true, '#93c47d', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
 
         sh.getRange('F1').setBackground('#93c47d');
       }
       else if (shName === 'test analysis' || shName === 'opportunity area analysis') {
-        sh.getRange(1, 1, 8, sh.getMaxColumns()).setBackground(primaryColor).setFontColor('white').setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+        sh.getRange(1, 1, 8, sh.getMaxColumns()).setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
 
         if (shName === 'test analysis') {
           var correctRange = 'F7:J7';
@@ -814,15 +814,19 @@ function styleClientSheets(
       shName = sh.getName().toLowerCase();
 
       if (satTestSheets.includes(shName)) {
-        sh.getRangeList(['B2:L4', 'B33:L35']).setBackground(primaryColor).setFontColor('white').setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
+        sh.getRangeList(['B2:L4', 'B33:L35']).setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
       }
       // check for SAT analysis sheets after checking exact match
       else if (shName.includes('analysis') || shName.includes('opportunity')) {
         if(shName === 'rev analysis') {
-          sh.getRange('A1:K7').setBackground(primaryColor).setFontColor('white').setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+          sh.getRange('A1:K7').setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+        }
+        else if (shName === 'time series analysis') {
+          sh.getRange('A1:K6').setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+          sh.getRange('D5:E6').setFontColor(fontColor)
         }
         else {
-          sh.getRange('A1:K6').setBackground(primaryColor).setFontColor('white').setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+          sh.getRange('A1:K6').setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
         }
         
         const imgCell = sh.getRange('B2');
