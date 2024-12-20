@@ -418,13 +418,13 @@ function newClient() {
     fontColor = primaryColor;
   }
 
-  img = ''
-  if (imgUrl) {
-    img = SpreadsheetApp
-          .newCellImage()
-          .setSourceUrl(imgUrl)
-          .build();
-  }
+  // img = ''
+  // if (imgUrl) {
+  //   img = SpreadsheetApp
+  //         .newCellImage()
+  //         .setSourceUrl(imgUrl)
+  //         .build();
+  // }
 
   var customStyles = {
     'isActive': isCustom,
@@ -432,7 +432,7 @@ function newClient() {
     'secondaryColor': secondaryColor,
     'tertiaryColor': tertiaryColor,
     'fontColor': fontColor,
-    'img': img
+    'img': imgUrl
   };
 
   var sourceFolder = DriveApp.getFolderById('1YU3bVuKbx6en8tsJuLW7huEQkKdDEown')
