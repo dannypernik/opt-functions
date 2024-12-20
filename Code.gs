@@ -205,13 +205,11 @@ var satSheetIds = {
   'student': null,
   'studentData': null,
   'adminData': null,
-  'rev': null
 }
 
 var satSheetDataUrls = {
   'admin': null,
   'student': null,
-  'rev': null
 }
 
 var actSheetIds = {
@@ -270,17 +268,6 @@ function linkSheets(folderId, nameOnReport=false) {
     let satAdminSheet = SpreadsheetApp.openById(satSheetIds.admin);
     let satStudentSheet = SpreadsheetApp.openById(satSheetIds.student);
     satAdminSheet.getSheetByName('Student responses').getRange('B1').setValue(satSheetIds.student);
-    
-    let revDataId = satAdminSheet.getSheetByName('Rev sheet backend').getValue('D2');
-
-    let adminRevSheet = satAdminSheet.getSheetByName('Rev sheets');
-    adminRevSheet.getRange('B5').setValue('=importrange("' + revDataId + '", "' + nameOnReport + '!B5:C")');
-    adminRevSheet.getRange('G5').setValue('=importrange("' + revDataId + '", "' + nameOnReport + '!E5:F")');
-
-    let studentRevSheet = satStudentSheet.getSheetByName('Rev sheets');
-    studentRevSheet.getRange('B5').setValue('=importrange("' + revDataId + '", "' + nameOnReport + '!B5:C")');
-    studentRevSheet.getRange('F5').setValue('=importrange("' + revDataId + '", "' + nameOnReport + '!E5:F")');
-
 
     // SpreadsheetApp.openById(satSheetIds.student).getSheetByName('Question bank data').getRange('I2').setValue('=iferror(importrange("' + satSheetIds.admin + '","Question bank data!I2:I"),"")');
     // SpreadsheetApp.openById(satSheetIds.student).getSheets()[0].getRange('D1').setValue('=importrange("' + satSheetIds.admin + '","Question bank data!V1")');
