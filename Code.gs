@@ -792,8 +792,10 @@ function styleClientSheets(
         }
         sh.getRange(correctRange).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
         
-        const imgCell = sh.getRange('B3');
+        const imgCell = sh.getRange('B3')
         imgCell.setValue('=image("'+ customStyles.img + '")');
+        imgCell.copyTo(imgCell, SpreadsheetApp.CopyPasteType.PASTE_VALUES, false);
+        
 
         applyConditionalFormatting(sh, customStyles);
       }
@@ -853,6 +855,9 @@ function styleClientSheets(
       }
       else if (shName === 'student responses') {
         sh.getRange(1, 1, 3, sh.getMaxColumns()).setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
+      }
+      else if (shName === 'rev sheets') {
+        sh.getRangeList(['B2:E4', 'G2:J4']).setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
       }
     }
   }
@@ -979,7 +984,7 @@ function applyConditionalFormatting(
   
   var backgroundColorRule = SpreadsheetApp.newConditionalFormatRule()
         .whenFormulaSatisfied('=sum($F7:$I7)>0')
-        .setBackground('#f4f6f8')
+        .setBackground('#f8fafc')
         .setRanges([sheet.getRange('B7:I70')]);
 
   newRules.push(grandTotalRule, subTotalRule, domainTotalRule, backgroundColorRule);
