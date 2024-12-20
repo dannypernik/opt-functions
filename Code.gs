@@ -198,20 +198,20 @@ function copyFolder(sourceFolderId = '1yqQx_qLsgqoNiDoKR9b63mLLeOiCoTwo', newFol
       copyFolder(sourceSubFolder.getId(), targetFolder.getId(), studentName, folderType);
     }
   }
-
-  //SpreadsheetApp.getUi().alert("copyFolder() ended");
 }
 
 var satSheetIds = {
   'admin': null,
   'student': null,
   'studentData': null,
-  'adminData': null
+  'adminData': null,
+  'rev': null
 }
 
 var satSheetDataUrls = {
   'admin': null,
-  'student': null
+  'student': null,
+  'rev': null
 }
 
 var actSheetIds = {
@@ -233,13 +233,13 @@ function linkSheets(folderId, nameOnReport=false) {
 
   while (files.hasNext()) {
     file = files.next();
-    fileName = file.getName();
+    fileName = file.getName().toLowerCase();
     if (fileName.includes('SAT')) {
-      if (fileName.toLowerCase().includes('student answer sheet')) {
+      if (fileName.includes('student answer sheet')) {
         satSheetIds.student = file.getId();
         DriveApp.getFileById(satSheetIds.student).setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
       }
-      else if (fileName.toLowerCase().includes('answer analysis')) {
+      else if (fileName.includes('answer analysis')) {
         satSheetIds.admin = file.getId();
 
         var ss = SpreadsheetApp.openById(file.getId());
@@ -267,9 +267,21 @@ function linkSheets(folderId, nameOnReport=false) {
   }
 
   if (satSheetIds.student && satSheetIds.admin) {
-    Logger.log(satSheetIds.student);
-    Logger.log(satSheetIds.admin);
-    SpreadsheetApp.openById(satSheetIds.admin).getSheetByName('Student responses').getRange('B1').setValue(satSheetIds.student);
+    let satAdminSheet = SpreadsheetApp.openById(satSheetIds.admin);
+    let satStudentSheet = SpreadsheetApp.openById(satSheetIds.student);
+    satAdminSheet.getSheetByName('Student responses').getRange('B1').setValue(satSheetIds.student);
+    
+    let revDataId = satAdminSheet.getSheetByName('Rev sheet backend').getValue('D2');
+
+    let adminRevSheet = satAdminSheet.getSheetByName('Rev sheets');
+    adminRevSheet.getRange('B5').setValue('=importrange("' + revDataId + '", "' + nameOnReport + '!B5:C")');
+    adminRevSheet.getRange('G5').setValue('=importrange("' + revDataId + '", "' + nameOnReport + '!E5:F")');
+
+    let studentRevSheet = satStudentSheet.getSheetByName('Rev sheets');
+    studentRevSheet.getRange('B5').setValue('=importrange("' + revDataId + '", "' + nameOnReport + '!B5:C")');
+    studentRevSheet.getRange('F5').setValue('=importrange("' + revDataId + '", "' + nameOnReport + '!E5:F")');
+
+
     // SpreadsheetApp.openById(satSheetIds.student).getSheetByName('Question bank data').getRange('I2').setValue('=iferror(importrange("' + satSheetIds.admin + '","Question bank data!I2:I"),"")');
     // SpreadsheetApp.openById(satSheetIds.student).getSheets()[0].getRange('D1').setValue('=importrange("' + satSheetIds.admin + '","Question bank data!V1")');
   }
@@ -437,15 +449,15 @@ function newClient() {
 
   var sourceFolder = DriveApp.getFolderById('1YU3bVuKbx6en8tsJuLW7huEQkKdDEown')
   var destinationFolder = DriveApp.getFolderById('130wX98bJM4wW6aE6J-e6VffDNwqvgeNS');
-  var newFolder = destinationFolder.createFolder(clientName);
-  var newFolderId = newFolder.getId();
+  let newFolder = destinationFolder.createFolder(clientName);
+  let newFolderId = newFolder.getId();
 
   createClientFolder(sourceFolder, newFolder, clientName, customStyles);
   linkSheets(newFolderId);
   setClientDataUrls(newFolderId);
 
   var htmlOutput = HtmlService
-    .createHtmlOutput('<a href="https://drive.google.com/drive/u/0/folders/' + newFolderId + '" target="_blank" onclick="google.script.host.close()">' + clientName + '\'s folder</a>')
+    .createHtmlOutput('<a href="https://drive.google.com/drive/u/0/folders/' + newFolderId + '" target="_blank" onclick="google.script.host.close()">' + newFolder.getName() + '\'s folder</a>')
     .setWidth(250) //optional
     .setHeight(50); //optional
   SpreadsheetApp.getUi().showModalDialog(htmlOutput, "Client folder created successfully");
@@ -499,6 +511,8 @@ function setClientDataUrls(folderId) {
     'satStudentToData': false,
     'satAdminToData': false,
     'satAdminDataToStudentData': false,
+    'satRevToAdmin': false,
+    'satRevToStudent': false,
     'actStudentToData': false,
     'actAdminToData': false,
     'actAdminDataToStudentData': false,
@@ -506,47 +520,54 @@ function setClientDataUrls(folderId) {
 
   while (files.hasNext()) {
     file = files.next();
-    fileName = file.getName();
+    fileId = file.getId();
+    fileName = file.getName().toLowerCase();
 
-    if (fileName.toLowerCase().includes('sat admin data')) {
+    if (fileName.includes('sat admin data')) {
       Logger.log('found sat admin data');
-      satSheetIds.adminData = file.getId();
+      satSheetIds.adminData = fileId;
       satSheetDataUrls.admin = '"https://docs.google.com/spreadsheets/d/' + satSheetIds.adminData + '/edit?usp=sharing"';
     }
-    else if (fileName.toLowerCase().includes('sat student data')) {
+    else if (fileName.includes('sat student data')) {
       Logger.log('found sat student data');
-      satSheetIds.studentData = file.getId();
+      satSheetIds.studentData = fileId;
       satSheetDataUrls.student = '"https://docs.google.com/spreadsheets/d/' + satSheetIds.studentData + '/edit?usp=sharing"';
       DriveApp.getFileById(satSheetIds.studentData).setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
     }
-    else if (fileName.toLowerCase().includes('sat student answer sheet')) {
+    else if (fileName.includes('sat student answer sheet')) {
       Logger.log('found sat student answer sheet');
-      satSheetIds.student = file.getId();
+      satSheetIds.student = fileId;
       DriveApp.getFileById(satSheetIds.student).setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
     }
-    else if (fileName.toLowerCase().includes('sat admin answer analysis')) {
+    else if (fileName.includes('sat admin answer analysis')) {
       Logger.log('found sat admin answer sheet');
-      satSheetIds.admin = file.getId();
+      satSheetIds.admin = fileId;
     }
-    else if (fileName.toLowerCase().includes('act admin data')) {
+    else if (fileName.includes('rev sheet data')) {
+      Logger.log('found rev sheet data');
+      satSheetIds.rev = fileId;
+      satSheetDataUrls.rev = '"https://docs.google.com/spreadsheets/d/' + satSheetIds.rev + '/edit?usp=sharing"';
+      DriveApp.getFileById(satSheetIds.student).setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
+    }
+    else if (fileName.includes('act admin data')) {
       Logger.log('found act admin data');
-      actSheetIds.adminData = file.getId();
+      actSheetIds.adminData = fileId;
       actSheetDataUrls.admin = '"https://docs.google.com/spreadsheets/d/' + actSheetIds.adminData + '/edit?usp=sharing"';
     }
-    else if (fileName.toLowerCase().includes('act student data')) {
+    else if (fileName.includes('act student data')) {
       Logger.log('found act student data');
-      actSheetIds.studentData = file.getId();
+      actSheetIds.studentData = fileId;
       actSheetDataUrls.student = '"https://docs.google.com/spreadsheets/d/' + actSheetIds.studentData + '/edit?usp=sharing"';
       DriveApp.getFileById(actSheetIds.studentData).setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
     }
-    else if (fileName.toLowerCase().includes('act student answer sheet')) {
+    else if (fileName.includes('act student answer sheet')) {
       Logger.log('found act student answer sheet');
-      actSheetIds.student = file.getId();
+      actSheetIds.student = fileId;
       DriveApp.getFileById(actSheetIds.student).setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
     }
-    else if (fileName.toLowerCase().includes('act admin answer analysis')) {
+    else if (fileName.includes('act admin answer analysis')) {
       Logger.log('found act admin answer sheet');
-      actSheetIds.admin = file.getId();
+      actSheetIds.admin = fileId;
     }
   }
 
@@ -581,6 +602,13 @@ function setClientDataUrls(folderId) {
       .setValue('=IMPORTRANGE(' + satSheetDataUrls.admin + ', "Practice test data!A1:E10000")');
 
     isSet.satAdminDataToStudentData = true;
+  }
+
+  if (!isSet.satRevToAdmin && satSheetIds.admin && satSheetDataUrls.rev) {
+    let adminRevSheet = SpreadsheetApp.openById(satSheetIds.admin).getSheetByName('Rev sheet backend')
+    adminRevSheet.getRange('D2').setValue(satSheetDataUrls.rev);
+
+    isSet.satRevToAdmin = true;
   }
 
   if (!isSet.actStudentToData && actSheetIds.student && actSheetDataUrls.student) {
@@ -793,10 +821,9 @@ function styleClientSheets(
         sh.getRange(correctRange).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
         
         const imgCell = sh.getRange('B3')
-        imgCell.setValue('=image("'+ customStyles.img + '")');
-        SpreadsheetApp.flush();
-        imgCell.copyTo(imgCell, SpreadsheetApp.CopyPasteType.PASTE_VALUES, false);
-        
+        if(imgUrl) {
+          imgCell.setValue('=image("'+ customStyles.img + '")');
+        }
 
         applyConditionalFormatting(sh, customStyles);
       }
@@ -820,24 +847,25 @@ function styleClientSheets(
 
       // practice SAT answer sheets
       if (satTestSheets.includes(shName)) {
-        sh.getRangeList(['B2:L4', 'B33:L35']).setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
-        sh.getRangeList(['A5:A', 'E5:E', 'I5:I']).setFontColor('white');
+        // sh.getRangeList(['B2:L4', 'B33:L35']).setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
+        sh.getRangeList(['B2:L4', 'B33:L35']).setBackground(secondaryColor).setFontColor(secondaryContrastColor).setBorder(true, true, true, true, true, true, secondaryColor, SpreadsheetApp.BorderStyle.SOLID);
+        sh.getRangeList(['A1:A', 'E1:E', 'I1:I']).setFontColor('white');
       }
       // check for SAT analysis sheets after checking exact match
       else if (shName.includes('analysis') || shName.includes('opportunity')) {
-        // if(shName === 'rev analysis') {
-        //   sh.getRange('A1:K7').setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-        // }
-        // else if (shName === 'time series analysis') {
-        //   sh.getRange('A1:K6').setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-        //   sh.getRange('D5:E6').setFontColor(fontColor)
-        // }
-        // else {
-        //   sh.getRange('A1:K6').setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-        // }
+        if(shName === 'rev analysis') {
+          sh.getRange('A1:K7').setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+        }
+        else if (shName === 'time series analysis') {
+          sh.getRange('A1:K6').setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+          sh.getRange('D5:E6').setFontColor(fontColor)
+        }
+        else {
+          sh.getRange('A1:K6').setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+        }
         
-        // const imgCell = sh.getRange('B2');
-        // imgCell.setValue('=image("'+ customStyles.img + '")');
+        const imgCell = sh.getRange('B2');
+        imgCell.setValue('=image("'+ customStyles.img + '")');
 
         applyConditionalFormatting(sh, customStyles);
       }
@@ -858,7 +886,8 @@ function styleClientSheets(
         sh.getRange(1, 1, 3, sh.getMaxColumns()).setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
       }
       else if (shName === 'rev sheets') {
-        sh.getRangeList(['B2:E4', 'G2:J4']).setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
+        // sh.getRangeList(['B2:E4', 'G2:J4']).setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
+        sh.getRangeList(['B2:E4', 'G2:J4']).setBackground(secondaryColor).setFontColor(secondaryContrastColor).setBorder(true, true, true, true, true, true, secondaryColor, SpreadsheetApp.BorderStyle.SOLID);
       }
     }
   }
@@ -921,7 +950,8 @@ function styleSatWorksheets(
   }
   for(r in conceptRows) {
       const highlightRange = sh.getRange(conceptRows[r], 2, 3, headerCols);
-      highlightRange.setBackground(customStyles.primaryColor).setFontColor(customStyles.primaryContrastColor).setBorder(true, true, true, true, true, true, customStyles.primaryColor, SpreadsheetApp.BorderStyle.SOLID);
+      // highlightRange.setBackground(customStyles.primaryColor).setFontColor(customStyles.primaryContrastColor).setBorder(true, true, true, true, true, true, customStyles.primaryColor, SpreadsheetApp.BorderStyle.SOLID);
+      highlightRange.setBackground(customStyles.secondaryColor).setFontColor(customStyles.secondaryContrastColor).setBorder(true, true, true, true, true, true, customStyles.secondaryColor, SpreadsheetApp.BorderStyle.SOLID);
   }
 }
 
