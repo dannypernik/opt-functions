@@ -398,10 +398,10 @@ function newClient() {
     ui.ButtonSet.YES_NO
   );
 
-  let primaryColor = '#134f5c';
-  let secondaryColor = '#f6b26b';
-  let tertiaryColor = '#efefef'
-  let fontColor = '';
+  let primaryColor;
+  let secondaryColor;
+  let tertiaryColor;
+  let fontColor;
   var isCustom = false;
   var imgUrl = '';
 
@@ -412,6 +412,18 @@ function newClient() {
     fontColor = ui.prompt('Font color (leave blank to use primary color)', ui.ButtonSet.OK_CANCEL).getResponseText();
     imgUrl = ui.prompt('Image URL', ui.ButtonSet.OK_CANCEL).getResponseText();
     isCustom = true;
+  }
+
+  if (primaryColor === '') {
+    primaryColor = '#1c4d65';
+  }
+
+  if (secondaryColor === '') {
+    secondaryColor = '#f6b26b';
+  }
+
+  if (tertiaryColor === '') {
+    tertiaryColor = '#e6e6e6';
   }
 
   if (fontColor === '') {
@@ -880,7 +892,14 @@ function styleClientSheets(
         sh.getRange(1, 1, 3, sh.getMaxColumns()).setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
       }
       else if (shName === 'rev sheets') {
-        sh.getRangeList(['B2:E4', 'G2:J4']).setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
+        let revSheetHeaderRange;
+        if (ssName.includes('sat admin answer analysis')) {
+          revSheetHeaderRange = sh.getRangeList(['B2:E4', 'G2:J4']);
+        }
+        else {
+          revSheetHeaderRange = sh.getRangeList(['B2:D4', 'F2:I4']);
+        }
+        revSheetHeaderRange.setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
         // sh.getRangeList(['B2:E4', 'G2:J4']).setBackground(secondaryColor).setFontColor(secondaryContrastColor).setBorder(true, true, true, true, true, true, secondaryColor, SpreadsheetApp.BorderStyle.SOLID);
       }
     }
@@ -1010,7 +1029,7 @@ function applyConditionalFormatting(
   
   var backgroundColorRule = SpreadsheetApp.newConditionalFormatRule()
         .whenFormulaSatisfied('=sum($F7:$I7)>0')
-        .setBackground('#f8fafc')
+        .setBackground('#f5f7f9')
         .setRanges([sheet.getRange('B7:I70')]);
 
   newRules.push(grandTotalRule, subTotalRule, domainTotalRule, backgroundColorRule);
