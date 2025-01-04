@@ -285,11 +285,6 @@ function linkSheets(folderId, nameOnReport=false) {
   }
 }
 
-function transferStudentAnswers(oldSsId, newSsId) {
-
-}
-
-
 function isEmptyFolder(folderId) {
   const folders = DriveApp.getFolderById(folderId).getFolders();
   const files = DriveApp.getFolderById(folderId).getFiles();
@@ -802,7 +797,7 @@ function styleClientSheets(
       if (satTestSheets.includes(shName)) {
         // sh.getRangeList(['B2:L4', 'B33:L35']).setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
         sh.getRangeList(['B2:L4', 'B33:L35']).setBackground(secondaryColor).setFontColor(secondaryContrastColor).setBorder(true, true, true, true, true, true, secondaryColor, SpreadsheetApp.BorderStyle.SOLID);
-        sh.getRangeList(['A1:A', 'E1:E', 'I1:I']).setFontColor('white');
+        sh.getRangeList(['A5:A', 'E5:E', 'I5:I']).setFontColor('white');
       }
       // check for SAT analysis sheets after checking exact match
       else if (shName.includes('analysis') || shName.includes('opportunity')) {
