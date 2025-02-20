@@ -591,7 +591,6 @@ function getStyledIds(parentFolder) {
 }
 
 function processFolders(folders, folderFunction) {
-  const folders = parentFolder.getFolders();
   while (folders.hasNext()) {
     const folder = folders.next();
     folderFunction(folder);
