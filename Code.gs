@@ -577,6 +577,24 @@ function styleClientFolder(clientFolder = null, customStyles = {}) {
   while (folders.hasNext()) {
     const folder = folders.next();
     styleClientFolder(folder, customStyles);
+
+    const subFolders = folder.getFolders();
+    while (subFolders.hasNext()) {
+      const subFolder = subFolders.next();
+      styleClientFolder(subFolder, customStyles);
+
+      const subSubFolders = subFolder.getFolders();
+      while (subSubFolders.hasNext()) {
+        const subSubFolder = subSubFolders.next();
+        styleClientFolder(subSubFolder, customStyles);
+
+        const subSubSubFolders = subSubFolder.getFolders();
+        while (subSubSubFolders.hasNext()) {
+          const subSubSubFolder = subSubSubFolders.next();
+          styleClientFolder(subSubSubFolder, customStyles);
+        }
+      }
+    }
   }
 
   styleClientSheets(styledIds, customStyles);
