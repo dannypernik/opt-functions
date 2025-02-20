@@ -533,7 +533,9 @@ function setClientDataUrls(folderId) {
   Logger.log('setClientDataUrls complete');
 }
 
-function styleClientFolder(clientFolder = null, customStyles = {}) {
+function styleClientFolder(clientFolder = DriveApp.getFolderById('1UMDDjYI17VDxQO-rKLTFll--rsL6lrsq'), 
+  customStyles = {}) {
+    
   let clientFolderId;
 
   if (clientFolder) {
@@ -559,9 +561,9 @@ function styleClientFolder(clientFolder = null, customStyles = {}) {
     customStyles = setCustomStyles();
   }
 
-  styledIds = getStyledIds(clientFolder);
-
-  styleClientSheets(styledIds, customStyles);
+  getStyledIds(clientFolder);
+  processFolders(clientFolder.getFolders(), getStyledIds);
+  // styleClientSheets(styledIds, customStyles);
 
   Logger.log('styleClientFolder -> styledIds: ' + styledIds);
   var htmlOutput = HtmlService.createHtmlOutput('<a href="https://drive.google.com/drive/u/0/folders/' + clientFolderId + '" target="_blank" onclick="google.script.host.close()">Client folder</a>')
@@ -571,8 +573,8 @@ function styleClientFolder(clientFolder = null, customStyles = {}) {
 }
 
 const styledIds = new Set();
-function getStyledIds(parentFolder = DriveApp.getFolderById('1UMDDjYI17VDxQO-rKLTFll--rsL6lrsq')) {
-  const files = parentFolder.getFiles();
+function getStyledIds(folder) {
+  const files = folder.getFiles();
   while (files.hasNext()) {
     const file = files.next();
     const filename = file.getName().toLowerCase();
