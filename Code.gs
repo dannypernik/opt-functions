@@ -355,11 +355,12 @@ function newClient(clientTemplateFolderId, clientParentFolderId) {
   SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Client folder created successfully');
 }
 
+const styledStrings = ['admin answer analysis', 'student answer sheet'];
+const styledIds = [];
+
 function copyClientFolder(sourceFolder, newFolder, clientName) {
   const folders = sourceFolder.getFolders();
   const files = sourceFolder.getFiles();
-  const styledStrings = ['admin answer analysis', 'student answer sheet'];
-  const styledIds = [];
 
   while (files.hasNext()) {
     var file = files.next();
@@ -391,7 +392,7 @@ function copyClientFolder(sourceFolder, newFolder, clientName) {
     copyClientFolder(folder, targetFolder, clientName);
   }
 
-  Logger.log('copyClientFolder -> styledIds:', styledIds);
+  Logger.log('copyClientFolder -> styledIds: ' + styledIds);
   return styledIds;
 }
 
@@ -559,7 +560,7 @@ function styleClientFolder(clientFolder = null, customStyles = {}) {
     customStyles = setCustomStyles();
   }
 
-  const styledIds = getStyledIds(clientFolder);
+  styledIds = getStyledIds(clientFolder);
 
   styleClientSheets(styledIds, customStyles);
 
@@ -570,13 +571,8 @@ function styleClientFolder(clientFolder = null, customStyles = {}) {
   SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Styling complete');
 }
 
-const styledIds = [];
-
-function getStyledIds(parentFolder) {
-  const folders = parentFolder.getFolders();
+function getStyledIds(parentFolder=DriveApp.getFolderById('1UMDDjYI17VDxQO-rKLTFll--rsL6lrsq')) {
   const files = parentFolder.getFiles();
-  const styledStrings = ['admin answer analysis', 'student answer sheet'];
-
   while (files.hasNext()) {
     const file = files.next();
     const filename = file.getName().toLowerCase();
@@ -587,6 +583,7 @@ function getStyledIds(parentFolder) {
     }
   }
 
+  const folders = parentFolder.getFolders();
   processFolders(folders, getStyledIds);
 }
 
@@ -594,8 +591,8 @@ function processFolders(folders, folderFunction) {
   while (folders.hasNext()) {
     const folder = folders.next();
     folderFunction(folder);
-    Logger.log(folderFunction + ' processed folder ' + folder.getName());
-    processFolders(folder.getFolders());
+    Logger.log(folderFunction.name + ' processed folder ' + folder.getName());
+    processFolders(folder.getFolders(), folderFunction);
   }
 }
 
