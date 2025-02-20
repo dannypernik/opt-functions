@@ -210,7 +210,7 @@ var actSheetDataUrls = {
   student: null,
 };
 
-function linkClientSheets(folderId, studentName, testType = 'all') {
+function linkClientSheets(folderId, testType = 'all') {
   var folder = DriveApp.getFolderById(folderId);
   var files = folder.getFiles();
   var subFolders = DriveApp.getFolderById(folderId).getFolders();
@@ -242,7 +242,7 @@ function linkClientSheets(folderId, studentName, testType = 'all') {
       break;
     }
     const subFolder = subFolders.next();
-    linkClientSheets(subFolder.getId(), studentName, testType);
+    linkClientSheets(subFolder.getId(), testType);
   }
 
   if (satSheetIds.student && satSheetIds.admin) {
