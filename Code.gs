@@ -4,100 +4,100 @@
 //
 //  do not edit NewFolder functions. May be used by others
 //
-function NewSatFolder(sourceFolderId, parentFolderId, studentName) {
-  if (sourceFolderId === undefined || parentFolderId === undefined) {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var file = DriveApp.getFileById(ss.getId());
-    var sourceFolder = file.getParents().next();
-    var sourceFolderId = sourceFolder.getId();
-    var parentFolderId = sourceFolder.getParents().next().getId();
-  }
+// function NewSatFolder(sourceFolderId, parentFolderId, studentName) {
+//   if (sourceFolderId === undefined || parentFolderId === undefined) {
+//     var ss = SpreadsheetApp.getActiveSpreadsheet();
+//     var file = DriveApp.getFileById(ss.getId());
+//     var sourceFolder = file.getParents().next();
+//     var sourceFolderId = sourceFolder.getId();
+//     var parentFolderId = sourceFolder.getParents().next().getId();
+//   }
 
-  if (studentName === undefined) {
-    const ui = SpreadsheetApp.getUi();
-    const prompt = ui.prompt('Student name:', ui.ButtonSet.OK_CANCEL);
-    if (prompt.getSelectedButton() == ui.Button.CANCEL) {
-      return;
-    } else {
-      studentName = prompt.getResponseText();
-    }
-  }
+//   if (studentName === undefined) {
+//     const ui = SpreadsheetApp.getUi();
+//     const prompt = ui.prompt('Student name:', ui.ButtonSet.OK_CANCEL);
+//     if (prompt.getSelectedButton() == ui.Button.CANCEL) {
+//       return;
+//     } else {
+//       studentName = prompt.getResponseText();
+//     }
+//   }
 
-  const newFolder = DriveApp.getFolderById(parentFolderId).createFolder(studentName);
-  const newFolderId = newFolder.getId();
+//   const newFolder = DriveApp.getFolderById(parentFolderId).createFolder(studentName);
+//   const newFolderId = newFolder.getId();
 
-  copyFolder(sourceFolderId, newFolderId, studentName, 'sat');
-  linkSheets(newFolderId, studentName, 'sat');
+//   copyFolder(sourceFolderId, newFolderId, studentName, 'sat');
+//   linkSheets(newFolderId, studentName, 'sat');
 
-  var htmlOutput = HtmlService.createHtmlOutput('<a href="https://drive.google.com/drive/u/0/folders/' + newFolderId + '" target="_blank" onclick="google.script.host.close()">' + studentName + "'s folder</a>")
-    .setWidth(250) //optional
-    .setHeight(50); //optional
-  SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'SAT folder created successfully');
-}
+//   var htmlOutput = HtmlService.createHtmlOutput('<a href="https://drive.google.com/drive/u/0/folders/' + newFolderId + '" target="_blank" onclick="google.script.host.close()">' + studentName + "'s folder</a>")
+//     .setWidth(250) //optional
+//     .setHeight(50); //optional
+//   SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'SAT folder created successfully');
+// }
 
-// do not edit. May be used by others
-function NewActFolder(sourceFolderId, parentFolderId, studentName) {
-  if (sourceFolderId === undefined || parentFolderId === undefined) {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var file = DriveApp.getFileById(ss.getId());
-    var sourceFolder = file.getParents().next();
-    var sourceFolderId = sourceFolder.getId();
-    var parentFolderId = sourceFolder.getParents().next().getId();
-  }
+// // do not edit. May be used by others
+// function NewActFolder(sourceFolderId, parentFolderId, studentName) {
+//   if (sourceFolderId === undefined || parentFolderId === undefined) {
+//     var ss = SpreadsheetApp.getActiveSpreadsheet();
+//     var file = DriveApp.getFileById(ss.getId());
+//     var sourceFolder = file.getParents().next();
+//     var sourceFolderId = sourceFolder.getId();
+//     var parentFolderId = sourceFolder.getParents().next().getId();
+//   }
 
-  if (studentName === undefined) {
-    const ui = SpreadsheetApp.getUi();
-    const prompt = ui.prompt('Student name:', ui.ButtonSet.OK_CANCEL);
-    if (prompt.getSelectedButton() == ui.Button.CANCEL) {
-      return;
-    } else {
-      studentName = prompt.getResponseText();
-    }
-  }
+//   if (studentName === undefined) {
+//     const ui = SpreadsheetApp.getUi();
+//     const prompt = ui.prompt('Student name:', ui.ButtonSet.OK_CANCEL);
+//     if (prompt.getSelectedButton() == ui.Button.CANCEL) {
+//       return;
+//     } else {
+//       studentName = prompt.getResponseText();
+//     }
+//   }
 
-  const newFolder = DriveApp.getFolderById(parentFolderId).createFolder(studentName);
-  const newFolderId = newFolder.getId();
+//   const newFolder = DriveApp.getFolderById(parentFolderId).createFolder(studentName);
+//   const newFolderId = newFolder.getId();
 
-  copyFolder(sourceFolderId, newFolderId, studentName, 'act');
-  linkSheets(newFolderId, studentName, 'act');
+//   copyFolder(sourceFolderId, newFolderId, studentName, 'act');
+//   linkSheets(newFolderId, studentName, 'act');
 
-  var htmlOutput = HtmlService.createHtmlOutput('<a href="https://drive.google.com/drive/u/0/folders/' + newFolderId + '" target="_blank" onclick="google.script.host.close()">' + studentName + "'s folder</a>")
-    .setWidth(250) //optional
-    .setHeight(50); //optional
-  SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'ACT folder created successfully');
-}
+//   var htmlOutput = HtmlService.createHtmlOutput('<a href="https://drive.google.com/drive/u/0/folders/' + newFolderId + '" target="_blank" onclick="google.script.host.close()">' + studentName + "'s folder</a>")
+//     .setWidth(250) //optional
+//     .setHeight(50); //optional
+//   SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'ACT folder created successfully');
+// }
 
-// do not edit. May be used by others
-function NewTestPrepFolder(sourceFolderId, parentFolderId, studentName) {
-  if (sourceFolderId === undefined || parentFolderId === undefined) {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var file = DriveApp.getFileById(ss.getId());
-    var sourceFolder = file.getParents().next();
-    var sourceFolderId = sourceFolder.getId();
-    var parentFolderId = sourceFolder.getParents().next().getId();
-  }
+// // do not edit. May be used by others
+// function NewTestPrepFolder(sourceFolderId, parentFolderId, studentName) {
+//   if (sourceFolderId === undefined || parentFolderId === undefined) {
+//     var ss = SpreadsheetApp.getActiveSpreadsheet();
+//     var file = DriveApp.getFileById(ss.getId());
+//     var sourceFolder = file.getParents().next();
+//     var sourceFolderId = sourceFolder.getId();
+//     var parentFolderId = sourceFolder.getParents().next().getId();
+//   }
 
-  if (studentName === undefined) {
-    const ui = SpreadsheetApp.getUi();
-    const prompt = ui.prompt('Student name:', ui.ButtonSet.OK_CANCEL);
-    if (prompt.getSelectedButton() == ui.Button.CANCEL) {
-      return;
-    } else {
-      studentName = prompt.getResponseText();
-    }
-  }
+//   if (studentName === undefined) {
+//     const ui = SpreadsheetApp.getUi();
+//     const prompt = ui.prompt('Student name:', ui.ButtonSet.OK_CANCEL);
+//     if (prompt.getSelectedButton() == ui.Button.CANCEL) {
+//       return;
+//     } else {
+//       studentName = prompt.getResponseText();
+//     }
+//   }
 
-  const newFolder = DriveApp.getFolderById(parentFolderId).createFolder(studentName);
-  const newFolderId = newFolder.getId();
+//   const newFolder = DriveApp.getFolderById(parentFolderId).createFolder(studentName);
+//   const newFolderId = newFolder.getId();
 
-  copyFolder(sourceFolderId, newFolderId, studentName, 'all');
-  linkSheets(newFolderId, studentName, 'all');
+//   copyFolder(sourceFolderId, newFolderId, studentName, 'all');
+//   linkSheets(newFolderId, studentName, 'all');
 
-  var htmlOutput = HtmlService.createHtmlOutput('<a href="https://drive.google.com/drive/u/0/folders/' + newFolderId + '" target="_blank" onclick="google.script.host.close()">' + studentName + "'s folder</a>")
-    .setWidth(250) //optional
-    .setHeight(50); //optional
-  SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Test prep folder created successfully');
-}
+//   var htmlOutput = HtmlService.createHtmlOutput('<a href="https://drive.google.com/drive/u/0/folders/' + newFolderId + '" target="_blank" onclick="google.script.host.close()">' + studentName + "'s folder</a>")
+//     .setWidth(250) //optional
+//     .setHeight(50); //optional
+//   SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Test prep folder created successfully');
+// }
 
 function copyFolder(sourceFolderId = '1yqQx_qLsgqoNiDoKR9b63mLLeOiCoTwo', newFolderId = '1_qQNYnGPFAePo8UE5NfX72irNtZGF5kF', studentName = '_Aaron S', folderType = 'sat') {
   var sourceFolder = DriveApp.getFolderById(sourceFolderId);
@@ -210,7 +210,7 @@ var actSheetDataUrls = {
   student: null,
 };
 
-function linkSheets(folderId, studentName, testType = 'all') {
+function linkClientSheets(folderId, studentName, testType = 'all') {
   var folder = DriveApp.getFolderById(folderId);
   var files = folder.getFiles();
   var subFolders = DriveApp.getFolderById(folderId).getFolders();
@@ -224,17 +224,6 @@ function linkSheets(folderId, studentName, testType = 'all') {
         DriveApp.getFileById(satSheetIds.student).setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
       } else if (filename.includes('answer analysis')) {
         satSheetIds.admin = file.getId();
-
-        var ss = SpreadsheetApp.openById(file.getId());
-        if (studentName) {
-          for (i in ss.getSheets()) {
-            var s = ss.getSheets()[i];
-            var sName = s.getName().toLowerCase();
-            if (sName.includes('analysis') || sName.includes('opportunity')) {
-              s.getRange('D4').setValue('for ' + studentName);
-            }
-          }
-        }
       }
     }
 
@@ -253,7 +242,7 @@ function linkSheets(folderId, studentName, testType = 'all') {
       break;
     }
     const subFolder = subFolders.next();
-    linkSheets(subFolder.getId(), studentName, testType);
+    linkClientSheets(subFolder.getId(), studentName, testType);
   }
 
   if (satSheetIds.student && satSheetIds.admin) {
@@ -334,17 +323,20 @@ function newClient(clientTemplateFolderId, clientParentFolderId) {
 
   const useCustomStyle = ui.alert('Apply custom styles?', ui.ButtonSet.YES_NO);
 
+  if (useCustomStyle === ui.Button.YES) {
+    customStyles = setCustomStyles();
+  }
+
   var clientTemplateFolder = DriveApp.getFolderById(clientTemplateFolderId);
   var clientParentFolder = DriveApp.getFolderById(clientParentFolderId);
   let newFolder = clientParentFolder.createFolder(clientName);
   let newFolderId = newFolder.getId();
 
   copyClientFolder(clientTemplateFolder, newFolder, clientName);
-  linkSheets(newFolderId, clientName);
+  linkClientSheets(newFolderId);
   setClientDataUrls(newFolderId);
 
   if (useCustomStyle === ui.Button.YES) {
-    customStyles = setCustomStyles();
     getStyledIds(newFolder);
     processFolders(newFolder.getFolders(), getStyledIds);
     styleClientSheets(styledIds, customStyles);
