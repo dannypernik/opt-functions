@@ -560,8 +560,8 @@ function styleClientFolder(clientFolder = null, customStyles = {}) {
     customStyles = setCustomStyles();
   }
 
-  styledIds = getStyledIds(clientFolder);
-
+  getStyledIds(clientFolder);
+  processFolders(folders, getStyledIds);
   styleClientSheets(styledIds, customStyles);
 
   Logger.log('styleClientFolder -> styledIds: ' + styledIds);
@@ -571,7 +571,7 @@ function styleClientFolder(clientFolder = null, customStyles = {}) {
   SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Styling complete');
 }
 
-function getStyledIds(parentFolder=DriveApp.getFolderById('1UMDDjYI17VDxQO-rKLTFll--rsL6lrsq')) {
+function getStyledIds(parentFolder = DriveApp.getFolderById('1UMDDjYI17VDxQO-rKLTFll--rsL6lrsq')) {
   const files = parentFolder.getFiles();
   while (files.hasNext()) {
     const file = files.next();
@@ -582,9 +582,6 @@ function getStyledIds(parentFolder=DriveApp.getFolderById('1UMDDjYI17VDxQO-rKLTF
       styledIds.push(file.getId());
     }
   }
-
-  const folders = parentFolder.getFolders();
-  processFolders(folders, getStyledIds);
 }
 
 function processFolders(folders, folderFunction) {
