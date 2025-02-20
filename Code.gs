@@ -534,17 +534,20 @@ function setClientDataUrls(folderId) {
 }
 
 function styleClientFolder(clientFolder = null, customStyles = {}) {
+  let clientFolderId;
+
   if (clientFolder) {
     clientFolderId = clientFolder.getId();
   } else {
     const ui = SpreadsheetApp.getUi();
     const prompt = ui.prompt('Client folder URL or ID', ui.ButtonSet.OK_CANCEL);
-    const clientFolderId = prompt.getResponseText();
+    clientFolderId = prompt.getResponseText();
 
     if (prompt.getSelectedButton() == ui.Button.CANCEL) {
       return;
-    } else if (prompt.getResponseText().includes('/folder/')) {
-      clientFolderId = prompt.getResponseText().split('/folder/')[1].split('/')[0];
+    } else if (prompt.getResponseText().includes('/folders/')) {
+      clientFolderId = prompt.getResponseText().split('/folders/')[1].split('/')[0];
+      Logger.log(clientFolderId);
       clientFolder = DriveApp.getFolderById(clientFolderId);
     } else {
       clientFolderId = prompt.getResponseText();
