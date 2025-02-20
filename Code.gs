@@ -582,9 +582,6 @@ function getStyledIds(parentFolder = DriveApp.getFolderById('1UMDDjYI17VDxQO-rKL
       styledIds.add(file.getId());
     }
   }
-
-  Logger.log(styledIds);
-  return styledIds;
 }
 
 function processFolders(folders, folderFunction) {
