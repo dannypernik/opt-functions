@@ -559,10 +559,23 @@ function styleClientFolder(clientFolder = null, customStyles = {}) {
     customStyles = setCustomStyles();
   }
 
-  const folders = clientFolder.getFolders();
-  const files = clientFolder.getFiles();
+  const styledIds = getStyledIds(clientFolder);
+
+  styleClientSheets(styledIds, customStyles);
+
+  Logger.log('styleClientFolder -> styledIds: ' + styledIds);
+  var htmlOutput = HtmlService.createHtmlOutput('<a href="https://drive.google.com/drive/u/0/folders/' + clientFolderId + '" target="_blank" onclick="google.script.host.close()">Client folder</a>')
+    .setWidth(250)
+    .setHeight(50);
+  SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Styling complete');
+}
+
+const styledIds = [];
+
+function getStyledIds(parentFolder) {
+  const folders = parentFolder.getFolders();
+  const files = parentFolder.getFiles();
   const styledStrings = ['admin answer analysis', 'student answer sheet'];
-  const styledIds = [];
 
   while (files.hasNext()) {
     const file = files.next();
@@ -574,36 +587,17 @@ function styleClientFolder(clientFolder = null, customStyles = {}) {
     }
   }
 
+  processFolders(folders, getStyledIds);
+}
+
+function processFolders(folders, folderFunction) {
+  const folders = parentFolder.getFolders();
   while (folders.hasNext()) {
     const folder = folders.next();
-    styleClientFolder(folder, customStyles);
-
-    const subFolders = folder.getFolders();
-    while (subFolders.hasNext()) {
-      const subFolder = subFolders.next();
-      styleClientFolder(subFolder, customStyles);
-
-      const subSubFolders = subFolder.getFolders();
-      while (subSubFolders.hasNext()) {
-        const subSubFolder = subSubFolders.next();
-        styleClientFolder(subSubFolder, customStyles);
-
-        const subSubSubFolders = subSubFolder.getFolders();
-        while (subSubSubFolders.hasNext()) {
-          const subSubSubFolder = subSubSubFolders.next();
-          styleClientFolder(subSubSubFolder, customStyles);
-        }
-      }
-    }
+    folderFunction(folder);
+    Logger.log(folderFunction + ' processed folder ' + folder.getName());
+    processFolders(folder.getFolders());
   }
-
-  styleClientSheets(styledIds, customStyles);
-
-  Logger.log('styleClientFolder -> styledIds:', styledIds);
-  var htmlOutput = HtmlService.createHtmlOutput('<a href="https://drive.google.com/drive/u/0/folders/' + clientFolderId + '" target="_blank" onclick="google.script.host.close()">Client folder</a>')
-    .setWidth(250)
-    .setHeight(50);
-  SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Styling complete');
 }
 
 function styleClientSheets(styledIds, customStyles) {
@@ -687,7 +681,7 @@ function styleClientSheets(styledIds, customStyles) {
           } else {
             sh.getRangeList(['B2:L4', 'B33:L35']).setBackground(secondaryColor).setFontColor(secondaryContrastColor).setBorder(true, true, true, true, true, true, secondaryColor, SpreadsheetApp.BorderStyle.SOLID);
           }
-          sh.getRangeList(['A5:A', 'E5:E', 'I5:I']).setFontColor('white');
+          sh.getRangeList(['A1:A', 'E5:E', 'I5:I']).setFontColor('white');
         }
         // check for SAT analysis sheets after checking exact match
         else if (shNameLower.includes('analysis') || shNameLower.includes('opportunity')) {
@@ -698,6 +692,7 @@ function styleClientSheets(styledIds, customStyles) {
             sh.getRange('D5:E6').setFontColor(fontColor);
           } else {
             sh.getRange('A1:K6').setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+            sh.getRange('A7:A8').setFontColor('white');
             applyConditionalFormatting(sh, customStyles);
           }
 
