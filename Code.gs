@@ -533,9 +533,7 @@ function setClientDataUrls(folderId) {
   Logger.log('setClientDataUrls complete');
 }
 
-function styleClientFolder(clientFolder = DriveApp.getFolderById('1UMDDjYI17VDxQO-rKLTFll--rsL6lrsq'), 
-  customStyles = {}) {
-    
+function styleClientFolder(clientFolder, customStyles = {}) {
   let clientFolderId;
 
   if (clientFolder) {
@@ -565,7 +563,7 @@ function styleClientFolder(clientFolder = DriveApp.getFolderById('1UMDDjYI17VDxQ
   processFolders(clientFolder.getFolders(), getStyledIds);
   // styleClientSheets(styledIds, customStyles);
 
-  Logger.log('styleClientFolder -> styledIds: ' + styledIds);
+  Logger.log('styleClientFolder -> styledIds: ' + [...styledIds]);
   var htmlOutput = HtmlService.createHtmlOutput('<a href="https://drive.google.com/drive/u/0/folders/' + clientFolderId + '" target="_blank" onclick="google.script.host.close()">Client folder</a>')
     .setWidth(250)
     .setHeight(50);
@@ -586,11 +584,10 @@ function getStyledIds(folder) {
   }
 }
 
-function processFolders(folders, folderFunction) {
+function processFolders(folders=DriveApp.getFolderById('1UMDDjYI17VDxQO-rKLTFll--rsL6lrsq').getFolders(), folderFunction) {
   while (folders.hasNext()) {
     const folder = folders.next();
     folderFunction(folder);
-    Logger.log(folderFunction.name + ' processed folder ' + folder.getName());
     processFolders(folder.getFolders(), folderFunction);
   }
 }
