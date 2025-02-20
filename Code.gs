@@ -546,7 +546,7 @@ function styleClientFolder(clientFolder = null, customStyles = {}) {
     if (prompt.getSelectedButton() == ui.Button.CANCEL) {
       return;
     } else if (prompt.getResponseText().includes('/folders/')) {
-      clientFolderId = prompt.getResponseText().split('/folders/')[1].split('/')[0];
+      clientFolderId = prompt.getResponseText().split('/folders/')[1].split(/[/?]/)[0];
       Logger.log(clientFolderId);
       clientFolder = DriveApp.getFolderById(clientFolderId);
     } else {
