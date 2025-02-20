@@ -584,7 +584,7 @@ function getStyledIds(parentFolder=DriveApp.getFolderById('1UMDDjYI17VDxQO-rKLTF
   }
 
   const folders = parentFolder.getFolders();
-  processFolders(folders, getStyledIds);
+  processFolders(folders, getStyledIds)
 }
 
 function processFolders(folders, folderFunction) {
