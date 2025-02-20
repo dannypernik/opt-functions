@@ -571,7 +571,7 @@ function styleClientFolder(clientFolder = null, customStyles = {}) {
 }
 
 const styledIds = new Set();
-function getStyledIds(parentFolder=DriveApp.getFolderById('1UMDDjYI17VDxQO-rKLTFll--rsL6lrsq')) {
+function getStyledIds(parentFolder = DriveApp.getFolderById('1UMDDjYI17VDxQO-rKLTFll--rsL6lrsq')) {
   const files = parentFolder.getFiles();
   while (files.hasNext()) {
     const file = files.next();
@@ -582,7 +582,6 @@ function getStyledIds(parentFolder=DriveApp.getFolderById('1UMDDjYI17VDxQO-rKLTF
       styledIds.add(file.getId());
     }
   }
-
 
   Logger.log(styledIds);
   return styledIds;
