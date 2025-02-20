@@ -334,27 +334,29 @@ function newClient(clientTemplateFolderId, clientParentFolderId) {
 
   const useCustomStyle = ui.alert('Apply custom styles?', ui.ButtonSet.YES_NO);
 
-  if (useCustomStyle === ui.Button.YES) {
-    customStyles = setCustomStyles();
-  }
-
   var clientTemplateFolder = DriveApp.getFolderById(clientTemplateFolderId);
   var clientParentFolder = DriveApp.getFolderById(clientParentFolderId);
   let newFolder = clientParentFolder.createFolder(clientName);
   let newFolderId = newFolder.getId();
 
-  const styledIds = copyClientFolder(clientTemplateFolder, newFolder, clientName);
+  copyClientFolder(clientTemplateFolder, newFolder, clientName);
   linkSheets(newFolderId, clientName);
   setClientDataUrls(newFolderId);
-  styleClientSheets(styledIds, customStyles);
 
-  Logger.log('newClient -> styledIds:', styledIds);
+  if (useCustomStyle === ui.Button.YES) {
+    customStyles = setCustomStyles();
+    getStyledIds(newFolder);
+    processFolders(newFolder.getFolders(), getStyledIds);
+    styleClientSheets(styledIds, customStyles);
+  }
+
   var htmlOutput = HtmlService.createHtmlOutput('<a href="https://drive.google.com/drive/u/0/folders/' + newFolderId + '" target="_blank" onclick="google.script.host.close()">' + newFolder.getName() + "'s folder</a>")
     .setWidth(250) //optional
     .setHeight(50); //optional
   SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Client folder created successfully');
 }
 
+const styledIds = new Set();
 const styledStrings = ['admin answer analysis', 'student answer sheet'];
 
 function copyClientFolder(sourceFolder, newFolder, clientName) {
@@ -375,12 +377,7 @@ function copyClientFolder(sourceFolder, newFolder, clientName) {
       }
     }
 
-    const newFile = file.makeCopy(filename, newFolder);
-    const containsSubstring = styledStrings.some((substring) => filename.toLowerCase().includes(substring));
-
-    if (containsSubstring) {
-      styledIds.push(newFile.getId());
-    }
+    file.makeCopy(filename, newFolder);
   }
 
   while (folders.hasNext()) {
@@ -390,9 +387,6 @@ function copyClientFolder(sourceFolder, newFolder, clientName) {
 
     copyClientFolder(folder, targetFolder, clientName);
   }
-
-  Logger.log('copyClientFolder -> styledIds: ' + styledIds);
-  return styledIds;
 }
 
 function setClientDataUrls(folderId) {
@@ -561,7 +555,7 @@ function styleClientFolder(clientFolder, customStyles = {}) {
 
   getStyledIds(clientFolder);
   processFolders(clientFolder.getFolders(), getStyledIds);
-  // styleClientSheets(styledIds, customStyles);
+  styleClientSheets(styledIds, customStyles);
 
   Logger.log('styleClientFolder -> styledIds: ' + [...styledIds]);
   var htmlOutput = HtmlService.createHtmlOutput('<a href="https://drive.google.com/drive/u/0/folders/' + clientFolderId + '" target="_blank" onclick="google.script.host.close()">Client folder</a>')
@@ -570,7 +564,6 @@ function styleClientFolder(clientFolder, customStyles = {}) {
   SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Styling complete');
 }
 
-const styledIds = new Set();
 function getStyledIds(folder) {
   const files = folder.getFiles();
   while (files.hasNext()) {
@@ -584,7 +577,7 @@ function getStyledIds(folder) {
   }
 }
 
-function processFolders(folders=DriveApp.getFolderById('1UMDDjYI17VDxQO-rKLTFll--rsL6lrsq').getFolders(), folderFunction) {
+function processFolders(folders = DriveApp.getFolderById('1UMDDjYI17VDxQO-rKLTFll--rsL6lrsq').getFolders(), folderFunction) {
   while (folders.hasNext()) {
     const folder = folders.next();
     folderFunction(folder);
@@ -593,8 +586,8 @@ function processFolders(folders=DriveApp.getFolderById('1UMDDjYI17VDxQO-rKLTFll-
 }
 
 function styleClientSheets(styledIds, customStyles) {
-  for (let i in styledIds) {
-    const ss = SpreadsheetApp.openById(styledIds[i]);
+  for (let id of styledIds) {
+    const ss = SpreadsheetApp.openById(id);
     const ssName = ss.getName();
     const satTestSheets = getTestCodes();
     const satDataSheets = ['question bank data', 'practice test data', 'rev sheet backend'];
