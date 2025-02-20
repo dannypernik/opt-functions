@@ -356,7 +356,6 @@ function newClient(clientTemplateFolderId, clientParentFolderId) {
 }
 
 const styledStrings = ['admin answer analysis', 'student answer sheet'];
-const styledIds = [];
 
 function copyClientFolder(sourceFolder, newFolder, clientName) {
   const folders = sourceFolder.getFolders();
@@ -364,7 +363,7 @@ function copyClientFolder(sourceFolder, newFolder, clientName) {
 
   while (files.hasNext()) {
     var file = files.next();
-    var filename = file.getName().toLowerCase();
+    var filename = file.getName();
 
     if (filename.includes('template')) {
       const rootName = filename.slice(0, filename.indexOf('-') + 2);
@@ -377,7 +376,7 @@ function copyClientFolder(sourceFolder, newFolder, clientName) {
     }
 
     const newFile = file.makeCopy(filename, newFolder);
-    const containsSubstring = styledStrings.some((substring) => filename.includes(substring));
+    const containsSubstring = styledStrings.some((substring) => filename.toLowerCase().includes(substring));
 
     if (containsSubstring) {
       styledIds.push(newFile.getId());
@@ -560,8 +559,8 @@ function styleClientFolder(clientFolder = null, customStyles = {}) {
     customStyles = setCustomStyles();
   }
 
-  getStyledIds(clientFolder);
-  processFolders(folders, getStyledIds);
+  styledIds = getStyledIds(clientFolder);
+
   styleClientSheets(styledIds, customStyles);
 
   Logger.log('styleClientFolder -> styledIds: ' + styledIds);
@@ -571,7 +570,8 @@ function styleClientFolder(clientFolder = null, customStyles = {}) {
   SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Styling complete');
 }
 
-function getStyledIds(parentFolder = DriveApp.getFolderById('1UMDDjYI17VDxQO-rKLTFll--rsL6lrsq')) {
+const styledIds = new Set();
+function getStyledIds(parentFolder=DriveApp.getFolderById('1UMDDjYI17VDxQO-rKLTFll--rsL6lrsq')) {
   const files = parentFolder.getFiles();
   while (files.hasNext()) {
     const file = files.next();
@@ -579,9 +579,13 @@ function getStyledIds(parentFolder = DriveApp.getFolderById('1UMDDjYI17VDxQO-rKL
     const containsSubstring = styledStrings.some((substring) => filename.includes(substring));
 
     if (containsSubstring) {
-      styledIds.push(file.getId());
+      styledIds.add(file.getId());
     }
   }
+
+
+  Logger.log(styledIds);
+  return styledIds;
 }
 
 function processFolders(folders, folderFunction) {
