@@ -1302,7 +1302,7 @@ function renameStudentFolder(folder, studentCurrentName, studentFullName) {
       file.setName(newFilename);
     }
 
-    if (filename.toLowerCase().includes('answer analysis')) {
+    if (filename.toLowerCase().includes('sat admin answer analysis')) {
       adminSsId = file.getId();
       adminSs = SpreadsheetApp.openById(adminSsId);
       revBackendSheet = adminSs.getSheetByName('Rev sheet backend');
