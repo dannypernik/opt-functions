@@ -456,17 +456,9 @@ function setClientDataUrls(folderId) {
   }
   if (satSheetIds.admin && satSheetDataUrls.admin) {
     SpreadsheetApp.openById(satSheetIds.admin)
-      .getSheetByName('Question bank data')
-      .getRange('A1')
-      .setValue('=IMPORTRANGE(' + satSheetDataUrls.admin + ', "Question bank data!A1:H10000")');
-    SpreadsheetApp.openById(satSheetIds.admin)
-      .getSheetByName('Practice test data')
-      .getRange('A1')
-      .setValue('=IMPORTRANGE(' + satSheetDataUrls.admin + ', "Practice test data!A1:J10000")');
-    SpreadsheetApp.openById(satSheetIds.admin)
-      .getSheetByName('Reading & Writing')
-      .getRange('D1')
-      .setValue('=IMPORTRANGE(' + satSheetDataUrls.admin + ', "Question bank data!Q1")');
+      .getSheetByName('Rev sheet backend')
+      .getRange('U5')
+      .setValue(satSheetDataUrls.admin);
   }
 
   if (satSheetDataUrls.admin && satSheetIds.studentData) {
