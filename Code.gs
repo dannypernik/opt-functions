@@ -545,6 +545,7 @@ function styleClientFolder(clientFolder, customStyles = {}) {
     customStyles = setCustomStyles();
   }
 
+  Logger.log('Styling sheets for ' + clientFolder.getName());
   getStyledIds(clientFolder);
   processFolders(clientFolder.getFolders(), getStyledIds);
   styleClientSheets(styledIds, customStyles);
@@ -1282,14 +1283,14 @@ const showAllExcept = (spreadsheetId, hiddenSheets = []) => {
   // SpreadsheetApp.flush();
 };
 
-function renameStudentFolder(folder, studentCurrentName, studentFullName) {
+function renameFolder(folder, currentName, newName, isStudentFolder = true) {
   let folderName = folder.getName();
   let files = folder.getFiles();
   let subfolders = folder.getFolders();
   let revDataSsId, adminSsId, adminSs, revBackendSheet;
 
-  if (folderName.includes(studentCurrentName) && !folderName.includes(studentFullName)) {
-    let newFoldername = folderName.replace(studentCurrentName, studentFullName);
+  if (folderName.includes(currentName) && !folderName.includes(newName)) {
+    let newFoldername = folderName.replace(currentName, newName);
     folder.setName(newFoldername);
   }
 
@@ -1297,16 +1298,16 @@ function renameStudentFolder(folder, studentCurrentName, studentFullName) {
     let file = files.next();
     let filename = file.getName();
 
-    if (filename.includes(studentCurrentName) && !filename.includes(studentFullName)) {
-      let newFilename = filename.replace(studentCurrentName, studentFullName);
+    if (filename.includes(currentName) && !filename.includes(newName)) {
+      let newFilename = filename.replace(currentName, newName);
       file.setName(newFilename);
     }
 
-    if (filename.toLowerCase().includes('sat admin answer analysis')) {
+    if (filename.toLowerCase().includes('sat admin answer analysis') && isStudentFolder) {
       adminSsId = file.getId();
       adminSs = SpreadsheetApp.openById(adminSsId);
       revBackendSheet = adminSs.getSheetByName('Rev sheet backend');
-      revBackendSheet.getRange('K2').setValue(studentFullName);
+      revBackendSheet.getRange('K2').setValue(newName);
     }
   }
 
@@ -1314,24 +1315,24 @@ function renameStudentFolder(folder, studentCurrentName, studentFullName) {
     let subfolder = subfolders.next();
     let subfolderName = subfolder.getName();
 
-    if (subfolderName.includes(studentCurrentName) && !subfolderName.includes(studentFullName)) {
-      let newSubfolderName = subfolderName.replace(studentCurrentName, studentFullName);
+    if (subfolderName.includes(currentName) && !subfolderName.includes(newName)) {
+      let newSubfolderName = subfolderName.replace(currentName, newName);
       subfolder.setName(newSubfolderName);
     }
 
-    renameStudentFolder(subfolder, studentCurrentName, studentFullName);
+    renameStudentFolder(subfolder, currentName, newName);
   }
 
-  if (adminSsId) {
+  if (adminSsId && isStudentFolder) {
     revDataSsId = revBackendSheet.getRange('U3');
     revDataSs = SpreadsheetApp.openById(revDataSsId);
 
-    if (revDataSs.getSheetByName(studentFullName)) {
+    if (revDataSs.getSheetByName(newName)) {
       let ui = SpreadsheetApp.getUi();
-      ui.alert('Rev sheet named ' + studentFullName + ' already exists. Please update manually.');
+      ui.alert('Rev sheet named ' + newName + ' already exists. Please update manually.');
       return;
     } else {
-      revDataSs.getSheetByName(studentCurrentName).setName(studentFullName);
+      revDataSs.getSheetByName(currentName).setName(newName);
     }
   }
 }
