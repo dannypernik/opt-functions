@@ -854,7 +854,7 @@ function setCustomStyles() {
   let secondaryColor = ui.prompt('Secondary background color', ui.ButtonSet.OK_CANCEL).getResponseText();
   let tertiaryColor = ui.prompt('Tertiary background color', ui.ButtonSet.OK_CANCEL).getResponseText();
   let fontColor = ui.prompt('Font color (leave blank to use primary color)', ui.ButtonSet.OK_CANCEL).getResponseText();
-  let imgUrl = ui.prompt('Image URL', ui.ButtonSet.OK_CANCEL).getResponseText();
+  let imgFilename = ui.prompt('Image URL or filename', ui.ButtonSet.OK_CANCEL).getResponseText();
   let sameHeaderColor = ui.alert('Same color header?', ui.ButtonSet.YES_NO);
 
   if (primaryColor === '') {
@@ -901,6 +901,14 @@ function setCustomStyles() {
     sameHeaderColor = true;
   } else {
     sameHeaderColor = false;
+  }
+
+  let imgUrl;
+  if (imgFilename.toLowerCase().includes('www.') || imgFilename === '') {
+    imgUrl = imgFilename;
+  }
+  else {
+    imgUrl = 'https://www.openpathtutoring.com/static/img/orgs/' + imgFilename;
   }
 
   let customStyles = {
