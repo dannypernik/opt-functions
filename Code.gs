@@ -456,7 +456,7 @@ function setClientDataUrls(folderId) {
     SpreadsheetApp.openById(satSheetIds.admin)
       .getSheetByName('Rev sheet backend')
       .getRange('U5')
-      .setValue(satSheetDataUrls.admin);
+      .setValue(satSheetIds.adminData);
   }
 
   if (satSheetDataUrls.admin && satSheetIds.studentData) {
