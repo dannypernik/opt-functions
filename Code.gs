@@ -184,7 +184,7 @@ function copyFolder(sourceFolderId = '1yqQx_qLsgqoNiDoKR9b63mLLeOiCoTwo', newFol
   }
 }
 
-var satSheetIds = {
+const satSheetIds = {
   admin: null,
   student: null,
   studentData: null,
@@ -192,20 +192,20 @@ var satSheetIds = {
   rev: null,
 };
 
-var satSheetDataUrls = {
+const satSheetDataUrls = {
   admin: null,
   student: null,
   rev: null,
 };
 
-var actSheetIds = {
+const actSheetIds = {
   admin: null,
   student: null,
   studentData: null,
   adminData: null,
 };
 
-var actSheetDataUrls = {
+const actSheetDataUrls = {
   admin: null,
   student: null,
 };
@@ -337,9 +337,9 @@ function newClient(clientTemplateFolderId, clientParentFolderId) {
   setClientDataUrls(newFolderId);
 
   if (useCustomStyle === ui.Button.YES) {
-    getStyledIds(newFolder);
-    processFolders(newFolder.getFolders(), getStyledIds);
-    styleClientSheets(styledIds, customStyles);
+    getStyledSheets(newFolder);
+    processFolders(newFolder.getFolders(), getStyledSheets);
+    styleClientSheets(satSheetIds, actSheetIds, customStyles);
   }
 
   var htmlOutput = HtmlService.createHtmlOutput('<a href="https://drive.google.com/drive/u/0/folders/' + newFolderId + '" target="_blank" onclick="google.script.host.close()">' + newFolder.getName() + "'s folder</a>")
@@ -348,8 +348,6 @@ function newClient(clientTemplateFolderId, clientParentFolderId) {
   SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Client folder created successfully');
 }
 
-const styledIds = new Set();
-const styledStrings = ['admin answer analysis', 'student answer sheet'];
 
 function copyClientFolder(sourceFolder, newFolder, clientName) {
   const folders = sourceFolder.getFolders();
@@ -538,28 +536,38 @@ function styleClientFolder(clientFolder, customStyles = {}) {
   }
 
   Logger.log('Styling sheets for ' + clientFolder.getName());
-  getStyledIds(clientFolder);
-  processFolders(clientFolder.getFolders(), getStyledIds);
-  styleClientSheets(styledIds, customStyles);
+  getStyledSheets(clientFolder);
+  processFolders(clientFolder.getFolders(), getStyledSheets);
+  styleClientSheets(satSheetIds, actSheetIds, customStyles);
 
-  Logger.log('styleClientFolder -> styledIds: ' + [...styledIds]);
   var htmlOutput = HtmlService.createHtmlOutput('<a href="https://drive.google.com/drive/u/0/folders/' + clientFolderId + '" target="_blank" onclick="google.script.host.close()">Client folder</a>')
     .setWidth(250)
     .setHeight(50);
   SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Styling complete');
 }
 
-function getStyledIds(folder) {
+function getStyledSheets(folder) {
   const files = folder.getFiles();
   while (files.hasNext()) {
     const file = files.next();
+    const fileId = file.getId();
     const filename = file.getName().toLowerCase();
-    const containsSubstring = styledStrings.some((substring) => filename.includes(substring));
 
-    if (containsSubstring) {
-      styledIds.add(file.getId());
+    if (filename.includes('sat admin answer analysis')) {
+      satSheetIds.admin = fileId;
+    }
+    else if (filename.includes('sat student answer sheet')) {
+      satSheetIds.student = fileId;
+    }
+    else if (filename.includes('act admin answer analysis')) {
+      actSheetIds.admin = fileId;
+    }
+    else if (filename.includes('act student answer sheet')) {
+      actSheetIds.student = fileId;
     }
   }
+
+  return [satSheetIds, actSheetIds];
 }
 
 function processFolders(folders, folderFunction) {
@@ -570,8 +578,28 @@ function processFolders(folders, folderFunction) {
   }
 }
 
-function styleClientSheets(styledIds, customStyles) {
-  for (let id of styledIds) {
+function saveClientFileIds(parentClientFolderId='130wX98bJM4wW6aE6J-e6VffDNwqvgeNS') {
+  const parentClientFolder = DriveApp.getFolderById(parentClientFolderId);
+  const clientFolders = parentClientFolder.getFolders();
+  const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
+  let newRow = getLastFilledRow(clientDataSs.getSheets()[0], 1) + 1;
+
+  while (clientFolders.hasNext()) {
+    const clientFolder = clientFolders.next();
+    const clientName = clientFolder.getName();
+    Logger.log(clientName);
+    if (!clientName.includes('Ξ')) {
+      getStyledSheets(clientFolder);
+      processFolders(clientFolder.getFolders(), getStyledSheets);
+
+      clientDataSs.getSheetById(0).getRange(newRow, 1, 1, 6).setValues([[clientName, clientFolder.getId(), satSheetIds.admin, satSheetIds.student, actSheetIds.admin, actSheetIds.student]]);
+      newRow ++;
+    }
+  }
+}
+
+function styleClientSheets(satSheetIds, actSheetIds, customStyles) {
+  for (let id of [satSheetIds.admin, satSheetIds.student, actSheetIds.admin, actSheetIds.student]) {
     const ss = SpreadsheetApp.openById(id);
     const ssName = ss.getName();
     const satTestSheets = getTestCodes();
@@ -796,25 +824,25 @@ function applyConditionalFormatting(sheet, customStyles) {
     .setBold(true)
     .setBackground(customStyles.primaryColor)
     .setFontColor(customStyles.primaryContrastColor)
-    .setRanges([sheet.getRange('B7:I70')]);
+    .setRanges([sheet.getRange('B7:I177')]);
 
   var subTotalRule = SpreadsheetApp.newConditionalFormatRule()
     .whenFormulaSatisfied('=right($' + subtotalStart + '7,5)="Total"')
     .setBold(true)
     .setBackground(customStyles.secondaryColor)
     .setFontColor(customStyles.secondaryContrastColor)
-    .setRanges([sheet.getRange(subtotalStart + '7:I70')]);
+    .setRanges([sheet.getRange(subtotalStart + '7:I177')]);
 
   var domainTotalRule = SpreadsheetApp.newConditionalFormatRule()
     .whenFormulaSatisfied('=right($' + domainStart + '7,5)="Total"')
     .setBackground(customStyles.tertiaryColor)
     .setFontColor(customStyles.tertiaryContrastColor)
-    .setRanges([sheet.getRange(domainStart + '7:I70')]);
+    .setRanges([sheet.getRange(domainStart + '7:I177')]);
 
   var backgroundColorRule = SpreadsheetApp.newConditionalFormatRule()
     .whenFormulaSatisfied('=sum($F7:$I7)>0')
     .setBackground('#f5f7f9')
-    .setRanges([sheet.getRange('B7:I70')]);
+    .setRanges([sheet.getRange('B7:I177')]);
 
   newRules.push(grandTotalRule, subTotalRule, domainTotalRule, backgroundColorRule);
   sheet.clearConditionalFormatRules();
