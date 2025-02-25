@@ -362,7 +362,7 @@ function copyClientFolder(sourceFolder, newFolder, clientName) {
     if (filename.includes('template')) {
       const rootName = filename.slice(0, filename.indexOf('-') + 2);
 
-      if (filename.includes('data - client')) {
+      if (filename.toLowerCase().includes('data - client')) {
         filename = rootName + clientName;
       } else {
         filename = rootName + 'Template for ' + clientName;
@@ -1182,46 +1182,49 @@ function sendPdfScoreReport(spreadsheetId, email, studentName, scores = []) {
   var pdfName = 'SAT answer analysis - ' + studentName + ' - ' + currentScore.test;
   var studentFirstName = studentName.split(' ')[0];
   const [studentHours, recentSessionDate] = getStudentHours(studentName);
-  var response = UrlFetchApp.fetch(url_base + url_ext, options);
-  var blob = response.getBlob().setName(pdfName + '.pdf');
-  var scoreReportFolder = DriveApp.getFolderById(scoreReportFolderId);
-  scoreReportFolder.createFile(blob);
-  var message =
-    'Hi PARENTNAME, please find the score report from ' +
-    studentFirstName +
-    "'s recent practice test attached. " +
-    currentScore.total +
-    ' overall (' +
-    currentScore.rw +
-    ' Reading & Writing, ' +
-    currentScore.m +
-    ' Math)<br><br>As of the session on ' +
-    recentSessionDate +
-    ', we have ' +
-    studentHours +
-    ' hours remaining on the current package. Let me know if you have any questions. Thanks!<br><br>';
 
-  if (scores.length > 1) {
-    message += 'Previous scores - most recent last:<br><ul>';
+  if (studentHours) {
+    var response = UrlFetchApp.fetch(url_base + url_ext, options);
+    var blob = response.getBlob().setName(pdfName + '.pdf');
+    var scoreReportFolder = DriveApp.getFolderById(scoreReportFolderId);
+    scoreReportFolder.createFile(blob);
+    var message =
+      'Hi PARENTNAME, please find the score report from ' +
+      studentFirstName +
+      "'s recent practice test attached. " +
+      currentScore.total +
+      ' overall (' +
+      currentScore.rw +
+      ' Reading & Writing, ' +
+      currentScore.m +
+      ' Math)<br><br>As of the session on ' +
+      recentSessionDate +
+      ', we have ' +
+      studentHours +
+      ' hours remaining on the current package. Let me know if you have any questions. Thanks!<br><br>';
 
-    for (i = 0; i < scores.length - 1; i++) {
-      message += '<li>' + scores[i].test + ': ' + scores[i].total + ' (' + scores[i].rw + ' RW, ' + scores[i].m + ' M)</li>';
+    if (scores.length > 1) {
+      message += 'Previous scores - most recent last:<br><ul>';
+
+      for (i = 0; i < scores.length - 1; i++) {
+        message += '<li>' + scores[i].test + ': ' + scores[i].total + ' (' + scores[i].rw + ' RW, ' + scores[i].m + ' M)</li>';
+      }
+      message += '</ul><br>';
     }
-    message += '</ul><br>';
-  }
 
-  if (email) {
-    MailApp.sendEmail({
-      to: email,
-      subject: currentScore.test + ' score report for ' + studentFirstName,
-      htmlBody: message,
-      attachments: [blob.getAs(MimeType.PDF)],
-    });
+    if (email) {
+      MailApp.sendEmail({
+        to: email,
+        subject: currentScore.test + ' score report for ' + studentFirstName,
+        htmlBody: message,
+        attachments: [blob.getAs(MimeType.PDF)],
+      });
+    }
   }
 }
 
 function getStudentHours(studentName) {
-  const summarySheet = SpreadsheetApp.openById('1M6Xs6zLR_QdPpOJYO0zaZOwJZ6dxdXsURD2PkpP2Vis').getSheetByName('Summary');
+  const summarySheet = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('optSheetId')).getSheetByName('Summary');
   const lastRow = summarySheet.getLastRow();
   const allVals = summarySheet.getRange('A1:A' + lastRow).getValues();
   const lastFilledRow = lastRow - allVals.reverse().findIndex((c) => c[0] != '');
@@ -1230,6 +1233,9 @@ function getStudentHours(studentName) {
   for (let r = 0; r < lastFilledRow; r++) {
     if (summaryData[r][0] === studentName) {
       return [summaryData[r][3], Utilities.formatDate(new Date(summaryData[r][16]), 'GMT', 'EEE M/d')];
+    }
+    else {
+      return [null, null];
     }
   }
 }
