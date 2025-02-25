@@ -607,16 +607,16 @@ function styleClientSheets(styledIds, customStyles) {
 
           sh.getRange('F1').setBackground('#93c47d');
         } else if (shName === 'test analysis' || shName === 'opportunity areas') {
-          sh.getRange(1, 1, 8, sh.getMaxColumns())
+          sh.getRange(1, 1, 7, sh.getMaxColumns())
             .setBackground(primaryColor)
             .setFontColor(primaryContrastColor)
             .setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID)
             .setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
 
           if (shName === 'test analysis') {
-            var correctRange = 'F7:J7';
+            var correctRange = 'F6:J6';
           } else {
-            var correctRange = 'D7:H7';
+            var correctRange = 'E6:I6';
           }
           sh.getRange(correctRange).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
 
