@@ -582,20 +582,34 @@ function saveClientFileIds(parentClientFolderId='130wX98bJM4wW6aE6J-e6VffDNwqvge
   const parentClientFolder = DriveApp.getFolderById(parentClientFolderId);
   const clientFolders = parentClientFolder.getFolders();
   const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
-  let newRow = getLastFilledRow(clientDataSs.getSheets()[0], 1) + 1;
+  const clientSheet = clientDataSs.getSheets()[0];
+
+  let newRow = getLastFilledRow(clientSheet, 1) + 1;
+  const savedClientFolderIds = clientSheet.getRange(2, 2, newRow).getValues();
 
   while (clientFolders.hasNext()) {
     const clientFolder = clientFolders.next();
-    const clientName = clientFolder.getName();
-    Logger.log(clientName);
-    if (!clientName.includes('Ξ')) {
-      getStyledSheets(clientFolder);
-      processFolders(clientFolder.getFolders(), getStyledSheets);
+    const isClientFolderListed = savedClientFolderIds.some(subArray => subArray.includes(clientFolder.getId()))
+    
+    if (!isClientFolderListed) {
+      const clientName = clientFolder.getName();
+      Logger.log(clientName);
+      if (!clientName.includes('Ξ')) {
+        getStyledSheets(clientFolder);
+        processFolders(clientFolder.getFolders(), getStyledSheets);
 
-      clientDataSs.getSheetById(0).getRange(newRow, 1, 1, 6).setValues([[clientName, clientFolder.getId(), satSheetIds.admin, satSheetIds.student, actSheetIds.admin, actSheetIds.student]]);
-      newRow ++;
+        clientDataSs.getSheetById(0).getRange(newRow, 1, 1, 6).setValues([[clientName, clientFolder.getId(), satSheetIds.admin, satSheetIds.student, actSheetIds.admin, actSheetIds.student]]);
+        newRow ++;
+      }
     }
   }
+}
+
+function updateClientFolders() {
+  const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
+  const clientSheet = clientDataSs.getSheets()[0];
+
+  
 }
 
 function styleClientSheets(satSheetIds, actSheetIds, customStyles) {
