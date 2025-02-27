@@ -608,8 +608,39 @@ function saveClientFileIds(parentClientFolderId='130wX98bJM4wW6aE6J-e6VffDNwqvge
 function updateClientFolders() {
   const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
   const clientSheet = clientDataSs.getSheets()[0];
+  const lastFilledRow = getLastFilledRow(clientSheet, 2);
+  const clientDataRange = clientSheet.getRange(1, 1, lastFilledRow, 10).getValues();
+  const clients = [];
 
-  
+  for (let row = 2; row < lastFilledRow; row++) {       // starts at 2
+    clients.push({
+      'name': clientDataRange[row][0],
+      'folderId': clientDataRange[row][1],
+      'satAdminSsId': clientDataRange[row][2],
+      'satStudentSsIds': clientDataRange[row][3],
+      'actAdminSsIds': clientDataRange[row][4],
+      'actStudentSsIds': clientDataRange[row][5]
+    })
+  }
+
+  // Fix Opportunity Areas formulas
+  for (let row = 29; row < clients.length; row++) {    // starts at 0. Change this if execution times out
+    Logger.log('row ' + (row + 2) + ': ' + clients[row]['name'] + ' started');
+    const satAdminSs = SpreadsheetApp.openById(clients[row]['satAdminSsId']);
+    const oppAreasSheet = satAdminSs.getSheetByName('Opportunity areas');
+    const yesRwStartCell = oppAreasSheet.getRange('C42');
+    const yesRwStartValue = '=if($B42="","",countifs(\'Question bank data\'!$D$2:$D,$B42,\'Question bank data\'!$J$2:$J,C$41))'
+    const yesRwRange = oppAreasSheet.getRange('C42:C73');
+    yesRwStartCell.setValue(yesRwStartValue)
+    yesRwStartCell.autoFill(yesRwRange, SpreadsheetApp.AutoFillSeries.DEFAULT_SERIES);
+
+    const yesMathStartCell = oppAreasSheet.getRange('H42');
+    const yesMathStartValue = '=if($G42="","",countifs(\'Question bank data\'!$D$2:$D,$G42,\'Question bank data\'!$J$2:$J,H$41))'
+    const yesMathRange = oppAreasSheet.getRange('H42:H73');
+    yesMathStartCell.setValue(yesMathStartValue)
+    yesMathStartCell.autoFill(yesMathRange, SpreadsheetApp.AutoFillSeries.DEFAULT_SERIES);
+    Logger.log(clients[row]['name'] + ' completed');
+  }
 }
 
 function styleClientSheets(satSheetIds, actSheetIds, customStyles) {
