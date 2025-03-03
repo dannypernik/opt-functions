@@ -1370,14 +1370,13 @@ function sortFoldersByDateCreated() {
 }
 
 // Rev sheet setup functions
-
 function getAllRowHeights(sheetName, rwIdRangeA1, mathIdRangeA1) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName(sheetName);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(sheetName);
 
   const subjectRanges = [
     {'name': 'rw', 'idRange': sh.getRange(rwIdRangeA1)},
-    {'name': 'm', 'idRange': sh.getRange(mathIdRangeA1)}
+    {'name': 'math', 'idRange': sh.getRange(mathIdRangeA1)}
   ]
 
   for (let subject of subjectRanges) {
@@ -1405,49 +1404,6 @@ function getAllRowHeights(sheetName, rwIdRangeA1, mathIdRangeA1) {
         Logger.log(`${subName} values set for rows ${batchStartRow}-${batchEndRow}`);
         lastSetRow = batchEndRow;
       }
-    }
-
-    // for (var row = idStartRow; row < idStartRow + ids.length; row++) {
-    //   const id = rwIds[row-1][0];
-    //   const height = calculateRowHeight(id, 1000, sub);
-      
-    //   heights.push([height]);
-    //   if (heights.length % 100 === 0) {
-    //     const slice = heights.slice(-100);
-    //     Logger.log(slice);
-    //     sh.getRange(row-99, idCol + 2, 100).setValues(slice);
-    //     lastSetRow = row;
-    //     Logger.log(sub + ' values set for rows ' + (row-99) + '-' + lastSetRow + ' with row=' + row);
-    //   }
-    //   else if (row == idStartRow + ids.length) {
-    //     const slice = heights.slice(lastSetRow);
-    //     sh.getRange(lastSetRow + 1, idCol + 2, slice.length).setValues(slice);
-    //     Logger.log(sub + ' values complete from rows ' + (lastSetRow + 1) + '-' + row);
-    //   }
-    // }
-  }
-
-  
-
-  const mathHeights = [];
-  let lastMathSetRow = 0;
-
-  for (var m = 1; m <= mathIds.length; m++) {
-    var id = mathIds[m-1][0];
-
-    var height = calculateRowHeight(id, 1000, 'math');
-    mathHeights.push([height]);
-    if (m % 100 === 0) {
-      const slice = mathHeights.slice(-100);
-      Logger.log(slice);
-      sh.getRange(m-99, mathIdCol + 2, 100).setValues(slice);
-      lastMathSetRow = m;
-      Logger.log('Math values set for rows ' + (m-99) + '-' + lastMathSetRow + ' with m=' + m);
-    }
-    else if (m == mathIds.length) {
-      const slice = mathHeights.slice(lastMathSetRow);
-      sh.getRange(Math.max(mathIdStartRow,mathIdStartRow+m-99), mathIdCol + 2, (m % 100)).setValues(slice);
-      Logger.log('Math values complete from rows ' + Math.max(1,m-99) + '-' + m);
     }
   }
 }
