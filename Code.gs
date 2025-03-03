@@ -1375,37 +1375,59 @@ function getAllRowHeights(sheetName, rwIdRangeA1, mathIdRangeA1) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sh = ss.getSheetByName(sheetName);
 
-  var rwIdRange = sh.getRange(rwIdRangeA1);
-  var rwIds = rwIdRange.getValues();
-  var rwIdStartRow = rwIdRange.getCell(1,1).getRow();
-  var rwIdCol = rwIdRange.getCell(1,1).getColumn();
-  
-  var mathIdRange = sh.getRange(mathIdRangeA1);
-  var mathIds = mathIdRange.getValues();
-  var mathIdStartRow = mathIdRange.getCell(1,1).getRow();
-  var mathIdCol = mathIdRange.getCell(1,1).getColumn();
+  const subjectRanges = [
+    {'name': 'rw', 'idRange': sh.getRange(rwIdRangeA1)},
+    {'name': 'm', 'idRange': sh.getRange(mathIdRangeA1)}
+  ]
 
-  const rwHeights = [];
-  let lastRwSetRow = 0;
+  for (let subject of subjectRanges) {
+    const subName = subject.name;
+    const subRange = subject.idRange;
+    const ids = subRange.getValues();
+    const startCell = subRange.getCell(1,1);
+    const idStartRow = startCell.getRow();
+    const idCol = startCell.getColumn();
+    const heights = [];
+    let lastSetRow = idStartRow - 1;
 
-  for (var m = 1; m <= rwIds.length; m++) {
-    var id = rwIds[m-1][0];
+    for (let rowOffset = 0; rowOffset < ids.length; rowOffset++) {
+      const id = ids[rowOffset][0]; // Get the ID from the current row
+      const height = calculateRowHeight(id, 1000, subName); // Calculate height based on ID
+      heights.push([height]);
 
-    var height = calculateRowHeight(id, 1000, 'rw');
-    rwHeights.push([height]);
-    if (m % 100 === 0) {
-      const slice = rwHeights.slice(-100);
-      Logger.log(slice);
-      sh.getRange(m-99, rwIdCol + 2, 100).setValues(slice);
-      lastRwSetRow = m;
-      Logger.log('rw values set for rows ' + (m-99) + '-' + lastRwSetRow + ' with m=' + m);
+      // Batch process every 100 rows
+      if ((rowOffset + 1) % 100 === 0 || rowOffset === ids.length - 1) {
+        const batchStartRow = lastSetRow + 1;
+        const batchEndRow = idStartRow + rowOffset;
+        const slice = heights.slice(lastSetRow - idStartRow + 1); // Slice only new rows
+
+        sh.getRange(batchStartRow, idCol + 2, slice.length).setValues(slice);
+        Logger.log(`${subName} values set for rows ${batchStartRow}-${batchEndRow}`);
+        lastSetRow = batchEndRow;
+      }
     }
-    else if (m == rwIds.length) {
-      const slice = rwHeights.slice(lastRwSetRow);
-      sh.getRange(Math.max(rwIdStartRow,rwIdStartRow+m-99), rwIdCol + 2, (m % 100)).setValues(slice);
-      Logger.log('rw values complete from rows ' + Math.max(1,m-99) + '-' + m);
-    }
+
+    // for (var row = idStartRow; row < idStartRow + ids.length; row++) {
+    //   const id = rwIds[row-1][0];
+    //   const height = calculateRowHeight(id, 1000, sub);
+      
+    //   heights.push([height]);
+    //   if (heights.length % 100 === 0) {
+    //     const slice = heights.slice(-100);
+    //     Logger.log(slice);
+    //     sh.getRange(row-99, idCol + 2, 100).setValues(slice);
+    //     lastSetRow = row;
+    //     Logger.log(sub + ' values set for rows ' + (row-99) + '-' + lastSetRow + ' with row=' + row);
+    //   }
+    //   else if (row == idStartRow + ids.length) {
+    //     const slice = heights.slice(lastSetRow);
+    //     sh.getRange(lastSetRow + 1, idCol + 2, slice.length).setValues(slice);
+    //     Logger.log(sub + ' values complete from rows ' + (lastSetRow + 1) + '-' + row);
+    //   }
+    // }
   }
+
+  
 
   const mathHeights = [];
   let lastMathSetRow = 0;
