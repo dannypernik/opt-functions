@@ -43,20 +43,23 @@ function newClient(clientTemplateFolderId, clientParentFolderId) {
 
   var clientTemplateFolder = DriveApp.getFolderById(clientTemplateFolderId);
   var clientParentFolder = DriveApp.getFolderById(clientParentFolderId);
-  let newFolder = clientParentFolder.createFolder(clientName);
-  let newFolderId = newFolder.getId();
+  let clientFolder = clientParentFolder.createFolder(clientName);
+  let clientFolderId = clientFolder.getId();
 
-  copyClientFolder(clientTemplateFolder, newFolder, clientName);
-  linkClientSheets(newFolderId);
-  setClientDataUrls(newFolderId);
+  copyClientFolder(clientTemplateFolder, clientFolder, clientName);
+  addClientData(clientFolderId);
+  linkClientSheets(clientFolderId);
+  setClientDataUrls(clientFolderId);
 
   if (useCustomStyle === ui.Button.YES) {
-    getStyledSheets(newFolder);
-    processFolders(newFolder.getFolders(), getStyledSheets);
+    getStyledSheets(clientFolder);
+    processFolders(clientFolder.getFolders(), getStyledSheets);
     styleClientSheets(satSheetIds, actSheetIds, customStyles);
   }
 
-  var htmlOutput = HtmlService.createHtmlOutput('<a href="https://drive.google.com/drive/u/0/folders/' + newFolderId + '" target="_blank" onclick="google.script.host.close()">' + newFolder.getName() + "'s folder</a>")
+  var htmlOutput = HtmlService
+    .createHtmlOutput('<a href="https://drive.google.com/drive/u/0/folders/' + clientFolderId + '" target="_blank" onclick="google.script.host.close()">' + clientName + "'s folder</a>" +
+      '<p><a href="https://docs.google.com/spreadsheets/d/' + PropertiesService.getScriptProperties().getProperty('clientDataSsId') + '">Client data IDs</a></p>')
     .setWidth(250) //optional
     .setHeight(50); //optional
   SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Client folder created successfully');
@@ -588,94 +591,6 @@ function applyConditionalFormatting(sheet, customStyles) {
   Logger.log('applyConditionalFormatting complete for ' + sheet.getName());
 }
 
-function saveClientFileIds(parentClientFolderId='130wX98bJM4wW6aE6J-e6VffDNwqvgeNS') {
-  const parentClientFolder = DriveApp.getFolderById(parentClientFolderId);
-  const clientFolders = parentClientFolder.getFolders();
-  const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
-  const clientSheet = clientDataSs.getSheets()[0];
-
-  let newRow = getLastFilledRow(clientSheet, 1) + 1;
-  const savedClientFolderIds = clientSheet.getRange(2, 2, newRow).getValues();
-
-  while (clientFolders.hasNext()) {
-    const clientFolder = clientFolders.next();
-    const isClientFolderListed = savedClientFolderIds.some(subArray => subArray.includes(clientFolder.getId()))
-    
-    if (!isClientFolderListed) {
-      const clientName = clientFolder.getName();
-      Logger.log(clientName);
-      if (!clientName.includes('Ξ')) {
-        getStyledSheets(clientFolder);
-        processFolders(clientFolder.getFolders(), getStyledSheets);
-
-        clientDataSs.getSheetById(0).getRange(newRow, 1, 1, 6).setValues([[clientName, clientFolder.getId(), satSheetIds.admin, satSheetIds.student, actSheetIds.admin, actSheetIds.student]]);
-        newRow ++;
-      }
-    }
-  }
-}
-
-function updateClientFolders() {
-  const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
-  const clientSheet = clientDataSs.getSheets()[0];
-  const lastFilledRow = getLastFilledRow(clientSheet, 2);
-  const clientDataRange = clientSheet.getRange(1, 1, lastFilledRow, 10).getValues();
-  const clients = [];
-
-  for (let row = 2; row < lastFilledRow; row++) {       // starts at 2
-    clients.push({
-      'name': clientDataRange[row][0],
-      'folderId': clientDataRange[row][1],
-      'satAdminSsId': clientDataRange[row][2],
-      'satStudentSsId': clientDataRange[row][3],
-      'actAdminSsId': clientDataRange[row][4],
-      'actStudentSsId': clientDataRange[row][5]
-    })
-  }
-
-  // Fix Opportunity Areas formulas
-  for (let id = 10; id < clients.length; id++) {    // starts at 0. Change this if execution times out
-    Logger.log(id + '. ' + clients[id]['name'] + ' started');
-    const ss = SpreadsheetApp.openById(clients[id]['actAdminSsId']);
-    const oppSh = ss.getSheetByName('Opportunity areas');
-    const taSh = ss.getSheetByName('Test analysis');
-
-    const bodyFontColor = oppSh.getRange('C11').getFontColorObject().asRgbColor().asHexString();
-    const headerFontColor = oppSh.getRange('D2').getFontColorObject().asRgbColor().asHexString();
-    const headerBgColor = oppSh.getRange('D2').getBackgroundObject().asRgbColor().asHexString();
-    
-    oppSh.getRange('A8:I8').setBackground('white').setFontColor(bodyFontColor).setBorder(true, true, true, true, true, true, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-    oppSh.getRange('A7:I7').setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-    oppSh.getRange('E6:I6').setBorder(null, null, true, null, null, null, headerFontColor, SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-    oppSh.insertRowBefore(1)
-    oppSh.getRange('A1:I1').setBorder(true, true, true, true, true, true, headerBgColor, SpreadsheetApp.BorderStyle.SOLID_MEDIUM)
-
-    taSh.getRange('A8:K8').setBackground('white').setFontColor(bodyFontColor).setBorder(true, true, true, true, true, true, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-    taSh.getRange('A7:K7').setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-    taSh.getRange('F6:J6').setBorder(null, null, true, null, null, null, headerFontColor, SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-    taSh.insertRowBefore(1);
-
-    taSh.getRange('A1:K1').setBorder(true, true, true, true, true, true, headerBgColor, SpreadsheetApp.BorderStyle.SOLID_MEDIUM)
-    taSh.getRange('H2:I2').merge().setHorizontalAlignment('right');
-    // const oppShRules = oppSh.getConditionalFormatRules();
-    // for (let rule of oppShRules) {
-    //   Logger.log(rule.getBooleanCondition() + ' ' + rule.getRanges()[0].getA1Notation());
-    //   if (rule.getRanges()[0].getA1Notation() === 'B7:I70') {
-    //     rule.copy().setRanges([oppSh.getRange('B7:I177')]).build();
-        
-    //   }
-    // }
-
-    // const taShRules = taSh.getConditionalFormatRules();
-
-    // for (let rule of taShRules) {
-    //   if (rule.getRanges()[0].getA1Notation() === 'B7:I70') {
-    //     rule.copy().setRanges([taSh.getRange('B7:I177')]).build();
-    //   }
-    // }
-  }
-}
-
 function isDark(hex = '#b6d7a8') {
   hex = hex.substring(1); // strip #
   var rgb = parseInt(hex, 16); // convert rrggbb to decimal
@@ -971,9 +886,8 @@ function sendPdfScoreReport(spreadsheetId, email, studentName, scores = []) {
 
   if (!scoreReportFolderId) {
     var scoreReportFolderId = DriveApp.getFolderById(parentId).createFolder('Score reports').getId();
+    practiceDataSheet.getRange('V1:W1').setValues([['Score report folder ID:', scoreReportFolderId]]);
   }
-
-  practiceDataSheet.getRange('V1:W1').setValues([['Score report folder ID:', scoreReportFolderId]]);
 
   var url_base = 'https://docs.google.com/spreadsheets/d/' + spreadsheet.getId() + '/';
   var url_ext =
@@ -1007,12 +921,12 @@ function sendPdfScoreReport(spreadsheetId, email, studentName, scores = []) {
   var pdfName = 'SAT answer analysis - ' + studentName + ' - ' + currentScore.test;
   var studentFirstName = studentName.split(' ')[0];
   const studentData = getStudentHours(studentName);
+  var response = UrlFetchApp.fetch(url_base + url_ext, options);
+  var blob = response.getBlob().setName(pdfName + '.pdf');
+  var scoreReportFolder = DriveApp.getFolderById(scoreReportFolderId);
+  scoreReportFolder.createFile(blob);
 
   if (studentData.hours) {
-    var response = UrlFetchApp.fetch(url_base + url_ext, options);
-    var blob = response.getBlob().setName(pdfName + '.pdf');
-    var scoreReportFolder = DriveApp.getFolderById(scoreReportFolderId);
-    scoreReportFolder.createFile(blob);
     var message =
       'Hi PARENTNAME, please find the score report from ' +
       studentFirstName +
@@ -1363,6 +1277,145 @@ function generateClassTestAnalysis(folderId, aggSsId) {
   const aggStudentAnswers = aggSheet.getRange(2, 12, aggSheet.getLastRow());
   const upperAggAnswers = aggStudentAnswers.getDisplayValues().map((row) => row.map((col) => (col ? col.toUpperCase() : col)));
   aggStudentAnswers.setValues(upperAggAnswers);
+}
+
+function updateClientsList(parentClientFolderId='130wX98bJM4wW6aE6J-e6VffDNwqvgeNS') {
+  const parentClientFolder = DriveApp.getFolderById(parentClientFolderId);
+  const clientFolders = parentClientFolder.getFolders();
+  let newRow = getLastFilledRow(clientSheet, 1) + 1;
+  
+  while (clientFolders.hasNext()) {
+    const clientFolder = clientFolders.next();
+    const clientFolderId = clientFolder.getId();
+
+    addClientData(clientFolderId, newRow);
+
+    newRow++;
+  }
+}
+
+function addClientData(clientFolderId, newRow=null) {
+  const clientFolder = DriveApp.getFolderById(clientFolderId);
+  const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
+  const clientSheet = clientDataSs.getSheets()[0];
+  if(!newRow) {
+    newRow = getLastFilledRow(clientSheet, 1) + 1;
+  }
+  
+  const savedClientFolderIds = clientSheet.getRange(2, 2, newRow).getValues();
+  const isClientFolderListed = savedClientFolderIds.some(subArray => subArray.includes(clientFolderId))
+    
+  if (!isClientFolderListed) {
+    const clientName = clientFolder.getName();
+    Logger.log(newRow + '. ' + clientName);
+    if (!clientName.includes('Ξ')) {
+      getStyledSheets(clientFolder);
+      processFolders(clientFolder.getFolders(), getStyledSheets);
+
+      const clientSubfolders = clientFolder.getFolders();
+      let studentFolder;
+      let studentFolderId = 'not found';
+      let studentFolderCount;
+
+      while (clientSubfolders.hasNext()) {
+        const clientSubfolder = clientSubfolders.next();
+        studentFolderCount = 0;
+
+        if (clientSubfolder.getName() === 'Students') {
+          studentFolder = clientSubfolder;
+          studentFolderId = studentFolder.getId();
+          const studentSubfolders = studentFolder.getFolders();
+          while (studentSubfolders.hasNext()) {
+            studentSubfolders.next();
+            studentFolderCount ++;
+          }
+          studentFolderCount -= 1;
+          break;
+        }
+      }
+
+      clientDataSs.getSheetById(0).getRange(newRow, 1, 1, 8).setValues([[clientName, clientFolder.getId(), satSheetIds.admin, satSheetIds.student, actSheetIds.admin, actSheetIds.student, studentFolderId, studentFolderCount]]);
+      newRow ++;
+    }
+  }
+  else {
+    Logger.log(clientFolder.getName() + ' present in data')
+  }
+}
+
+function updateClientFolders() {
+  const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
+  const clientSheet = clientDataSs.getSheets()[0];
+  const lastFilledRow = getLastFilledRow(clientSheet, 2);
+  const clientDataRange = clientSheet.getRange(1, 1, lastFilledRow, 10).getValues();
+  const clients = [];
+
+  for (let row = 2; row < lastFilledRow; row++) {       // starts at 2
+    clients.push({
+      'name': clientDataRange[row][0],
+      'folderId': clientDataRange[row][1],
+      'satAdminSsId': clientDataRange[row][2],
+      'satStudentSsId': clientDataRange[row][3],
+      'actAdminSsId': clientDataRange[row][4],
+      'actStudentSsId': clientDataRange[row][5]
+    })
+  }
+
+  for (let id = 40; id < clients.length; id++) {    // starts at 0. Change this if execution times out
+    Logger.log(id + '. ' + clients[id]['name'] + ' started');
+
+    const studentFolders = DriveApp.getFolderById(clients[id]['folderId']).getFoldersByName('Students').next().getFolders();
+
+    while (studentFolders.hasNext()) {
+      const ssId = studentFolders.next().getFiles().next().getId();
+      const ss = SpreadsheetApp.openById(ssId);
+
+      ss.getSheets().forEach(sh => {
+        sh.getProtections(SpreadsheetApp.ProtectionType.SHEET).forEach(p => {
+          p.remove();
+          Logger.log('Protections removed for ' + sh.getName());
+        });
+      });
+
+    }
+
+    // const oppSh = ss.getSheetByName('Opportunity areas');
+    // const taSh = ss.getSheetByName('Test analysis');
+
+    // const bodyFontColor = oppSh.getRange('C11').getFontColorObject().asRgbColor().asHexString();
+    // const headerFontColor = oppSh.getRange('D2').getFontColorObject().asRgbColor().asHexString();
+    // const headerBgColor = oppSh.getRange('D2').getBackgroundObject().asRgbColor().asHexString();
+    
+    // oppSh.getRange('A8:I8').setBackground('white').setFontColor(bodyFontColor).setBorder(true, true, true, true, true, true, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+    // oppSh.getRange('A7:I7').setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+    // oppSh.getRange('E6:I6').setBorder(null, null, true, null, null, null, headerFontColor, SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+    // oppSh.insertRowBefore(1)
+    // oppSh.getRange('A1:I1').setBorder(true, true, true, true, true, true, headerBgColor, SpreadsheetApp.BorderStyle.SOLID_MEDIUM)
+
+    // taSh.getRange('A8:K8').setBackground('white').setFontColor(bodyFontColor).setBorder(true, true, true, true, true, true, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+    // taSh.getRange('A7:K7').setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+    // taSh.getRange('F6:J6').setBorder(null, null, true, null, null, null, headerFontColor, SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+    // taSh.insertRowBefore(1);
+
+    // taSh.getRange('A1:K1').setBorder(true, true, true, true, true, true, headerBgColor, SpreadsheetApp.BorderStyle.SOLID_MEDIUM)
+    // taSh.getRange('H2:I2').merge().setHorizontalAlignment('right');
+    // const oppShRules = oppSh.getConditionalFormatRules();
+    // for (let rule of oppShRules) {
+    //   Logger.log(rule.getBooleanCondition() + ' ' + rule.getRanges()[0].getA1Notation());
+    //   if (rule.getRanges()[0].getA1Notation() === 'B7:I70') {
+    //     rule.copy().setRanges([oppSh.getRange('B7:I177')]).build();
+        
+    //   }
+    // }
+
+    // const taShRules = taSh.getConditionalFormatRules();
+
+    // for (let rule of taShRules) {
+    //   if (rule.getRanges()[0].getA1Notation() === 'B7:I70') {
+    //     rule.copy().setRanges([taSh.getRange('B7:I177')]).build();
+    //   }
+    // }
+  }
 }
 
 
