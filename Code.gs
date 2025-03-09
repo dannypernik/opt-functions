@@ -1361,61 +1361,37 @@ function updateClientFolders() {
     })
   }
 
-  for (let id = 40; id < clients.length; id++) {    // starts at 0. Change this if execution times out
+  for (let id = 28; id < clients.length; id++) {    // starts at 0. Change this if execution times out
     Logger.log(id + '. ' + clients[id]['name'] + ' started');
 
-    const studentFolders = DriveApp.getFolderById(clients[id]['folderId']).getFoldersByName('Students').next().getFolders();
+    // Update Math!E294:E296 on admin and student sheets
+    const sltSh = SpreadsheetApp.openById(clients[id]['satAdminSsId']).getSheetByName('SLT Uniques');
 
-    while (studentFolders.hasNext()) {
-      const ssId = studentFolders.next().getFiles().next().getId();
-      const ss = SpreadsheetApp.openById(ssId);
+    const rwStartCell = sltSh.getRange('D5');
+    const mathStartCell = sltSh.getRange('H5');
+    const rwCorrectRange = sltSh.getRange('D5:D199');
+    const mathCorrectRange = sltSh.getRange('H5:H199');
 
-      ss.getSheets().forEach(sh => {
-        sh.getProtections(SpreadsheetApp.ProtectionType.SHEET).forEach(p => {
-          p.remove();
-          Logger.log('Protections removed for ' + sh.getName());
-        });
-      });
+    rwStartCell.setValue('=if(B5="","", let(result, xlookup(B5, \'Question bank data\'!$G$2:$G, \'Question bank data\'!$H$2:$H, "not found"), if(result=C5, "", result)))');
+    mathStartCell.setValue('=if(F5="","", let(result, xlookup(F5, \'Question bank data\'!$G$2:$G, \'Question bank data\'!$H$2:$H, "not found"), if(result=G5, "", result)))');
 
-    }
+    rwStartCell.autoFill(rwCorrectRange, SpreadsheetApp.AutoFillSeries.DEFAULT_SERIES);
+    mathStartCell.autoFill(mathCorrectRange, SpreadsheetApp.AutoFillSeries.DEFAULT_SERIES);
 
-    // const oppSh = ss.getSheetByName('Opportunity areas');
-    // const taSh = ss.getSheetByName('Test analysis');
+    // const studentFolders = DriveApp.getFolderById(clients[id]['folderId']).getFoldersByName('Students').next().getFolders();
+    // while (studentFolders.hasNext()) {
+    //   const studentFolder = studentFolders.next();
 
-    // const bodyFontColor = oppSh.getRange('C11').getFontColorObject().asRgbColor().asHexString();
-    // const headerFontColor = oppSh.getRange('D2').getFontColorObject().asRgbColor().asHexString();
-    // const headerBgColor = oppSh.getRange('D2').getBackgroundObject().asRgbColor().asHexString();
-    
-    // oppSh.getRange('A8:I8').setBackground('white').setFontColor(bodyFontColor).setBorder(true, true, true, true, true, true, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-    // oppSh.getRange('A7:I7').setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-    // oppSh.getRange('E6:I6').setBorder(null, null, true, null, null, null, headerFontColor, SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-    // oppSh.insertRowBefore(1)
-    // oppSh.getRange('A1:I1').setBorder(true, true, true, true, true, true, headerBgColor, SpreadsheetApp.BorderStyle.SOLID_MEDIUM)
-
-    // taSh.getRange('A8:K8').setBackground('white').setFontColor(bodyFontColor).setBorder(true, true, true, true, true, true, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-    // taSh.getRange('A7:K7').setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-    // taSh.getRange('F6:J6').setBorder(null, null, true, null, null, null, headerFontColor, SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-    // taSh.insertRowBefore(1);
-
-    // taSh.getRange('A1:K1').setBorder(true, true, true, true, true, true, headerBgColor, SpreadsheetApp.BorderStyle.SOLID_MEDIUM)
-    // taSh.getRange('H2:I2').merge().setHorizontalAlignment('right');
-    // const oppShRules = oppSh.getConditionalFormatRules();
-    // for (let rule of oppShRules) {
-    //   Logger.log(rule.getBooleanCondition() + ' ' + rule.getRanges()[0].getA1Notation());
-    //   if (rule.getRanges()[0].getA1Notation() === 'B7:I70') {
-    //     rule.copy().setRanges([oppSh.getRange('B7:I177')]).build();
-        
-    //   }
-    // }
-
-    // const taShRules = taSh.getConditionalFormatRules();
-
-    // for (let rule of taShRules) {
-    //   if (rule.getRanges()[0].getA1Notation() === 'B7:I70') {
-    //     rule.copy().setRanges([taSh.getRange('B7:I177')]).build();
+    //   if (!studentFolder.getName().toLowerCase().includes('template')) {
+    //     updateStudentFolder(studentFolder);
     //   }
     // }
   }
+}
+
+function updateStudentFolder(studentFolder) {
+  const studentFolderName = studentFolder.getName();
+  Logger.log(studentFolderName + ' started');
 }
 
 
