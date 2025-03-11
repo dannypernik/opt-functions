@@ -1374,31 +1374,9 @@ function updateClientFolders() {
     })
   }
 
-  for (let id = 28; id < clients.length; id++) {    // starts at 0. Change this if execution times out
+  for (let id = 0; id < clients.length; id++) {    // starts at 0. Change this if execution times out
     Logger.log(id + '. ' + clients[id]['name'] + ' started');
 
-    // Update Math!E294:E296 on admin and student sheets
-    const sltSh = SpreadsheetApp.openById(clients[id]['satAdminSsId']).getSheetByName('SLT Uniques');
-
-    const rwStartCell = sltSh.getRange('D5');
-    const mathStartCell = sltSh.getRange('H5');
-    const rwCorrectRange = sltSh.getRange('D5:D199');
-    const mathCorrectRange = sltSh.getRange('H5:H199');
-
-    rwStartCell.setValue('=if(B5="","", let(result, xlookup(B5, \'Question bank data\'!$G$2:$G, \'Question bank data\'!$H$2:$H, "not found"), if(result=C5, "", result)))');
-    mathStartCell.setValue('=if(F5="","", let(result, xlookup(F5, \'Question bank data\'!$G$2:$G, \'Question bank data\'!$H$2:$H, "not found"), if(result=G5, "", result)))');
-
-    rwStartCell.autoFill(rwCorrectRange, SpreadsheetApp.AutoFillSeries.DEFAULT_SERIES);
-    mathStartCell.autoFill(mathCorrectRange, SpreadsheetApp.AutoFillSeries.DEFAULT_SERIES);
-
-    // const studentFolders = DriveApp.getFolderById(clients[id]['folderId']).getFoldersByName('Students').next().getFolders();
-    // while (studentFolders.hasNext()) {
-    //   const studentFolder = studentFolders.next();
-
-    //   if (!studentFolder.getName().toLowerCase().includes('template')) {
-    //     updateStudentFolder(studentFolder);
-    //   }
-    // }
   }
 }
 
@@ -1407,7 +1385,7 @@ function updateStudentFolder(studentFolder) {
   Logger.log(studentFolderName + ' started');
 }
 
-function addConceptRows(answerSsId = '1sdnVpuX8mVkpTdrqZgwz7zph1NdFpueX6CP45JHiNP8') {
+function updateConceptRows(answerSsId = '1sdnVpuX8mVkpTdrqZgwz7zph1NdFpueX6CP45JHiNP8') {
   const ss = SpreadsheetApp.openById(answerSsId);
   const qbDataSh = ss.getSheetByName('Question bank data');
   const qbDataVals = qbDataSh.getRange(1,1, getLastFilledRow(qbDataSh, 1), 15).getValues();
@@ -1516,15 +1494,18 @@ function addConceptRows(answerSsId = '1sdnVpuX8mVkpTdrqZgwz7zph1NdFpueX6CP45JHiN
         ]);
       }
 
-      sh.getRange(subject['rowOffset'], levelStartCol + 1, outputValues.length, 2).setValues(outputValues);
+      sh.getRange(subject['rowOffset'], levelStartCol + 1, outputValues.length, 2).setHorizontalAlignment('center').setFontWeight('bold').setValues(outputValues);
     }
 
-    const correctedFormulaR1C1 = '=let(worksheetNum,R[0]C[-2], if(worksheetNum="","", if(left(worksheetNum,5)="Level","Corrected", if(iserror(search(".",worksheetNum)), "", let(id,R[0]C[-3], result,xlookup(id,\'Question bank data\'!R2C1:C1,\'Question bank data\'!R2C8:C8,"not found"), if(result=R[0]C[-1],"",result))))))'
+    const answerFormulaR1C1 = '=let(worksheetNum,R[0]C[-1],if(worksheetNum="","", if(left(worksheetNum,5)="Level","Answer", if(iserror(search(".",worksheetNum)),"", let(id,R[0]C[-2], xlookup(id,\'Student responses\'!R4C1:C1,\'Student responses\'!R4C8:C8,"not found"))))))'
+    const correctedFormulaR1C1 = '=let(worksheetNum,R[0]C[-2],if(worksheetNum="","", if(left(worksheetNum,5)="Level","Corrected", if(iserror(search(".",worksheetNum)), "", let(id,R[0]C[-3], result,xlookup(id,\'Question bank data\'!R2C1:C1,\'Question bank data\'!R2C8:C8,"not found"), if(result=R[0]C[-1],"",result))))))'
     
     for (let level = 1; level < 4; level++) {
-      const correctedCol = 4 * (level - 1) + 4;
-      const correctedRange = sh.getRange(subject['rowOffset'] + 3, correctedCol, sh.getLastRow() - subject['rowOffset'] - 1);
-      correctedRange.setFormulaR1C1(correctedFormulaR1C1);
+      const answerCol = 4 * (level - 1) + 3;
+      const answerRange = sh.getRange(subject['rowOffset'] + 3, answerCol, sh.getLastRow() - subject['rowOffset'] - 2);
+      const correctedRange = sh.getRange(subject['rowOffset'] + 3, answerCol + 1, sh.getLastRow() - subject['rowOffset'] - 2);
+      answerRange.setHorizontalAlignment('center').setFontWeight('normal').setFormulaR1C1(answerFormulaR1C1)
+      correctedRange.setHorizontalAlignment('center').setFontWeight('normal').setFormulaR1C1(correctedFormulaR1C1)
     }
 
     modifyIdFormatRule(sh);
@@ -1566,11 +1547,12 @@ function modifyIdFormatRule(sheet=SpreadsheetApp.openById('1sdnVpuX8mVkpTdrqZgwz
   for (var i = 0; i < rules.length; i++) {
     var rule = rules[i];
     var bgColor = rule.getBooleanCondition().getBackgroundObject().asRgbColor().asHexString();
+    Logger.log(sheet.getName() + ' ' + bgColor);
     
     if (bgColor === alertColor) {
       // Modify the rule
       var newRule = SpreadsheetApp.newConditionalFormatRule()
-        .setRanges(sheet.getRangeList(['A10:A, E10:E, I10:I']))
+        .setRanges([sheet.getRange('A10:A'), sheet.getRange('E10:E'), sheet.getRange('I10:I')])
         .whenFormulaSatisfied('=and(len(A10)<>8,B10<>"",B9<>"")')
         .setBackground(alertColor)
         .setFontColor('#ffffff')
@@ -1580,7 +1562,7 @@ function modifyIdFormatRule(sheet=SpreadsheetApp.openById('1sdnVpuX8mVkpTdrqZgwz
     }
     else if (bgColor === darkGreen) {
       var newRule = SpreadsheetApp.newConditionalFormatRule()
-        .setRanges(sheet.getRangeList(['C10:C, G10:G, K10:K']))
+        .setRanges([sheet.getRange('C10:C'), sheet.getRange('G10:G'), sheet.getRange('K10:K')])
         .whenFormulaSatisfied('=and(C10<>"",D10="",isformula(C10))')
         .setBackground(darkGreen)
         .setFontColor('#ffffff')
@@ -1590,7 +1572,7 @@ function modifyIdFormatRule(sheet=SpreadsheetApp.openById('1sdnVpuX8mVkpTdrqZgwz
     }
     else if (bgColor === lightGreen) {
       var newRule = SpreadsheetApp.newConditionalFormatRule()
-        .setRanges(sheet.getRangeList(['C10:C, G10:G, K10:K']))
+        .setRanges([sheet.getRange('C10:C'), sheet.getRange('G10:G'), sheet.getRange('K10:K')])
         .whenFormulaSatisfied('=and(C10<>"",D10="",C10<>"Answer")')
         .setBackground(lightGreen)
         .build();
@@ -1599,7 +1581,7 @@ function modifyIdFormatRule(sheet=SpreadsheetApp.openById('1sdnVpuX8mVkpTdrqZgwz
     }
     else if (bgColor === darkRed) {
       var newRule = SpreadsheetApp.newConditionalFormatRule()
-        .setRanges(sheet.getRangeList(['C10:C, G10:G, K10:K']))
+        .setRanges([sheet.getRange('C10:C'), sheet.getRange('G10:G'), sheet.getRange('K10:K')])
         .whenFormulaSatisfied('=and(or(C10="",C10="-"),B10<>"",B9<>"")')
         .setBackground(darkRed)
         .setFontColor('#ffffff')
@@ -1609,7 +1591,7 @@ function modifyIdFormatRule(sheet=SpreadsheetApp.openById('1sdnVpuX8mVkpTdrqZgwz
     }
     else if (bgColor === lightRed) {
       var newRule = SpreadsheetApp.newConditionalFormatRule()
-        .setRanges(sheet.getRangeList(['C10:C, G10:G, K10:K']))
+        .setRanges([sheet.getRange('C10:C'), sheet.getRange('G10:G'), sheet.getRange('K10:K')])
         .whenFormulaSatisfied('=and(C10<>"",D10<>"",C10<>"Answer")')
         .setBackground(lightRed)
         .build();
@@ -1618,7 +1600,7 @@ function modifyIdFormatRule(sheet=SpreadsheetApp.openById('1sdnVpuX8mVkpTdrqZgwz
     }
     else if (bgColor === yellow) {
       var newRule = SpreadsheetApp.newConditionalFormatRule()
-        .setRanges(sheet.getRangeList(['C10:C, G10:G, K10:K']))
+        .setRanges([sheet.getRange('C10:C'), sheet.getRange('G10:G'), sheet.getRange('K10:K')])
         .whenFormulaSatisfied('=and(or(C10="",C10="-"),B10<>"",B9<>"")')
         .setBackground(yellow)
         .build();
@@ -1627,7 +1609,7 @@ function modifyIdFormatRule(sheet=SpreadsheetApp.openById('1sdnVpuX8mVkpTdrqZgwz
     }
     else if (bgColor === grey) {
       var newRule = SpreadsheetApp.newConditionalFormatRule()
-        .setRanges(sheet.getRangeList(['C10:C, G10:G, K10:K']))
+        .setRanges([sheet.getRange('C10:C'), sheet.getRange('G10:G'), sheet.getRange('K10:K')])
         .whenFormulaSatisfied('=and(not(isformula(C10)),C10="",B10<>"",B9<>"")')
         .setBackground(grey)
         .build();
@@ -1642,9 +1624,6 @@ function modifyIdFormatRule(sheet=SpreadsheetApp.openById('1sdnVpuX8mVkpTdrqZgwz
   // Reapply all rules to the sheet
   sheet.setConditionalFormatRules(updatedRules);
 }
-
-
-
 
 
 // Scheduled recurring functions
