@@ -470,17 +470,8 @@ function styleClientSheets(satSheetIds, actSheetIds, customStyles) {
   Logger.log('styleClientSheets complete');
 }
 
-function styleSatWorksheets(
-  sh = SpreadsheetApp.openById('1FW_3GIWmytdrgBdfSuIl2exy9hIAnQoG8IprF8k9uEY').getSheetByName('Math'),
-  rowOffset = 10,
-  headerCols = 11,
-  customStyles = {
-    primaryColor: '#134f5c',
-    primaryContrastColor: 'white',
-  }) {
-  const cats = [
+const cats = [
     'Area and volume',
-    'Reading & Writing', // styles header in SLT Uniques
     'Boundaries',
     'Central ideas and details',
     'Circles',
@@ -510,6 +501,17 @@ function styleSatWorksheets(
     'Rhetorical synthesis',
     'Text, structure, and purpose',
   ];
+
+function styleSatWorksheets(
+  sh = SpreadsheetApp.openById('1FW_3GIWmytdrgBdfSuIl2exy9hIAnQoG8IprF8k9uEY').getSheetByName('Math'),
+  rowOffset = 10,
+  headerCols = 11,
+  customStyles = {
+    primaryColor: '#134f5c',
+    primaryContrastColor: 'white',
+  }) {
+
+  cats.push('Reading & Writing'); // styles SLT Uniques header
   var conceptRows = [];
 
   sh.getRange(1, 1, sh.getMaxRows()).setFontColor('white');
@@ -812,50 +814,55 @@ function analysisSsSearch(fileList) {
 }
 
 function createSatScoreReport(spreadsheetId, testCode, scores) {
-  var spreadsheet = spreadsheetId ? SpreadsheetApp.openById(spreadsheetId) : SpreadsheetApp.getActiveSpreadsheet();
-  var spreadsheetId = spreadsheetId ? spreadsheetId : spreadsheet.getId();
+  try {
+    var spreadsheet = spreadsheetId ? SpreadsheetApp.openById(spreadsheetId) : SpreadsheetApp.getActiveSpreadsheet();
+    var spreadsheetId = spreadsheetId ? spreadsheetId : spreadsheet.getId();
 
-  var sheetsToPrint = [testCode.toLowerCase(), testCode.toLowerCase() + ' analysis'];
-  var filename = spreadsheet.getName();
-  var studentName = filename.slice(filename.indexOf('-') + 2);
-  var analysisIndex = 1;
+    var sheetsToPrint = [testCode.toLowerCase(), testCode.toLowerCase() + ' analysis'];
+    var filename = spreadsheet.getName();
+    var studentName = filename.slice(filename.indexOf('-') + 2);
+    var analysisIndex = 1;
 
-  showAllExcept(spreadsheetId);
-  SpreadsheetApp.flush();
+    showAllExcept(spreadsheetId);
+    SpreadsheetApp.flush();
 
-  /* PDF can be created from single sheet or all visible sheets. For a multi-sheet PDF, we need to hide
-  unwanted sheets, save the PDF, then show all sheets again. */
-  SpreadsheetApp.openById(spreadsheetId)
-    .getSheets()
-    .forEach((sh) => {
-      try {
-        if (sheetsToPrint.includes(sh.getName().toLowerCase())) {
-          sh.showSheet();
-          if (sh.getName().includes('analysis')) {
-            analysisIndex = sh.getIndex();
-            spreadsheet.setActiveSheet(sh);
-            // Move analysis sheet to first position so that it displays first in PDF
-            spreadsheet.moveActiveSheet(1);
-            // Hide column H if student did not omit any answers
-            if (sh.getRange('H7').getValue() === '-') {
-              sh.hideColumns(8);
-            } else if (sh.getRange('H7').getValue() === 'BLANK') {
-              sh.showColumns(8);
+    /* PDF can be created from single sheet or all visible sheets. For a multi-sheet PDF, we need to hide
+    unwanted sheets, save the PDF, then show all sheets again. */
+    SpreadsheetApp.openById(spreadsheetId)
+      .getSheets()
+      .forEach((sh) => {
+        try {
+          if (sheetsToPrint.includes(sh.getName().toLowerCase())) {
+            sh.showSheet();
+            if (sh.getName().includes('analysis')) {
+              analysisIndex = sh.getIndex();
+              spreadsheet.setActiveSheet(sh);
+              // Move analysis sheet to first position so that it displays first in PDF
+              spreadsheet.moveActiveSheet(1);
+              // Hide column H if student did not omit any answers
+              if (sh.getRange('H7').getValue() === '-') {
+                sh.hideColumns(8);
+              } else if (sh.getRange('H7').getValue() === 'BLANK') {
+                sh.showColumns(8);
+              }
             }
+          } else {
+            sh.hideSheet();
           }
-        } else {
-          sh.hideSheet();
+        } catch (error) {
+          Logger.log(error);
         }
-      } catch (error) {
-        Logger.log(error);
-      }
-    });
+      });
 
-  var email = getOPTPermissionsList(spreadsheetId);
-  SpreadsheetApp.flush();
-  sendPdfScoreReport(spreadsheetId, email, studentName, scores);
-  Logger.log(testCode.toUpperCase() + ' Score report created for ' + studentName);
-  // SpreadsheetApp.flush();
+    var email = getOPTPermissionsList(spreadsheetId);
+    SpreadsheetApp.flush();
+    sendPdfScoreReport(spreadsheetId, email, studentName, scores);
+    Logger.log(testCode.toUpperCase() + ' Score report created for ' + studentName);
+  }
+  catch (err) {
+    Logger.log(err.message + '\n\n' + err.stack);
+  }
+
   showAllExcept(spreadsheetId);
   // Move analysis sheet back to original position
   spreadsheet.moveActiveSheet(analysisIndex);
@@ -863,113 +870,119 @@ function createSatScoreReport(spreadsheetId, testCode, scores) {
 
 // Save spreadsheet as a PDF: https://gist.github.com/andrewroberts/26d460212874cdd3f645b55993942455
 function sendPdfScoreReport(spreadsheetId, email, studentName, scores = []) {
-  var spreadsheet = spreadsheetId ? SpreadsheetApp.openById(spreadsheetId) : SpreadsheetApp.getActiveSpreadsheet();
-  var spreadsheetId = spreadsheetId ? spreadsheetId : spreadsheet.getId();
-  //var sheetId = sheetName ? spreadsheet.getSheetByName(sheetName).getSheetId() : null;
-  var practiceDataSheet = spreadsheet.getSheetByName('Practice test data');
+  try {
+    var spreadsheet = spreadsheetId ? SpreadsheetApp.openById(spreadsheetId) : SpreadsheetApp.getActiveSpreadsheet();
+    var spreadsheetId = spreadsheetId ? spreadsheetId : spreadsheet.getId();
+    //var sheetId = sheetName ? spreadsheet.getSheetByName(sheetName).getSheetId() : null;
+    var practiceDataSheet = spreadsheet.getSheetByName('Practice test data');
 
-  if (practiceDataSheet.getRange('V1').getValue() === 'Score report folder ID:' && practiceDataSheet.getRange('W1').getValue() !== '') {
-    var scoreReportFolderId = practiceDataSheet.getRange('W1').getValue();
-  } else {
-    var parentId = DriveApp.getFileById(spreadsheetId).getParents().next().getId();
-    const subfolderIds = getSubFolderIdsByFolderId(parentId);
+    if (practiceDataSheet.getRange('V1').getValue() === 'Score report folder ID:' && practiceDataSheet.getRange('W1').getValue() !== '') {
+      var scoreReportFolderId = practiceDataSheet.getRange('W1').getValue();
+    } else {
+      var parentId = DriveApp.getFileById(spreadsheetId).getParents().next().getId();
+      const subfolderIds = getSubFolderIdsByFolderId(parentId);
 
-    for (let i in subfolderIds) {
-      let subfolderId = subfolderIds[i];
-      let subfolder = DriveApp.getFolderById(subfolderId);
-      let subfolderName = subfolder.getName();
-      if (subfolderName.toLowerCase().includes('score report')) {
-        var scoreReportFolderId = subfolder.getId();
+      for (let i in subfolderIds) {
+        let subfolderId = subfolderIds[i];
+        let subfolder = DriveApp.getFolderById(subfolderId);
+        let subfolderName = subfolder.getName();
+        if (subfolderName.toLowerCase().includes('score report')) {
+          var scoreReportFolderId = subfolder.getId();
+        }
       }
     }
-  }
 
-  if (!scoreReportFolderId) {
-    var scoreReportFolderId = DriveApp.getFolderById(parentId).createFolder('Score reports').getId();
-    practiceDataSheet.getRange('V1:W1').setValues([['Score report folder ID:', scoreReportFolderId]]);
-  }
+    if (!scoreReportFolderId) {
+      var scoreReportFolderId = DriveApp.getFolderById(parentId).createFolder('Score reports').getId();
+      practiceDataSheet.getRange('V1:W1').setValues([['Score report folder ID:', scoreReportFolderId]]);
+    }
 
-  var url_base = 'https://docs.google.com/spreadsheets/d/' + spreadsheet.getId() + '/';
-  var url_ext =
-    'export?exportFormat=pdf&format=pdf' + //export as pdf
-    // Print either the entire Spreadsheet or the specified sheet if optSheetId is provided
-    //+ (sheetId ? ('&gid=' + sheetId) : ('&id=' + spreadsheetId))
-    '&id=' +
-    spreadsheetId +
-    // following parameters are optional...
-    '&size=letter' + // paper size
-    '&portrait=true' + // orientation, false for landscape
-    '&fitw=true' + // fit to width, false for actual size
-    '&fzr=false' + // do not repeat row headers (frozen rows) on each page
-    '&top_margin=0.5' +
-    '&bottom_margin=0.5' +
-    '&left_margin=0.3' +
-    '&right_margin=0.3' +
-    '&printnotes=false' +
-    '&sheetnames=false' +
-    '&printtitle=false' +
-    '&pagenumbers=false'; //hide optional headers and footers
+    var url_base = 'https://docs.google.com/spreadsheets/d/' + spreadsheet.getId() + '/';
+    var url_ext =
+      'export?exportFormat=pdf&format=pdf' + //export as pdf
+      // Print either the entire Spreadsheet or the specified sheet if optSheetId is provided
+      //+ (sheetId ? ('&gid=' + sheetId) : ('&id=' + spreadsheetId))
+      '&id=' +
+      spreadsheetId +
+      // following parameters are optional...
+      '&size=letter' + // paper size
+      '&portrait=true' + // orientation, false for landscape
+      '&fitw=true' + // fit to width, false for actual size
+      '&fzr=false' + // do not repeat row headers (frozen rows) on each page
+      '&top_margin=0.5' +
+      '&bottom_margin=0.5' +
+      '&left_margin=0.3' +
+      '&right_margin=0.3' +
+      '&printnotes=false' +
+      '&sheetnames=false' +
+      '&printtitle=false' +
+      '&pagenumbers=false'; //hide optional headers and footers
 
-  var options = {
-    headers: {
-      Authorization: 'Bearer ' + ScriptApp.getOAuthToken(),
-    },
-  };
+    var options = {
+      headers: {
+        Authorization: 'Bearer ' + ScriptApp.getOAuthToken(),
+      },
+    };
 
-  // Create PDF
-  var currentScore = scores.slice(-1)[0];
-  var pdfName = 'SAT answer analysis - ' + studentName + ' - ' + currentScore.test;
-  var studentFirstName = studentName.split(' ')[0];
-  const studentData = getStudentHours(studentName);
-  var response = UrlFetchApp.fetch(url_base + url_ext, options);
-  var blob = response.getBlob().setName(pdfName + '.pdf');
-  var scoreReportFolder = DriveApp.getFolderById(scoreReportFolderId);
-  scoreReportFolder.createFile(blob);
+    // Create PDF
+    var currentScore = scores.slice(-1)[0];
+    var pdfName = 'SAT answer analysis - ' + studentName + ' - ' + currentScore.test;
+    var studentFirstName = studentName.split(' ')[0];
+    const studentData = getStudentHours(studentName);
+    var response = UrlFetchApp.fetch(url_base + url_ext, options);
+    var blob = response.getBlob().setName(pdfName + '.pdf');
+    var scoreReportFolder = DriveApp.getFolderById(scoreReportFolderId);
+    scoreReportFolder.createFile(blob);
 
-  if (studentData.hours) {
-    var message =
-      'Hi PARENTNAME, please find the score report from ' +
-      studentFirstName +
-      "'s recent practice test attached. " +
-      currentScore.total +
-      ' overall (' +
-      currentScore.rw +
-      ' Reading & Writing, ' +
-      currentScore.m +
-      ' Math)<br><br>As of the session on ' +
-      studentData.recentSessionDate +
-      ', we have ' +
-      studentHours +
-      ' hours remaining on the current package. Let me know if you have any questions. Thanks!<br><br>';
+    if (studentData.hours) {
+      var message =
+        'Hi PARENTNAME, please find the score report from ' +
+        studentFirstName +
+        "'s recent practice test attached. " +
+        currentScore.total +
+        ' overall (' +
+        currentScore.rw +
+        ' Reading & Writing, ' +
+        currentScore.m +
+        ' Math)<br><br>As of the session on ' +
+        studentData.recentSessionDate +
+        ', we have ' +
+        studentHours +
+        ' hours remaining on the current package. Let me know if you have any questions. Thanks!<br><br>';
 
-    if (scores.length > 1) {
-      message += 'Previous scores - most recent last:<br><ul>';
+      if (scores.length > 1) {
+        message += 'Previous scores - most recent last:<br><ul>';
 
-      for (i = 0; i < scores.length - 1; i++) {
-        message += '<li>' + scores[i].test + ': ' + scores[i].total + ' (' + scores[i].rw + ' RW, ' + scores[i].m + ' M)</li>';
+        for (i = 0; i < scores.length - 1; i++) {
+          message += '<li>' + scores[i].test + ': ' + scores[i].total + ' (' + scores[i].rw + ' RW, ' + scores[i].m + ' M)</li>';
+        }
+        message += '</ul><br>';
       }
-      message += '</ul><br>';
+    }
+    else {
+      var message = 'Hi PARENTNAME, please find the score report from ' +
+        studentFirstName +
+        "'s recent practice test attached. " +
+        currentScore.total +
+        ' overall (' +
+        currentScore.rw +
+        ' Reading & Writing, ' +
+        currentScore.m +
+        ' Math)<br><br>'
+    }
+
+    if (email) {
+      MailApp.sendEmail({
+        to: email,
+        subject: currentScore.test + ' score report for ' + studentFirstName,
+        htmlBody: message,
+        attachments: [blob.getAs(MimeType.PDF)],
+      });
     }
   }
-  else {
-    var message = 'Hi PARENTNAME, please find the score report from ' +
-      studentFirstName +
-      "'s recent practice test attached. " +
-      currentScore.total +
-      ' overall (' +
-      currentScore.rw +
-      ' Reading & Writing, ' +
-      currentScore.m +
-      ' Math)<br><br>'
-  }
-
-  if (email) {
-    MailApp.sendEmail({
-      to: email,
-      subject: currentScore.test + ' score report for ' + studentFirstName,
-      htmlBody: message,
-      attachments: [blob.getAs(MimeType.PDF)],
-    });
+  catch (err) {
+    Logger.log(err.stack);
+    throw new Error(err.message + '\n\n' + err.stack)
   }
 }
 
@@ -1393,6 +1406,245 @@ function updateStudentFolder(studentFolder) {
   const studentFolderName = studentFolder.getName();
   Logger.log(studentFolderName + ' started');
 }
+
+function addConceptRows(answerSsId = '1sdnVpuX8mVkpTdrqZgwz7zph1NdFpueX6CP45JHiNP8') {
+  const ss = SpreadsheetApp.openById(answerSsId);
+  const qbDataSh = ss.getSheetByName('Question bank data');
+  const qbDataVals = qbDataSh.getRange(1,1, getLastFilledRow(qbDataSh, 1), 15).getValues();
+
+  const subjectData = [
+    {
+      'sub': 'rw',
+      'name': 'Reading & Writing',
+      'rowOffset': 7,
+    },
+    {
+      'sub': 'm',
+      'name': 'Math',
+      'rowOffset': 10
+    }
+  ]
+
+  for (subject of subjectData) {
+    const sh = ss.getSheetByName(subject['name']);
+    const conceptColVals = sh.getRange(subject['rowOffset'], 2, sh.getMaxRows() - subject['rowOffset']).getValues();
+    const conceptData = [];
+    const modifications = [];
+    let id = 1;
+
+    for (let x = 0; x < conceptColVals.length; x++) {
+      if (cats.includes(conceptColVals[x][0])) {
+        var row = x + subject['rowOffset'];
+        conceptData.push({
+          'name': conceptColVals[x][0],
+          'row': row,
+          'id': id
+        });
+        id ++;
+      }
+    }
+
+    for (concept of conceptData) {
+      for (let level = 1; level < 4; level ++) {
+        let count = 0;
+        for (let r = 0; r < qbDataVals.length; r++) {
+          if (qbDataVals[r][3].toLowerCase() === concept['name'].toLowerCase() && Number(qbDataVals[r][4]) === level && qbDataVals[r][6].slice(0,3) !== 'SAT' && qbDataVals[r][6].slice(0,4) !== 'PSAT' && qbDataVals[r][6].slice(0,3) !== 'SLT') {
+            count ++;
+          }
+        }
+        concept['level' + level] = count;
+      }
+    }
+    
+    for (concept of conceptData) {
+      const rowsNeeded = Math.max(concept['level1'], concept['level2'], concept['level3']) + 4;
+      const nextConcept = conceptData.find(c => c.id === concept['id'] + 1);
+      let rowsToAdd, endRow;
+
+      if (nextConcept) {
+        endRow = nextConcept.row;
+      }
+      else {
+        Logger.log(concept['name'] + ' is last concept');
+        endRow = sh.getLastRow() + 1;
+      }
+        
+      rowsToAdd = concept['row'] + rowsNeeded - endRow;
+
+      if (rowsToAdd > 0) {
+        modifications.push({
+          'position': endRow - 1,
+          'rows': rowsToAdd
+        });
+        Logger.log('Adding ' + rowsToAdd + ' to ' + concept['name'])
+      }
+      else if (rowsToAdd < 0) {
+        modifications.push({
+          'position': concept['row'] + rowsNeeded - 1,
+          'rows': rowsToAdd
+        });
+        Logger.log('Removing ' + -1 * rowsToAdd + ' from ' + concept['name'])
+      }
+    }
+    modifyRowsAtPositions(sh, modifications);
+
+    const shNewRange = sh.getRange(subject['rowOffset'], 1, sh.getMaxRows() - subject['rowOffset'], sh.getMaxColumns());
+    shNewRange.setNumberFormat('@STRING@');
+    const shNewVals = shNewRange.getValues();
+    const newConceptRows = shNewVals.map(row => row[1]);
+
+    for (let level = 1; level < 4; level++) {
+      const levelStartCol = (level - 1) * 4;
+
+      for (concept of conceptData) {
+        concept['row'] = newConceptRows.indexOf(concept['name']);
+
+        for (qNum = 1; qNum <= concept['level' + level]; qNum++) {
+          const qRow = concept['row'] + 2 + qNum;
+          const dataRow = qbDataVals.find(row => row[3].toLowerCase() === concept['name'].toLowerCase() && Number(row[4]) === level && Number(row[5]) === qNum);
+          shNewVals[qRow] = []
+          shNewVals[qRow][levelStartCol] = dataRow[0];
+          shNewVals[qRow][levelStartCol + 1] = level + '.' + qNum;
+        }
+      }
+
+      const outputValues = [];
+      for (let i = 0; i < shNewVals.length; i++) {
+        outputValues.push([
+          shNewVals[i][levelStartCol], 
+          shNewVals[i][levelStartCol + 1]
+        ]);
+      }
+
+      sh.getRange(subject['rowOffset'], levelStartCol + 1, outputValues.length, 2).setValues(outputValues);
+    }
+
+    const correctedFormulaR1C1 = '=let(worksheetNum,R[0]C[-2], if(worksheetNum="","", if(left(worksheetNum,5)="Level","Corrected", if(iserror(search(".",worksheetNum)), "", let(id,R[0]C[-3], result,xlookup(id,\'Question bank data\'!R2C1:C1,\'Question bank data\'!R2C8:C8,"not found"), if(result=R[0]C[-1],"",result))))))'
+    
+    for (let level = 1; level < 4; level++) {
+      const correctedCol = 4 * (level - 1) + 4;
+      const correctedRange = sh.getRange(subject['rowOffset'] + 3, correctedCol, sh.getLastRow() - subject['rowOffset'] - 1);
+      correctedRange.setFormulaR1C1(correctedFormulaR1C1);
+    }
+
+    modifyIdFormatRule(sh);
+  }
+}
+
+function modifyRowsAtPositions(sheet, modifications) {
+  // Sort modifications in descending order of positions to avoid shifting issues
+  modifications.sort((a, b) => b.position - a.position);
+
+  // Apply each modification
+  modifications.forEach(mod => {
+    if (mod.rows > 0) {
+      // Insert rows if `rows` is positive
+      sheet.insertRows(mod.position, mod.rows);
+    } else if (mod.rows < 0) {
+      // Delete rows if `rows` is negative
+      sheet.deleteRows(mod.position, Math.abs(mod.rows));
+    }
+  });
+  Logger.log('Row modifications complete')
+}
+
+function modifyIdFormatRule(sheet=SpreadsheetApp.openById('1sdnVpuX8mVkpTdrqZgwz7zph1NdFpueX6CP45JHiNP8').getSheetByName('Reading & Writing')) {
+  const alertColor = '#cc0000';
+  const darkGreen = '#6aa84f';
+  const lightGreen = '#b7e1cd';
+  const darkRed = '#e06666';
+  const lightRed = '#f4c7c3';
+  const grey = '#f3f3f3';
+  const yellow = '#fff2cc';
+  // Get all existing conditional formatting rules
+  var rules = sheet.getConditionalFormatRules();
+  
+  // Create an array to store updated rules
+  var updatedRules = [];
+  
+  // Iterate through each rule
+  for (var i = 0; i < rules.length; i++) {
+    var rule = rules[i];
+    var bgColor = rule.getBooleanCondition().getBackgroundObject().asRgbColor().asHexString();
+    
+    if (bgColor === alertColor) {
+      // Modify the rule
+      var newRule = SpreadsheetApp.newConditionalFormatRule()
+        .setRanges(sheet.getRangeList(['A10:A, E10:E, I10:I']))
+        .whenFormulaSatisfied('=and(len(A10)<>8,B10<>"",B9<>"")')
+        .setBackground(alertColor)
+        .setFontColor('#ffffff')
+        .build();
+      
+      updatedRules.push(newRule); // Add the modified rule to the list
+    }
+    else if (bgColor === darkGreen) {
+      var newRule = SpreadsheetApp.newConditionalFormatRule()
+        .setRanges(sheet.getRangeList(['C10:C, G10:G, K10:K']))
+        .whenFormulaSatisfied('=and(C10<>"",D10="",isformula(C10))')
+        .setBackground(darkGreen)
+        .setFontColor('#ffffff')
+        .build();
+      
+      updatedRules.push(newRule); 
+    }
+    else if (bgColor === lightGreen) {
+      var newRule = SpreadsheetApp.newConditionalFormatRule()
+        .setRanges(sheet.getRangeList(['C10:C, G10:G, K10:K']))
+        .whenFormulaSatisfied('=and(C10<>"",D10="",C10<>"Answer")')
+        .setBackground(lightGreen)
+        .build();
+      
+      updatedRules.push(newRule); 
+    }
+    else if (bgColor === darkRed) {
+      var newRule = SpreadsheetApp.newConditionalFormatRule()
+        .setRanges(sheet.getRangeList(['C10:C, G10:G, K10:K']))
+        .whenFormulaSatisfied('=and(or(C10="",C10="-"),B10<>"",B9<>"")')
+        .setBackground(darkRed)
+        .setFontColor('#ffffff')
+        .build();
+      
+      updatedRules.push(newRule); 
+    }
+    else if (bgColor === lightRed) {
+      var newRule = SpreadsheetApp.newConditionalFormatRule()
+        .setRanges(sheet.getRangeList(['C10:C, G10:G, K10:K']))
+        .whenFormulaSatisfied('=and(C10<>"",D10<>"",C10<>"Answer")')
+        .setBackground(lightRed)
+        .build();
+      
+      updatedRules.push(newRule); 
+    }
+    else if (bgColor === yellow) {
+      var newRule = SpreadsheetApp.newConditionalFormatRule()
+        .setRanges(sheet.getRangeList(['C10:C, G10:G, K10:K']))
+        .whenFormulaSatisfied('=and(or(C10="",C10="-"),B10<>"",B9<>"")')
+        .setBackground(yellow)
+        .build();
+      
+      updatedRules.push(newRule); 
+    }
+    else if (bgColor === grey) {
+      var newRule = SpreadsheetApp.newConditionalFormatRule()
+        .setRanges(sheet.getRangeList(['C10:C, G10:G, K10:K']))
+        .whenFormulaSatisfied('=and(not(isformula(C10)),C10="",B10<>"",B9<>"")')
+        .setBackground(grey)
+        .build();
+      
+      updatedRules.push(newRule); 
+    }
+    else {
+      updatedRules.push(rule); // Keep unmodified rules as-is
+    }
+  }
+  
+  // Reapply all rules to the sheet
+  sheet.setConditionalFormatRules(updatedRules);
+}
+
+
+
 
 
 // Scheduled recurring functions
