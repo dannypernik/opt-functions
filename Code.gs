@@ -701,9 +701,9 @@ function getTestCodes() {
 }
 
 function getLastFilledRow(sheet, col) {
-  const lastRow = sheet.getLastRow();
-  const allVals = sheet.getRange(1, col, lastRow).getValues();
-  const lastFilledRow = lastRow - allVals.reverse().findIndex((c) => c[0] != '');
+  const maxRow = sheet.getMaxRows();
+  const allVals = sheet.getRange(1, col, maxRow).getValues();
+  const lastFilledRow = maxRow - allVals.reverse().findIndex((c) => c[0] != '');
 
   return lastFilledRow;
 }
@@ -988,9 +988,9 @@ function sendPdfScoreReport(spreadsheetId, email, studentName, scores = []) {
 
 function getStudentHours(studentName) {
   const summarySheet = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('optSheetId')).getSheetByName('Summary');
-  const lastRow = summarySheet.getLastRow();
-  const allVals = summarySheet.getRange('A1:A' + lastRow).getValues();
-  const lastFilledRow = lastRow - allVals.reverse().findIndex((c) => c[0] != '');
+  const maxRow = summarySheet.getMaxRows();
+  const allVals = summarySheet.getRange('A1:A' + maxRow).getValues();
+  const lastFilledRow = maxRow - allVals.reverse().findIndex((c) => c[0] != '');
   var summaryData = summarySheet.getRange(1, 1, lastFilledRow, 26).getValues();
   const studentData = {
     'name': null,
@@ -1385,7 +1385,7 @@ function updateStudentFolder(studentFolder) {
   Logger.log(studentFolderName + ' started');
 }
 
-function updateConceptRows(answerSsId = '1sdnVpuX8mVkpTdrqZgwz7zph1NdFpueX6CP45JHiNP8') {
+function updateConceptRows(answerSsId = '1ol7ps0y2QZe3JpGmbMVzCmXQE81_Z4nnxbPrX71upPc', isAdminSs = false) {
   const ss = SpreadsheetApp.openById(answerSsId);
   const qbDataSh = ss.getSheetByName('Question bank data');
   const qbDataVals = qbDataSh.getRange(1,1, getLastFilledRow(qbDataSh, 1), 15).getValues();
@@ -1444,7 +1444,7 @@ function updateConceptRows(answerSsId = '1sdnVpuX8mVkpTdrqZgwz7zph1NdFpueX6CP45J
       }
       else {
         Logger.log(concept['name'] + ' is last concept');
-        endRow = sh.getLastRow() + 1;
+        endRow = sh.getMaxRows() + 1;
       }
         
       rowsToAdd = concept['row'] + rowsNeeded - endRow;
@@ -1458,7 +1458,7 @@ function updateConceptRows(answerSsId = '1sdnVpuX8mVkpTdrqZgwz7zph1NdFpueX6CP45J
       }
       else if (rowsToAdd < 0) {
         modifications.push({
-          'position': concept['row'] + rowsNeeded - 1,
+          'position': concept['row'] + rowsNeeded + rowsToAdd - 1, // rowsToAdd negative
           'rows': rowsToAdd
         });
         Logger.log('Removing ' + -1 * rowsToAdd + ' from ' + concept['name'])
@@ -1494,18 +1494,25 @@ function updateConceptRows(answerSsId = '1sdnVpuX8mVkpTdrqZgwz7zph1NdFpueX6CP45J
         ]);
       }
 
-      sh.getRange(subject['rowOffset'], levelStartCol + 1, outputValues.length, 2).setHorizontalAlignment('center').setFontWeight('bold').setValues(outputValues);
+      sh.getRange(subject['rowOffset'], levelStartCol + 1, outputValues.length, 2).setValues(outputValues);
+      sh.getRange(subject['rowOffset'], levelStartCol + 2, outputValues.length).setHorizontalAlignment('center').setFontWeight('bold')
+    }
+
+    for (concept of conceptData) {
+      sh.getRange(concept['row'] + subject['rowOffset'] + 1, 2).setHorizontalAlignment('left');
     }
 
     const answerFormulaR1C1 = '=let(worksheetNum,R[0]C[-1],if(worksheetNum="","", if(left(worksheetNum,5)="Level","Answer", if(iserror(search(".",worksheetNum)),"", let(id,R[0]C[-2], xlookup(id,\'Student responses\'!R4C1:C1,\'Student responses\'!R4C8:C8,"not found"))))))'
     const correctedFormulaR1C1 = '=let(worksheetNum,R[0]C[-2],if(worksheetNum="","", if(left(worksheetNum,5)="Level","Corrected", if(iserror(search(".",worksheetNum)), "", let(id,R[0]C[-3], result,xlookup(id,\'Question bank data\'!R2C1:C1,\'Question bank data\'!R2C8:C8,"not found"), if(result=R[0]C[-1],"",result))))))'
     
     for (let level = 1; level < 4; level++) {
-      const answerCol = 4 * (level - 1) + 3;
-      const answerRange = sh.getRange(subject['rowOffset'] + 3, answerCol, sh.getLastRow() - subject['rowOffset'] - 2);
-      const correctedRange = sh.getRange(subject['rowOffset'] + 3, answerCol + 1, sh.getLastRow() - subject['rowOffset'] - 2);
-      answerRange.setHorizontalAlignment('center').setFontWeight('normal').setFormulaR1C1(answerFormulaR1C1)
-      correctedRange.setHorizontalAlignment('center').setFontWeight('normal').setFormulaR1C1(correctedFormulaR1C1)
+      if (isAdminSs) {
+        const answerCol = 4 * (level - 1) + 3;
+        const answerRange = sh.getRange(subject['rowOffset'] + 3, answerCol, sh.getMaxRows() - subject['rowOffset'] - 2);
+        answerRange.setHorizontalAlignment('center').setFormulaR1C1(answerFormulaR1C1);
+        const correctedRange = sh.getRange(subject['rowOffset'] + 3, answerCol + 1, sh.getMaxRows() - subject['rowOffset'] - 2);
+        correctedRange.setHorizontalAlignment('center').setFormulaR1C1(correctedFormulaR1C1);
+      }
     }
 
     modifyIdFormatRule(sh);
