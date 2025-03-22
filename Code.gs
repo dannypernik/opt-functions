@@ -1420,23 +1420,22 @@ function updateClientFolders() {
   for (let client of clients) {
     const index = clients.indexOf(client)
 
-
-    
     if (index >= 0 /* 0 is OPT folder */ ) {  
       Logger.log(index + '. ' + client['name'] + ' started');
 
-      const qbResArrayVal = '=let(testCodes,\'Practice test data\'!$E$2:E, testResponses,\'Practice test data\'!$K$2:$K,\n' +
-      '    worksheetRanges,vstack(\'Reading & Writing\'!A10:C,\'Reading & Writing\'!E10:G,\'Reading & Writing\'!I10:K,\n' +
-      '                           Math!A13:C,Math!E13:G,Math!I13:K,\'SLT Uniques\'!A5:C,\'SLT Uniques\'!E5:G),\n' +
-      '    z,counta(A2:A),\n' +
-      '    map(offset(G1,1,0,z),offset(B1,1,0,z),offset(E1,1,0,z),offset(A1,1,0,z),\n' +
-      '    lambda(    skillCode,       subject,         difficulty,      id,\n' +
-      '           if(or(left(skillCode,3)="SAT",left(skillCode,4)="PSAT"),\n' +
-      '           xlookup(skillCode,testCodes,testResponses,"not found"),\n' +
-      '           vlookup(id,worksheetRanges,3,FALSE)))))'
+      // const qbResArrayVal = '=let(testCodes,\'Practice test data\'!$E$2:E, testResponses,\'Practice test data\'!$K$2:$K,\n' +
+      // '    worksheetRanges,vstack(\'Reading & Writing\'!A10:C,\'Reading & Writing\'!E10:G,\'Reading & Writing\'!I10:K,\n' +
+      // '                           Math!A13:C,Math!E13:G,Math!I13:K,\'SLT Uniques\'!A5:C,\'SLT Uniques\'!E5:G),\n' +
+      // '    z,counta(A2:A),\n' +
+      // '    map(offset(G1,1,0,z),offset(B1,1,0,z),offset(E1,1,0,z),offset(A1,1,0,z),\n' +
+      // '    lambda(    skillCode,       subject,         difficulty,      id,\n' +
+      // '           if(or(left(skillCode,3)="SAT",left(skillCode,4)="PSAT"),\n' +
+      // '           xlookup(skillCode,testCodes,testResponses,"not found"),\n' +
+      // '           vlookup(id,worksheetRanges,3,FALSE)))))'
 
-      SpreadsheetApp.openById(client['satAdminSsId']).getSheetByName('Question bank data').getRange('I2').setValue(qbResArrayVal);
+      // SpreadsheetApp.openById(client['satAdminSsId']).getSheetByName('Question bank data').getRange('I2').setValue(qbResArrayVal);
 
+      modifyTestFormatRules(client['satAdminSsId']);
       // updateSatDataSheets(client['satAdminDataId'], client['satStudentDataId'], client['satAdminSsId'], client['satStudentSsId']);
       // updateConceptRows(client['satAdminSsId'], true);
       // updateConceptRows(client['satStudentSsId'], false);
@@ -1660,7 +1659,6 @@ function modifyIdFormatRule(sheet=SpreadsheetApp.openById('1sdnVpuX8mVkpTdrqZgwz
   for (var i = 0; i < rules.length; i++) {
     var rule = rules[i];
     var bgColor = rule.getBooleanCondition().getBackgroundObject().asRgbColor().asHexString();
-    Logger.log(sheet.getName() + ' ' + bgColor);
     
     if (bgColor === alertColor) {
       // Modify the rule
@@ -1736,6 +1734,45 @@ function modifyIdFormatRule(sheet=SpreadsheetApp.openById('1sdnVpuX8mVkpTdrqZgwz
   
   // Reapply all rules to the sheet
   sheet.setConditionalFormatRules(updatedRules);
+}
+
+function modifyTestFormatRules(satAnswerSheetId='1FW_3GIWmytdrgBdfSuIl2exy9hIAnQoG8IprF8k9uEY') {
+  const ss = SpreadsheetApp.openById(satAnswerSheetId);
+  const tests = getTestCodes();
+
+  for (test of tests) {
+    const sh = ss.getSheetByName(test);
+    var rules = sh.getConditionalFormatRules();
+    const alertColor = '#cc0000';
+    const updatedRules = [];
+    
+    for (var i = 0; i < rules.length; i++) {
+      var rule = rules[i];
+      var bgColor = rule.getBooleanCondition().getBackgroundObject().asRgbColor().asHexString();
+      
+      if (bgColor !== alertColor) {
+        updatedRules.push(rule);
+      }
+    }
+
+    const rwRule = SpreadsheetApp.newConditionalFormatRule()
+    .setRanges([sh.getRange('A5:A31'), sh.getRange('E5:E31'), sh.getRange('I5:I31')])
+    .whenFormulaSatisfied('=A5<>$B$2&" "&B5')
+    .setBackground(alertColor)
+    .setFontColor('#ffffff')
+    .build();
+
+    const mathRule = SpreadsheetApp.newConditionalFormatRule()
+    .setRanges([sh.getRange('A36:A57'), sh.getRange('E36:E57'), sh.getRange('I36:I57')])
+    .whenFormulaSatisfied('=A36<>$B$33&" "&B36')
+    .setBackground(alertColor)
+    .setFontColor('#ffffff')
+    .build();
+  
+    updatedRules.push(rwRule, mathRule);
+    sh.setConditionalFormatRules(updatedRules);
+    Logger.log(test + ' formatting updated');
+  }
 }
 
 
