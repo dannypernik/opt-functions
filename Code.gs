@@ -537,9 +537,13 @@ function styleSatWorksheets(
   }
 }
 
-function applyConditionalFormatting(sheet, customStyles) {
+function applyConditionalFormatting(sheet=SpreadsheetApp.openById('1nwG8o6Rd0ArGQMzrfUjRP16FkSw9urEIK-V7UD2ayJM'), customStyles=null) {
   var rules = [];
   var newRules = [];
+
+  if (!customStyles) {
+    customStyles = setCustomStyles();
+  }
 
   for (i in sheet.getConditionalFormatRules()) {
     var condition = sheet.getConditionalFormatRules()[i];
@@ -1420,25 +1424,106 @@ function updateClientFolders() {
   for (let client of clients) {
     const index = clients.indexOf(client)
 
-    if (index >= 0 /* 0 is OPT folder */ ) {  
+    if (index === 15 /* 0 is OPT folder */ ) {  
       Logger.log(index + '. ' + client['name'] + ' started');
 
-      // const qbResArrayVal = '=let(testCodes,\'Practice test data\'!$E$2:E, testResponses,\'Practice test data\'!$K$2:$K,\n' +
-      // '    worksheetRanges,vstack(\'Reading & Writing\'!A10:C,\'Reading & Writing\'!E10:G,\'Reading & Writing\'!I10:K,\n' +
-      // '                           Math!A13:C,Math!E13:G,Math!I13:K,\'SLT Uniques\'!A5:C,\'SLT Uniques\'!E5:G),\n' +
-      // '    z,counta(A2:A),\n' +
-      // '    map(offset(G1,1,0,z),offset(B1,1,0,z),offset(E1,1,0,z),offset(A1,1,0,z),\n' +
-      // '    lambda(    skillCode,       subject,         difficulty,      id,\n' +
-      // '           if(or(left(skillCode,3)="SAT",left(skillCode,4)="PSAT"),\n' +
-      // '           xlookup(skillCode,testCodes,testResponses,"not found"),\n' +
-      // '           vlookup(id,worksheetRanges,3,FALSE)))))'
+      const studentFolders = DriveApp.getFolderById(client['folderId']).getFoldersByName('Students').next().getFolders();
+      const students = []
 
-      // SpreadsheetApp.openById(client['satAdminSsId']).getSheetByName('Question bank data').getRange('I2').setValue(qbResArrayVal);
+      // Edit all folders in Students, including template
+      while (studentFolders.hasNext()) {
+        const studentFolder = studentFolders.next();
+        const studentFolderName = studentFolder.getName();
+        const adminFiles = studentFolder.getFiles();
+        let satAdminSsId, satStudentSsId, satSubfolder;
 
-      modifyTestFormatRules(client['satAdminSsId']);
+        Logger.log('studentFolder: ' + studentFolder);
+
+        while (adminFiles.hasNext()) {
+          const adminFile = adminFiles.next();
+          if (adminFile.getName().toLowerCase().includes('sat admin')) {
+            satAdminSsId = adminFile.getId();
+            break;
+          }
+        }
+
+        const studentSubfolders = studentFolder.getFolders();
+
+        while (studentSubfolders.hasNext()) {
+          const studentSubfolder = studentSubfolders.next();
+          const studentSubfolderName = studentSubfolder.getName();
+
+          if (studentSubfolderName.includes(studentFolderName) || studentSubfolderName === 'Student') {
+            if (studentSubfolderName.includes('SAT')) {
+              satSubfolder = studentSubfolder;
+              break;
+            }
+            else if (studentSubfolder.getFoldersByName('_SAT').hasNext()) {
+              satSubfolder = studentSubfolder.getFoldersByName('_SAT').next();
+              break;
+            }
+          }
+        }
+
+        let satFiles;
+        if (satSubfolder) {
+          satFiles = satSubfolder.getFiles();
+        }
+        else {
+          Logger.log('SAT subfolder not found for ' + studentFolderName);
+        }
+
+        while (satFiles.hasNext()) {
+          const satFile = satFiles.next();
+
+          if (satFile.getName().toLowerCase().includes('sat student')) {
+            satStudentSsId = satFile.getId();
+            break;
+          }
+        }
+
+        students.push({
+          'name': studentFolderName,
+          'satAdminSsId': satAdminSsId,
+          'satStudentSsId': satStudentSsId,
+          'studentFolder': studentFolder,
+          'satSubfolderId': satSubfolder.getId()
+        })
+      }
+
+      const qbResArrayVal = '=let(testCodes,\'Practice test data\'!$E$2:E, testResponses,\'Practice test data\'!$K$2:$K,\n' +
+      '    worksheetRanges,vstack(\'Reading & Writing\'!A10:C,\'Reading & Writing\'!E10:G,\'Reading & Writing\'!I10:K,\n' +
+      '                           Math!A13:C,Math!E13:G,Math!I13:K,\'SLT Uniques\'!A5:C,\'SLT Uniques\'!E5:G),\n' +
+      '    z,counta(A2:A),\n' +
+      '    map(offset(G1,1,0,z),offset(B1,1,0,z),offset(E1,1,0,z),offset(A1,1,0,z),\n' +
+      '    lambda(    skillCode,       subject,         difficulty,      id,\n' +
+      '           if(or(left(skillCode,3)="SAT",left(skillCode,4)="PSAT"),\n' +
+      '           xlookup(skillCode,testCodes,testResponses,"not found"),\n' +
+      '           vlookup(id,worksheetRanges,3,FALSE)))))'
+
+      const sltFilterR1C1 = "=FILTER({'Question bank data'!R2C1:C1,'Question bank data'!R2C7:C7},left('Question bank data'!R2C7:C7,3)=\"SLT\",'Question bank data'!R2C2:C2=R[-3]C[1])"
+
+
+      // iterate through all folders in Students including template folder
+      for (student of students) {
+        Logger.log('Starting student: ' + student['name'] + ' ' + student['satAdminSsId'] + ' ' + student['satStudentSsId'] + ' ' + student['satSubfolderId']);
+        const adminSs = SpreadsheetApp.openById(student['satAdminSsId']);
+        adminSs.getSheetByName('Question bank data').getRange('I2').setValue(qbResArrayVal);
+        adminSs.getSheetByName('Rev sheet backend').getRange('U5').setValue(client['satAdminDataId']);
+        adminSs.getSheetByName('SLT Uniques').getRange('B5').setValue('');
+        adminSs.getSheetByName('SLT Uniques').getRange('F5').setValue('');
+        adminSs.getSheetByName('SLT Uniques').getRange('A5').setValue(sltFilterR1C1);
+        adminSs.getSheetByName('SLT Uniques').getRange('E5').setValue(sltFilterR1C1);
+
+        const studentSs = SpreadsheetApp.openById(student['satStudentSsId']);
+        studentSs.getSheetByName('Rev sheets').getRange('B5:B').setFontWeight('bold');
+        studentSs.getSheetByName('Rev sheets').getRange('F5:F').setFontWeight('bold');
+        modifyTestFormatRules(client['satAdminSsId']);
+      }
+
       // updateSatDataSheets(client['satAdminDataId'], client['satStudentDataId'], client['satAdminSsId'], client['satStudentSsId']);
-      // updateConceptRows(client['satAdminSsId'], true);
-      // updateConceptRows(client['satStudentSsId'], false);
+      // updateConceptRows(client['satAdminSsId'], true, true);
+      // updateConceptRows(client['satStudentSsId'], false, false);
       Logger.log(index + '. ' + client['name'] + ' complete');
     }
   }
@@ -1482,15 +1567,15 @@ function updateSatDataSheets(satAdminDataSsId, satStudentDataSsId, satAdminSsId,
     satStudentDataSs.getSheetByName('Practice test data').copyTo(satStudentDataSs).setName('Practice test data updated 03/2025').getRange('A1').setValue('=importrange("' + client['satAdminDataId'] + '", "Practice test data updated 03/2025!A1:E10000")');
   }
   Logger.log('sat student data sheets updated')
-  satAdminSs.getSheetByName('Question bank data').getRange('A1').setValue('=importrange("' + client['satAdminDataId'] + '", "Question bank data updated 03/2025!A1:H10000")');
-  satAdminSs.getSheetByName('Practice test data').getRange('A1').setValue('=importrange("' + client['satAdminDataId'] + '", "Practice test data updated 03/2025!A1:J10000")');
+  satAdminSs.getSheetByName('Question bank data').getRange('A1').setValue('=importrange(\'Rev sheet backend\'!U5, "Question bank data updated 03/2025!A1:H10000")');
+  satAdminSs.getSheetByName('Practice test data').getRange('A1').setValue('=importrange(\'Rev sheet backend\'!U5, "Practice test data updated 03/2025!A1:J10000")');
   Logger.log('sat admin template sheets updated')
-  satStudentSs.getSheetByName('Question bank data').getRange('A1').setValue('=importrange("' + client['satStudentDataId'] + '", "Question bank data updated 03/2025!A1:G10000")');
-  satStudentSs.getSheetByName('Practice test data').getRange('A1').setValue('=importrange("' + client['satStudentDataId'] + '", "Practice test data updated 03/2025!A1:E10000")');
+  satStudentSs.getSheetByName('Question bank data').getRange('A1').setValue('=importrange("' + satStudentDataSsId + '", "Question bank data updated 03/2025!A1:G10000")');
+  satStudentSs.getSheetByName('Practice test data').getRange('A1').setValue('=importrange("' + satStudentDataSsId + '", "Practice test data updated 03/2025!A1:E10000")');
   Logger.log('sat student template sheets updated');
 }
 
-function updateConceptRows(answerSsId = '1sdnVpuX8mVkpTdrqZgwz7zph1NdFpueX6CP45JHiNP8', isAdminSs = true) {
+function updateConceptRows(answerSsId = '1sdnVpuX8mVkpTdrqZgwz7zph1NdFpueX6CP45JHiNP8', isAdminSs = true, isLinkedToStudentSheet=true) {
   const qbDataSh = SpreadsheetApp.openById('1XoANqHEGfOCdO1QBVnbA3GH-z7-_FMYwoy7Ft4ojulE').getSheetByName('Question bank data updated 03/2025');
   const ss = SpreadsheetApp.openById(answerSsId);
   const qbDataVals = qbDataSh.getRange(1,1, getLastFilledRow(qbDataSh, 1), 15).getValues();
@@ -1518,7 +1603,7 @@ function updateConceptRows(answerSsId = '1sdnVpuX8mVkpTdrqZgwz7zph1NdFpueX6CP45J
         var row = x + subject['rowOffset'];
         conceptData.push({
           'name': conceptColVals[x][0],
-          'row': row,
+          'row': row,                        // row 1-indexed
           'id': id
         });
         id ++;
@@ -1534,7 +1619,6 @@ function updateConceptRows(answerSsId = '1sdnVpuX8mVkpTdrqZgwz7zph1NdFpueX6CP45J
           }
         }
         concept['level' + level] = count;
-        //Logger.log(concept['name'] + ' ' + level + ': ' + count)
       }
     }
     
@@ -1572,16 +1656,25 @@ function updateConceptRows(answerSsId = '1sdnVpuX8mVkpTdrqZgwz7zph1NdFpueX6CP45J
     const shNewRange = sh.getRange(subject['rowOffset'], 1, sh.getMaxRows() - subject['rowOffset'], sh.getMaxColumns());
     shNewRange.setNumberFormat('@STRING@');
     const shNewVals = shNewRange.getValues();
+    const shFormulas = shNewRange.getFormulas();
     const newConceptRows = shNewVals.map(row => row[1]);
 
     for (let level = 1; level < 4; level++) {
       const levelStartCol = (level - 1) * 4;
 
       for (concept of conceptData) {
-        concept['row'] = newConceptRows.indexOf(concept['name']);
+
+        // Since newConceptRows starts at subject['rowOffset'] and includes blanks,
+        // concept['index'] is 0-indexed position of concept name starting at 1st concept
+        concept['index'] = newConceptRows.indexOf(concept['name']);
+
+        const levelRow = concept['index'] + 2;
+        shNewVals[levelRow][levelStartCol + 1] = shFormulas[levelRow][levelStartCol + 1];
 
         for (qNum = 1; qNum <= concept['level' + level]; qNum++) {
-          const qRow = concept['row'] + 2 + qNum;
+          const qRow = levelRow + qNum;
+  
+          // Find the matching row in Question bank data
           const dataRow = qbDataVals.find(row => row[3].toLowerCase() === concept['name'].toLowerCase() && Number(row[4]) === level && Number(row[5]) === qNum);
           shNewVals[qRow] = []
           shNewVals[qRow][levelStartCol] = dataRow[0];
@@ -1602,25 +1695,44 @@ function updateConceptRows(answerSsId = '1sdnVpuX8mVkpTdrqZgwz7zph1NdFpueX6CP45J
     }
 
 
-    const answerFormulaR1C1 = '=let(worksheetNum,R[0]C[-1],if(worksheetNum="","", if(left(worksheetNum,5)="Level","Answer", if(iserror(search(".",worksheetNum)),"", let(id,R[0]C[-2], xlookup(id,\'Student responses\'!R4C1:C1,\'Student responses\'!R4C8:C8,"not found"))))))'
+    const answerFormulaR1C1 = '=let(worksheetNum,R[0]C[-1],if(worksheetNum="","", if(iserror(search(".",worksheetNum)),"", let(id,R[0]C[-2], xlookup(id,\'Student responses\'!R4C1:C1,\'Student responses\'!R4C8:C8,"not found")))))'
     const correctedFormulaR1C1 = '=let(worksheetNum,R[0]C[-2],if(worksheetNum="","", if(left(worksheetNum,5)="Level","Corrected", if(iserror(search(".",worksheetNum)), "", let(id,R[0]C[-3], result,xlookup(id,\'Question bank data\'!R2C1:C1,\'Question bank data\'!R2C8:C8,"not found"), if(result=R[0]C[-1],"",result))))))'
     
-    for (let level = 1; level < 4; level++) {
-      if (isAdminSs) {
+    if (isAdminSs) {
+      for (let level = 1; level < 4; level++) {
         const answerCol = 4 * (level - 1) + 3;
-        const answerRange = sh.getRange(subject['rowOffset'] + 3, answerCol, sh.getMaxRows() - subject['rowOffset'] - 2);
-        answerRange.setHorizontalAlignment('center').setFontWeight('normal').setFormulaR1C1(answerFormulaR1C1);
-        const correctedRange = sh.getRange(subject['rowOffset'] + 3, answerCol + 1, sh.getMaxRows() - subject['rowOffset'] - 2);
+        if (isLinkedToStudentSheet) {
+          const answerRange = sh.getRange(subject['rowOffset'] + 3, answerCol, sh.getMaxRows() - subject['rowOffset'] - 3);
+          const answerVals = answerRange.getValues();
+
+          for (let r = 0; r < answerVals.length; r ++) {
+            let startRow = subject['rowOffset'] + 3 + r;
+            let numRows = 0;
+
+            // Set R1C1 formula for consecutive blank rows, leave values as is
+            while (r < answerVals.length && answerVals[r][0] === '') {
+              numRows ++;
+              r ++;
+            }
+            if (numRows > 0) {
+              sh.getRange(startRow, answerCol, numRows).setFormulaR1C1(answerFormulaR1C1);
+              Logger.log('Set formulas for col ' + answerCol + ' rows ' + startRow + '-' + (startRow + numRows));
+            }
+          }
+          answerRange.setHorizontalAlignment('center').setFontWeight('normal');
+        }
+        const correctedRange = sh.getRange(subject['rowOffset'] + 3, answerCol + 1, sh.getMaxRows() - subject['rowOffset'] - 3);
         correctedRange.setHorizontalAlignment('center').setFontWeight('normal').setFormulaR1C1(correctedFormulaR1C1);
       }
     }
 
     for (concept of conceptData) {
-      const headerStartRow = concept['row'] + subject['rowOffset'];
+      const headerStartRow = concept['index'] + subject['rowOffset'];
       sh.getRange(headerStartRow, 2, 1, 11).merge().setHorizontalAlignment('left');
       sh.getRange(headerStartRow, 2, 3, 11).setFontWeight('bold');
     }
-    modifyIdFormatRule(sh);
+    
+    modifyConceptFormatRules(sh, isAdminSs);
   }
 }
 
@@ -1641,7 +1753,7 @@ function modifyRowsAtPositions(sheet, modifications) {
   Logger.log('Row modifications complete')
 }
 
-function modifyIdFormatRule(sheet=SpreadsheetApp.openById('1sdnVpuX8mVkpTdrqZgwz7zph1NdFpueX6CP45JHiNP8').getSheetByName('Reading & Writing')) {
+function modifyConceptFormatRules(sheet, isAdminSs) {
   const alertColor = '#cc0000';
   const darkGreen = '#6aa84f';
   const lightGreen = '#b7e1cd';
@@ -1662,74 +1774,62 @@ function modifyIdFormatRule(sheet=SpreadsheetApp.openById('1sdnVpuX8mVkpTdrqZgwz
     
     if (bgColor === alertColor) {
       // Modify the rule
-      var newRule = SpreadsheetApp.newConditionalFormatRule()
+      rule = SpreadsheetApp.newConditionalFormatRule()
         .setRanges([sheet.getRange('A10:A'), sheet.getRange('E10:E'), sheet.getRange('I10:I')])
         .whenFormulaSatisfied('=and(len(A10)<>8,B10<>"",B9<>"")')
         .setBackground(alertColor)
         .setFontColor('#ffffff')
         .build();
-      
-      updatedRules.push(newRule); // Add the modified rule to the list
-    }
-    else if (bgColor === darkGreen) {
-      var newRule = SpreadsheetApp.newConditionalFormatRule()
-        .setRanges([sheet.getRange('C10:C'), sheet.getRange('G10:G'), sheet.getRange('K10:K')])
-        .whenFormulaSatisfied('=and(C10<>"",D10="",isformula(C10))')
-        .setBackground(darkGreen)
-        .setFontColor('#ffffff')
-        .build();
-      
-      updatedRules.push(newRule); 
-    }
-    else if (bgColor === lightGreen) {
-      var newRule = SpreadsheetApp.newConditionalFormatRule()
-        .setRanges([sheet.getRange('C10:C'), sheet.getRange('G10:G'), sheet.getRange('K10:K')])
-        .whenFormulaSatisfied('=and(C10<>"",D10="",C10<>"Answer")')
-        .setBackground(lightGreen)
-        .build();
-      
-      updatedRules.push(newRule); 
-    }
-    else if (bgColor === darkRed) {
-      var newRule = SpreadsheetApp.newConditionalFormatRule()
-        .setRanges([sheet.getRange('C10:C'), sheet.getRange('G10:G'), sheet.getRange('K10:K')])
-        .whenFormulaSatisfied('=and(or(C10="",C10="-"),B10<>"",B9<>"")')
-        .setBackground(darkRed)
-        .setFontColor('#ffffff')
-        .build();
-      
-      updatedRules.push(newRule); 
-    }
-    else if (bgColor === lightRed) {
-      var newRule = SpreadsheetApp.newConditionalFormatRule()
-        .setRanges([sheet.getRange('C10:C'), sheet.getRange('G10:G'), sheet.getRange('K10:K')])
-        .whenFormulaSatisfied('=and(C10<>"",D10<>"",C10<>"Answer")')
-        .setBackground(lightRed)
-        .build();
-      
-      updatedRules.push(newRule); 
     }
     else if (bgColor === yellow) {
-      var newRule = SpreadsheetApp.newConditionalFormatRule()
+      rule = SpreadsheetApp.newConditionalFormatRule()
         .setRanges([sheet.getRange('C10:C'), sheet.getRange('G10:G'), sheet.getRange('K10:K')])
         .whenFormulaSatisfied('=and(or(C10="",C10="-"),B10<>"",B9<>"")')
         .setBackground(yellow)
         .build();
-      
-      updatedRules.push(newRule); 
     }
-    else if (bgColor === grey) {
-      var newRule = SpreadsheetApp.newConditionalFormatRule()
-        .setRanges([sheet.getRange('C10:C'), sheet.getRange('G10:G'), sheet.getRange('K10:K')])
-        .whenFormulaSatisfied('=and(not(isformula(C10)),C10="",B10<>"",B9<>"")')
-        .setBackground(grey)
-        .build();
-      
-      updatedRules.push(newRule); 
+
+    if (isAdminSs) {  
+      if (bgColor === darkGreen) {
+        rule = SpreadsheetApp.newConditionalFormatRule()
+          .setRanges([sheet.getRange('C10:C'), sheet.getRange('G10:G'), sheet.getRange('K10:K')])
+          .whenFormulaSatisfied('=and(C10<>"",D10="",isformula(C10))')
+          .setBackground(darkGreen)
+          .setFontColor('#ffffff')
+          .build();
+      }
+      else if (bgColor === lightGreen) {
+        rule = SpreadsheetApp.newConditionalFormatRule()
+          .setRanges([sheet.getRange('C10:C'), sheet.getRange('G10:G'), sheet.getRange('K10:K')])
+          .whenFormulaSatisfied('=and(C10<>"",D10="",B9<>"")')
+          .setBackground(lightGreen)
+          .build();
+      }
+      else if (bgColor === darkRed) {
+        rule = SpreadsheetApp.newConditionalFormatRule()
+          .setRanges([sheet.getRange('C10:C'), sheet.getRange('G10:G'), sheet.getRange('K10:K')])
+          .whenFormulaSatisfied('=and(C10<>"",D10<>"",isformula(C10),B9<>"")')
+          .setBackground(darkRed)
+          .setFontColor('#ffffff')
+          .build();
+      }
+      else if (bgColor === lightRed) {
+        rule = SpreadsheetApp.newConditionalFormatRule()
+          .setRanges([sheet.getRange('C10:C'), sheet.getRange('G10:G'), sheet.getRange('K10:K')])
+          .whenFormulaSatisfied('=and(C10<>"",D10<>"",B9<>"")')
+          .setBackground(lightRed)
+          .build();
+      }
+      else if (bgColor === grey) {
+        rule = SpreadsheetApp.newConditionalFormatRule()
+          .setRanges([sheet.getRange('C10:C'), sheet.getRange('G10:G'), sheet.getRange('K10:K')])
+          .whenFormulaSatisfied('=and(not(isformula(C10)),C10="",B10<>"",B9<>"")')
+          .setBackground(grey)
+          .build();
+      }
     }
-    else {
-      updatedRules.push(rule); // Keep unmodified rules as-is
-    }
+    
+    updatedRules.push(rule); // Add updated or existing rule
   }
   
   // Reapply all rules to the sheet
@@ -1771,8 +1871,8 @@ function modifyTestFormatRules(satAnswerSheetId='1FW_3GIWmytdrgBdfSuIl2exy9hIAnQ
   
     updatedRules.push(rwRule, mathRule);
     sh.setConditionalFormatRules(updatedRules);
-    Logger.log(test + ' formatting updated');
   }
+  Logger.log('Test sheets formatting updated');
 }
 
 
