@@ -204,12 +204,9 @@ function setClientDataUrls(folderId) {
   if (satSheetIds.student && satSheetDataUrls.student) {
     SpreadsheetApp.openById(satSheetIds.student)
       .getSheetByName('Question bank data')
-      .getRange('A1')
-      .setValue('=IMPORTRANGE(' + satSheetDataUrls.student + ', "Question bank data!A1:G10000")');
-    SpreadsheetApp.openById(satSheetIds.student)
-      .getSheetByName('Practice test data')
-      .getRange('A1')
-      .setValue('=IMPORTRANGE(' + satSheetDataUrls.student + ', "Practice test data!A1:E10000")');
+      .getRange('U7')
+      .setValue(satSheetDataUrls.student);
+
 
     // isSet.satStudentToData = true;
   }
@@ -470,38 +467,6 @@ function styleClientSheets(satSheetIds, actSheetIds, customStyles) {
   Logger.log('styleClientSheets complete');
 }
 
-const cats = [
-    'Area and volume',
-    'Boundaries',
-    'Central ideas and details',
-    'Circles',
-    'Command of evidence',
-    'Cross-text connections',
-    'Distributions',
-    'Equivalent expressions',
-    'Form, structure, and sense',
-    'Inferences',
-    'Linear equations in one variable',
-    'Linear equations in two variables',
-    'Linear functions',
-    'Linear inequalities',
-    'Lines, angles, and triangles',
-    'Models and scatterplots',
-    'Nonlinear equations and systems',
-    'Nonlinear functions',
-    'Observational studies and experiments',
-    'Percentages',
-    'Probability',
-    'Ratios, rates, proportions, and units',
-    'Systems of linear equations',
-    'Right triangles and trigonometry',
-    'Sample statistics and margin of error',
-    'Words in context',
-    'Transitions',
-    'Rhetorical synthesis',
-    'Text, structure, and purpose',
-  ];
-
 function styleSatWorksheets(
   sh = SpreadsheetApp.openById('1FW_3GIWmytdrgBdfSuIl2exy9hIAnQoG8IprF8k9uEY').getSheetByName('Math'),
   rowOffset = 10,
@@ -511,6 +476,7 @@ function styleSatWorksheets(
     primaryContrastColor: 'white',
   }) {
 
+  const cats = createStudentFolders.cats
   cats.push('Reading & Writing'); // styles SLT Uniques header
   var conceptRows = [];
 
@@ -737,42 +703,55 @@ function getAnalysisFiles(folder, n = 3, fileList = []) {
 }
 
 function analysisSsSearch(fileList) {
-  var testCodes = ['at1', 'at2', 'at3', 'at4', 'at5', 'at6', 'sat1', 'sat2', 'sat3', 'sat4', 'sat5', 'sat6', 'psat1', 'psat2', 'apt1', 'apt2'];
-  var scoreSheet = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('optSheetId')).getSheetByName('Scores');
-  var lastRow = scoreSheet.getLastRow();
-  var scoresNames = scoreSheet.getRange(1, 1, lastRow);
-  var nextOpenRow =
+  // const testCodes = ['at1', 'at2', 'at3', 'at4', 'at5', 'at6', 'sat1', 'sat2', 'sat3', 'sat4', 'sat5', 'sat6', 'sat7', 'sat8', 'sat9', 'sat10', 'psat1', 'psat2', 'apt1', 'apt2'];
+  const testCodes = ['sat1', 'sat2', 'sat3', 'sat4', 'sat5', 'sat6', 'sat7', 'sat8', 'sat9', 'sat10', 'psat1', 'psat2'];
+  const scoreSheet = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('optSheetId')).getSheetByName('Scores');
+  const lastRow = scoreSheet.getLastRow();
+  const scoresNames = scoreSheet.getRange(1, 1, lastRow);
+  const nextOpenRow =
     lastRow -
     scoresNames
       .getValues()
       .reverse()
-      .findIndex((c) => c[0] != '') +
-    1;
+      .findIndex((c) => c[0] != '') + 1;
 
   // Loop through analysis spreadsheets
   for (var i = 0; i < fileList.length; i++) {
-    var ssId = fileList[i].getId();
-    var ss = SpreadsheetApp.openById(ssId);
-    var ssName = ss.getName();
-    var studentName = ssName.slice(ssName.indexOf('-') + 2);
-    var sheets = ss.getSheets();
-    var scores = [];
+    const ssId = fileList[i].getId();
+    const ss = SpreadsheetApp.openById(ssId);
+    const ssName = ss.getName();
+    const studentName = ssName.slice(ssName.indexOf('-') + 2);
+    const sheets = ss.getSheets();
+    const scores = [];
 
     // Loop through sheets within analysis spreadsheet
     for (var s = 0; s < sheets.length; s++) {
-      sheet = sheets[s];
-      var sheetName = sheet.getName().toLowerCase();
-      if (testCodes.includes(sheetName)) {
+      const sheet = sheets[s];
+      const sheetData = sheet.getRange('A1:K57');
+      const sheetName = sheet.getName().toLowerCase();
+      const rwScore = sheetData[0][6];
+      const mScore = sheetData[0][8];
+
+      if (testCodes.includes(sheetName) && rwScore && mScore) {
+        const totalScore = rwScore + mScore;
         // Check last answer for each module
-        var mod1RWEnd = sheet.getRange('C31').getValues().filter(String).length;
-        var mod2RWEnd = sheet.getRange('G31').getValues().filter(String).length;
-        var mod3RWEnd = sheet.getRange('K31').getValues().filter(String).length;
-        var mod1MathEnd = sheet.getRange('C57').getValues().filter(String).length;
-        var mod2MathEnd = sheet.getRange('G57').getValues().filter(String).length;
-        var mod3MathEnd = sheet.getRange('K57').getValues().filter(String).length;
-        var modsComplete = mod1RWEnd + mod2RWEnd + mod3RWEnd + mod1MathEnd + mod2MathEnd + mod3MathEnd;
-        var completionCheck = sheet.getRange('M1');
-        var testName = sheetName.toUpperCase();
+        const mod1RWEnd = sheetData[30][2];
+        const mod2RWEnd = sheetData[30][6];
+        const mod3RWEnd = sheetData[30][10];
+        const mod1MathEnd = sheetData[56][2];
+        const mod2MathEnd = sheetData[56][6];
+        const mod3MathEnd = sheetData[56][10];
+
+        const values = [mod1RWEnd, mod2RWEnd, mod3RWEnd, mod1MathEnd, mod2MathEnd, mod3MathEnd];
+
+        // Filter out blank or null values and count the remaining ones
+        const modsComplete = values.filter(function(value) {
+          return value !== "" && value !== null;
+        }).length;
+
+         
+        const completionCheck = sheet.getRange('M1');
+        const testName = sheetName.toUpperCase();
 
         if (sheetName.slice(0, 3) === 'apt') {
           testName = sheetName.replace('apt', 'psat').toUpperCase();
@@ -782,9 +761,6 @@ function analysisSsSearch(fileList) {
 
         // If test is completed, add to scores array
         if (modsComplete === 4 && sheet.getRange('G1').getValue() >= 200 && sheet.getRange('I1').getValue() >= 200) {
-          var rwScore = sheet.getRange('G1').getValue();
-          var mScore = sheet.getRange('I1').getValue();
-          var totalScore = sheet.getRange('L1').getValue();
           scores.push({
             test: testName,
             rw: rwScore,
@@ -803,11 +779,11 @@ function analysisSsSearch(fileList) {
             completionCheck.setVerticalAlignment('middle');
             completionCheck.setFontColor('#134f5c');
 
-            var dateSubmitted = sheet.getRange('D2').getValue();
+            const dateSubmitted = sheet.getRange('D2').getValue();
             if ((dateSubmitted = '')) {
               dateSubmitted = Utilities.formatDate(new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() - 1), 'UTC', 'MM/dd/yyyy');
             }
-            var rowData = [[studentName, 'Practice', testName.toUpperCase(), dateSubmitted, totalScore, rwScore, mScore]];
+            const rowData = [[studentName, 'Practice', testName.toUpperCase(), dateSubmitted, totalScore, rwScore, mScore]];
             scoreSheet.getRange(nextOpenRow, 1, 1, 7).setValues(rowData);
             nextOpenRow += 1;
           }
@@ -1048,7 +1024,7 @@ function getOPTPermissionsList(id) {
   return emails;
 }
 
-const showAllExcept = (spreadsheetId, hiddenSheets = []) => {
+const showAllExcept = (spreadsheetId='1_nRuW80ewwxEcsHLKy8U8o1nIxKNxxrih-IC-T2suJk', hiddenSheets = []) => {
   SpreadsheetApp.openById(spreadsheetId)
     .getSheets()
     .forEach((sh) => {
@@ -1324,7 +1300,8 @@ function addClientData(clientFolderId, newRow=null) {
   const emailList = []
   collaborators.forEach(c => {
     if (!PropertiesService.getScriptProperties().getProperty('myEmails').includes(c.getEmail())) {
-      emailList.push(c.getEmail());
+      Logger.log(c.getEmail());
+      // emailList.push(c.getEmail());
     }
   });
   
@@ -1333,7 +1310,7 @@ function addClientData(clientFolderId, newRow=null) {
   }
   
   const savedClientFolderIds = clientSheet.getRange(2, 4, newRow).getValues();
-  let clientIndex = savedClientFolderIds.findIndex(subArray => subArray.includes(clientFolderId))
+  let clientIndex = savedClientFolderIds.findIndex(subArray => subArray.includes(clientFolderId));
   let studentFolder, studentFolderId, studentFolderCount;
     
   if (clientIndex === -1) {
@@ -1382,14 +1359,20 @@ function addClientData(clientFolderId, newRow=null) {
       }
     }
 
-    clientDataSs.getSheets()[0].getRange(newRow, 1, 1, 16).setValues([[clientIndex, clientName, emailList, clientFolder.getId(), satSheetIds.admin, satSheetIds.student, actSheetIds.admin, actSheetIds.student, dataFolderId, satAdminDataId, satStudentDataId, actAdminDataId, actStudentDataId, revDataId, studentFolderId, studentFolderCount,]]);
+    clientDataSs.getSheets()[0].getRange(newRow, 1, 1, 16).setValues([[clientIndex, clientName, emailList, clientFolder.getId(), satSheetIds.admin, satSheetIds.student, actSheetIds.admin, actSheetIds.student, dataFolderId, satAdminDataId, satStudentDataId, actAdminDataId, actStudentDataId, revDataId, studentFolderId, studentFolderCount]]);
     newRow ++;
   }
   else {
     studentFolderId = clientSheet.getRange(clientIndex + 2, 15).getValue();
     studentFolderCount = getStudentFolderCount(studentFolderId);
-    clientSheet.getRange(clientIndex + 2, 16).setValue(studentFolderCount);
-    Logger.log(clientFolder.getName() + ' present with ' + studentFolderCount + ' student folders');
+    // clientSheet.getRange(clientIndex + 2, 16).setValue(studentFolderCount);
+    // Logger.log(clientFolder.getName() + ' present with ' + studentFolderCount + ' student folders');
+  }
+
+  const sheetStudentCount = clientSheet.getRange(clientIndex + 2, 16).getValue();
+  Logger.log(sheetStudentCount - studentFolderCount);
+  if (sheetStudentCount !== studentFolderCount) {
+    Logger.log(clientName + ' has ' + studentFolderCount + ' folders and ' + sheetStudentCount + ' SAT admin sheets');
   }
 }
 
@@ -1419,25 +1402,133 @@ function updateClientFolders() {
       'studentsFolderId': clientDataRange[row][14],
     })
   }
-  
 
   for (let client of clients) {
-    const index = clients.indexOf(client)
+    const startIndex = PropertiesService.getScriptProperties().getProperty('startIndex');
 
-    if (index === 15 /* 0 is OPT folder */ ) {  
-      Logger.log(index + '. ' + client['name'] + ' started');
+    if (client.index >= startIndex /* 0 is OPT folder */ ) {  
+      const clientRow = client.index + 2;
+      const studentsDataCell = clientSheet.getRange(clientRow, 17);
+      const students = updateStudentFolderData(client);
 
-      const studentFolders = DriveApp.getFolderById(client['folderId']).getFoldersByName('Students').next().getFolders();
-      const students = []
+      const qbResArrayVal = 
+        '=let(testCodes,\'Practice test data\'!$E$2:E, testResponses,\'Practice test data\'!$K$2:$K,\n' +
+        '    worksheetRanges,vstack(\'Reading & Writing\'!A10:C,\'Reading & Writing\'!E10:G,\'Reading & Writing\'!I10:K,\n' +
+        '                           Math!A13:C,Math!E13:G,Math!I13:K,\'SLT Uniques\'!A5:C,\'SLT Uniques\'!E5:G),\n' +
+        '    z,counta(A2:A),\n' +
+        '    map(offset(G1,1,0,z),offset(B1,1,0,z),offset(E1,1,0,z),offset(A1,1,0,z),\n' +
+        '    lambda(    skillCode,       subject,         difficulty,      id,\n' +
+        '           if(or(left(skillCode,3)="SAT",left(skillCode,4)="PSAT"),\n' +
+        '           xlookup(skillCode,testCodes,testResponses,"not found"),\n' +
+        '           vlookup(id,worksheetRanges,3,FALSE)))))'
 
-      // Edit all folders in Students, including template
-      while (studentFolders.hasNext()) {
-        const studentFolder = studentFolders.next();
-        const studentFolderName = studentFolder.getName();
+      const sltFilterR1C1 = "=FILTER({'Question bank data'!R2C1:C1,'Question bank data'!R2C7:C7},left('Question bank data'!R2C7:C7,3)=\"SLT\",'Question bank data'!R2C2:C2=R[-3]C[1])"
+
+      
+      // iterate through all folders in Students including template folder
+      for (student of students) {
+        if(student.satAdminSsId) {
+          for (ssId of [student.satAdminSsId, student.satStudentSsId]) {
+            const ss = SpreadsheetApp.openById(ssId);
+
+            for (sheetName of ['Reading & Writing', 'Math']) {
+              const sheet = ss.getSheetByName(sheetName);
+
+              sheet.getRange('A10:A').setFontColor('#ffffff');
+              sheet.getRange('E10:E').setFontColor('#ffffff');
+              sheet.getRange('I10:I').setFontColor('#ffffff');
+            }
+          }
+        }
+        
+        // if (student.satAdminSsId && !student.updateComplete) {
+        //   Logger.log('Starting student: ' + student['name'] + ' ' + student['satAdminSsId'] + ' ' + student['satStudentSsId']);
+        //   const adminSs = SpreadsheetApp.openById(student['satAdminSsId']);
+        //   adminSs.getSheetByName('Question bank data').getRange('I2').setValue(qbResArrayVal);
+
+        //   const revBackendSheet = adminSs.getSheetByName('Rev sheet backend');
+        //   if (revBackendSheet) {
+        //     revBackendSheet.getRange('U5').setValue(client['satAdminDataId']);
+        //   }
+        //   Logger.log('Admin values updated')
+        //   adminSs.getSheetByName('SLT Uniques').getRange('B5').setValue('');
+        //   adminSs.getSheetByName('SLT Uniques').getRange('F5').setValue('');
+        //   adminSs.getSheetByName('SLT Uniques').getRange('A5').setValue(sltFilterR1C1);
+        //   adminSs.getSheetByName('SLT Uniques').getRange('E5').setValue(sltFilterR1C1);
+        //   Logger.log('SLT Uniques filter fixed')
+
+        //   const studentSs = SpreadsheetApp.openById(student['satStudentSsId']);
+        //   const studentRevSheet = studentSs.getSheetByName('Rev sheets');
+        //   if (studentRevSheet) {
+        //     studentRevSheet.getRange('B5:B').setFontWeight('bold');
+        //     studentRevSheet.getRange('F5:F').setFontWeight('bold');
+        //   }
+        //   modifyTestFormatRules(student['satAdminSsId']);
+        //   createStudentFolders.updateConceptData(student['satAdminSsId'], student['satStudentSsId']);
+        //   student.updateComplete = true;
+        //   studentsDataCell.setValue(JSON.stringify(students));
+        // }
+        // else if (student.updateComplete) {
+        //   Logger.log(`${student.name} data is updated`);
+        // }
+        // else if (!student.satAdminSsId) {
+        //   student.updateComplete = true;
+        //   studentsDataCell.setValue(JSON.stringify(students));
+        //   Logger.log(`No SAT data found for ${student.name}`)
+        // }
+
+      }
+
+      // updateSatDataSheets(client['satAdminDataId'], client['satStudentDataId']);
+      
+      PropertiesService.getScriptProperties().setProperty('startIndex', client.index + 1);
+      Logger.log(client.index + '. ' + client.name + ' complete');
+    }
+  }
+  PropertiesService.getScriptProperties().setProperty('startIndex', 0);
+  const triggers = ScriptApp.getProjectTriggers();
+
+  for (let t = 0; t < triggers.length; t++) {
+    const trigger = triggers[t];
+    
+    if (trigger.getHandlerFunction() === 'continueClientFolderUpdate') {
+      ScriptApp.deleteTrigger(trigger);
+      Logger.log(`Removed trigger for ${trigger.getHandlerFunction()}`);
+    }
+  }
+}
+
+function updateStudentFolderData(
+  client={
+    'index': null,
+    'name': null,
+    'studentsFolderId': null,
+  })
+{
+  const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
+  const clientSheet = clientDataSs.getSheets()[0];
+  const clientRow = client.index + 2;
+  Logger.log(client.index + '. ' + client.name + ' started');
+
+  const studentFolders = DriveApp.getFolderById(client.studentsFolderId).getFolders();
+  const studentsDataCell = clientSheet.getRange(clientRow, 17);
+  const studentsValue = studentsDataCell.getValue();
+  const students = JSON.parse(studentsValue);
+
+  while (studentFolders.hasNext()) {
+    const studentFolder = studentFolders.next();
+    const studentFolderId = studentFolder.getId();
+    const studentFolderName = studentFolder.getName();
+    
+    if (!studentFolderName.includes('Ξ')) {  
+      const studentDataExists = students.some(obj => obj.folderId===studentFolderId);
+      if (studentDataExists) {
+        Logger.log(`${studentFolderName} found with folder ID ${studentFolderId}`);
+      }
+      else {
+        Logger.log(`Adding ${studentFolderName} to students data`);
         const adminFiles = studentFolder.getFiles();
-        let satAdminSsId, satStudentSsId, satSubfolder;
-
-        Logger.log('studentFolder: ' + studentFolder);
+        let satAdminSsId, satStudentSsId;
 
         while (adminFiles.hasNext()) {
           const adminFile = adminFiles.next();
@@ -1447,87 +1538,106 @@ function updateClientFolders() {
           }
         }
 
-        const studentSubfolders = studentFolder.getFolders();
-
-        while (studentSubfolders.hasNext()) {
-          const studentSubfolder = studentSubfolders.next();
-          const studentSubfolderName = studentSubfolder.getName();
-
-          if (studentSubfolderName.includes(studentFolderName) || studentSubfolderName === 'Student') {
-            if (studentSubfolderName.includes('SAT')) {
-              satSubfolder = studentSubfolder;
-              break;
-            }
-            else if (studentSubfolder.getFoldersByName('_SAT').hasNext()) {
-              satSubfolder = studentSubfolder.getFoldersByName('_SAT').next();
-              break;
-            }
-          }
-        }
-
-        let satFiles;
-        if (satSubfolder) {
-          satFiles = satSubfolder.getFiles();
-        }
-        else {
-          Logger.log('SAT subfolder not found for ' + studentFolderName);
-        }
-
-        while (satFiles.hasNext()) {
-          const satFile = satFiles.next();
-
-          if (satFile.getName().toLowerCase().includes('sat student')) {
-            satStudentSsId = satFile.getId();
-            break;
-          }
+        if (satAdminSsId) {
+          satStudentSsId = SpreadsheetApp.openById(satAdminSsId).getSheetByName('Student responses').getRange('B1').getValue();
         }
 
         students.push({
           'name': studentFolderName,
+          'folderId': studentFolderId,
           'satAdminSsId': satAdminSsId,
           'satStudentSsId': satStudentSsId,
-          'studentFolder': studentFolder,
-          'satSubfolderId': satSubfolder.getId()
+          'updateComplete': false
         })
       }
-
-      const qbResArrayVal = '=let(testCodes,\'Practice test data\'!$E$2:E, testResponses,\'Practice test data\'!$K$2:$K,\n' +
-      '    worksheetRanges,vstack(\'Reading & Writing\'!A10:C,\'Reading & Writing\'!E10:G,\'Reading & Writing\'!I10:K,\n' +
-      '                           Math!A13:C,Math!E13:G,Math!I13:K,\'SLT Uniques\'!A5:C,\'SLT Uniques\'!E5:G),\n' +
-      '    z,counta(A2:A),\n' +
-      '    map(offset(G1,1,0,z),offset(B1,1,0,z),offset(E1,1,0,z),offset(A1,1,0,z),\n' +
-      '    lambda(    skillCode,       subject,         difficulty,      id,\n' +
-      '           if(or(left(skillCode,3)="SAT",left(skillCode,4)="PSAT"),\n' +
-      '           xlookup(skillCode,testCodes,testResponses,"not found"),\n' +
-      '           vlookup(id,worksheetRanges,3,FALSE)))))'
-
-      const sltFilterR1C1 = "=FILTER({'Question bank data'!R2C1:C1,'Question bank data'!R2C7:C7},left('Question bank data'!R2C7:C7,3)=\"SLT\",'Question bank data'!R2C2:C2=R[-3]C[1])"
-
-
-      // iterate through all folders in Students including template folder
-      for (student of students) {
-        Logger.log('Starting student: ' + student['name'] + ' ' + student['satAdminSsId'] + ' ' + student['satStudentSsId'] + ' ' + student['satSubfolderId']);
-        const adminSs = SpreadsheetApp.openById(student['satAdminSsId']);
-        adminSs.getSheetByName('Question bank data').getRange('I2').setValue(qbResArrayVal);
-        adminSs.getSheetByName('Rev sheet backend').getRange('U5').setValue(client['satAdminDataId']);
-        adminSs.getSheetByName('SLT Uniques').getRange('B5').setValue('');
-        adminSs.getSheetByName('SLT Uniques').getRange('F5').setValue('');
-        adminSs.getSheetByName('SLT Uniques').getRange('A5').setValue(sltFilterR1C1);
-        adminSs.getSheetByName('SLT Uniques').getRange('E5').setValue(sltFilterR1C1);
-
-        const studentSs = SpreadsheetApp.openById(student['satStudentSsId']);
-        studentSs.getSheetByName('Rev sheets').getRange('B5:B').setFontWeight('bold');
-        studentSs.getSheetByName('Rev sheets').getRange('F5:F').setFontWeight('bold');
-        modifyTestFormatRules(client['satAdminSsId']);
-      }
-
-      // updateSatDataSheets(client['satAdminDataId'], client['satStudentDataId'], client['satAdminSsId'], client['satStudentSsId']);
-      // updateConceptRows(client['satAdminSsId'], true, true);
-      // updateConceptRows(client['satStudentSsId'], false, false);
-      Logger.log(index + '. ' + client['name'] + ' complete');
     }
+
+    // only for clients with grouped student folders
+    // const subfolders = studentFolder.getFolders();
+    // while (subfolders.hasNext()) {
+    //   const subfolder = subfolders.next();
+    //   const subfiles = subfolder.getFiles();
+
+    //   while (subfiles.hasNext()) {
+    //     const subfile = subfiles.next();
+    //     if (subfile.getName().toLowerCase().includes('sat admin')) {
+    //       satAdminSsId = subfile.getId();
+    //       break;
+    //     }
+    //   }
+
+    //   if (satAdminSsId) {
+    //     satStudentSsId = SpreadsheetApp.openById(satAdminSsId).getSheetByName('Student responses').getRange('B1').getValue();
+    //   }
+
+    //   students.push({
+    //     'name': subfolder.getName(),
+    //     'satAdminSsId': satAdminSsId,
+    //     'satStudentSsId': satStudentSsId
+    //   })
+    // }
   }
+
+  const studentFolderCount = students.length
+  clientSheet.getRange(clientRow, 17).setValue(JSON.stringify(students));
+  clientSheet.getRange(clientRow, 16).setValue(studentFolderCount);
+
+  return students;
 }
+
+
+function continueClientFolderUpdate() {
+  const startIndex = PropertiesService.getScriptProperties().getProperty('startIndex');
+  const isClientUpdateRunning = isFunctionRunning('continueClientFolderUpdate');
+  Logger.log(`isClientUpdateRunning ${isClientUpdateRunning}`)
+  
+  while (!isClientUpdateRunning) {
+    updateClientFolders();
+  }
+
+  // if (startIndex === 2) {
+  //   PropertiesService.getScriptProperties().setProperty('startIndex', 0);
+
+  //   const triggers = ScriptApp.getProjectTriggers();
+
+  //   for (let t = 0; t < triggers.length; t++) {
+  //     const trigger = triggers[t];
+      
+  //     if (trigger.getHandlerFunction() === 'continueClientFolderUpdate') {
+  //       ScriptApp.deleteTrigger(trigger);
+  //       Logger.log(`Removed trigger for ${trigger.getHandlerFunction()}`);
+  //     }
+  //   }
+  // }
+}
+
+function isFunctionRunning(functionName) {
+  const url = "https://script.googleapis.com/v1/processes";
+  const options = {
+    method: "get",
+    headers: {
+      Authorization: "Bearer " + ScriptApp.getOAuthToken(),
+    },
+  };
+
+  const response = UrlFetchApp.fetch(url, options);
+  const processes = JSON.parse(response.getContentText()).processes;
+  const now = new Date();
+
+// Check if any processes with the specified functionName were started within the past 6 minutes
+  const isRunning = processes.some(process => {
+    const processStartTime = new Date(process.startTime);
+    const timeDifference = (now - processStartTime) / (1000 * 60); // Convert difference to minutes
+    if (process.functionName === functionName && process.processStatus === "RUNNING" && timeDifference <= 6 && timeDifference > 0.1) {
+      Logger.log(`process.functionName: ${process.functionName}, process.processStatus: ${process.processStatus}, process.startTime ${process.startTime}`)
+    }
+    return process.functionName === functionName && process.processStatus === "RUNNING" && timeDifference <= 6 && timeDifference > 0.1;
+  });
+
+  // const isRunning = processes.some(process => process.processStatus === "RUNNING" && process.functionName === functionName);
+  return isRunning;
+}
+
 
 function getStudentFolderCount(studentsFolderId) {
   const studentFolder = DriveApp.getFolderById(studentsFolderId);
@@ -1539,7 +1649,7 @@ function getStudentFolderCount(studentsFolderId) {
     studentFolderCount ++;
   }
 
-  return studentFolderCount - 1;
+  return studentFolderCount;
 }
 
 function updateStudentFolder(studentFolder) {
@@ -1547,293 +1657,36 @@ function updateStudentFolder(studentFolder) {
   Logger.log(studentFolderName + ' started');
 }
 
-function updateSatDataSheets(satAdminDataSsId, satStudentDataSsId, satAdminSsId, satStudentSsId) {
+function updateSatDataSheets(satAdminDataSsId, satStudentDataSsId) {
+
+  const dataLatestDate = '03/2025';
+  
   const satAdminDataSs = SpreadsheetApp.openById(satAdminDataSsId);
   const satStudentDataSs = SpreadsheetApp.openById(satStudentDataSsId);
-  const satAdminSs = SpreadsheetApp.openById(satAdminSsId);
-  const satStudentSs = SpreadsheetApp.openById(satStudentSsId);
+  let newAdminQbSheet = satAdminDataSs.getSheetByName('Question bank data updated ' + dataLatestDate);
+  let newAdminPtSheet = satAdminDataSs.getSheetByName('Practice test data updated ' + dataLatestDate);
+  let newStudentQbSheet = satStudentDataSs.getSheetByName('Question bank data updated ' + dataLatestDate);
+  let newStudentPtSheet = satStudentDataSs.getSheetByName('Practice test data updated ' + dataLatestDate);
 
-  if (!satAdminDataSs.getSheetByName('Question bank data updated 03/2025')) {
-    satAdminDataSs.getSheetByName('Question bank data').copyTo(satAdminDataSs).setName('Question bank data updated 03/2025').getRange('A1').setValue('=importrange("1XoANqHEGfOCdO1QBVnbA3GH-z7-_FMYwoy7Ft4ojulE", "Question bank data updated 03/2025!A1:H10000")');
+  if (!newAdminQbSheet) {
+    newAdminQbSheet = satAdminDataSs.getSheetByName('Question bank data').copyTo(satAdminDataSs).setName('Question bank data updated ' + dataLatestDate);
   }
-  if (!satAdminDataSs.getSheetByName('Practice test data updated 03/2025')) {
-    satAdminDataSs.getSheetByName('Practice test data').copyTo(satAdminDataSs).setName('Practice test data updated 03/2025').getRange('A1').setValue('=importrange("1XoANqHEGfOCdO1QBVnbA3GH-z7-_FMYwoy7Ft4ojulE", "Practice test data updated 03/2025!A1:J10000")');
+  if (!newAdminPtSheet) {
+    newAdminPtSheet = satAdminDataSs.getSheetByName('Practice test data').copyTo(satAdminDataSs).setName('Practice test data updated ' + dataLatestDate);
   }
+  if (!newStudentQbSheet) {
+    newStudentQbSheet = satStudentDataSs.getSheetByName('Question bank data').copyTo(satStudentDataSs).setName('Question bank data updated ' + dataLatestDate);
+  }
+  if (!newStudentPtSheet) {
+    newStudentPtSheet = satStudentDataSs.getSheetByName('Practice test data').copyTo(satStudentDataSs).setName('Practice test data updated ' + dataLatestDate);
+  }
+
+  newAdminQbSheet.getRange('A1').setValue('=importrange("1XoANqHEGfOCdO1QBVnbA3GH-z7-_FMYwoy7Ft4ojulE", "Question bank data updated ' + dataLatestDate + '!A1:H10000")');
+  newAdminPtSheet.getRange('A1').setValue('=importrange("1XoANqHEGfOCdO1QBVnbA3GH-z7-_FMYwoy7Ft4ojulE", "Practice test data updated ' + dataLatestDate + '!A1:J10000")');
   Logger.log('sat admin data sheets updated')
-  if (!satStudentDataSs.getSheetByName('Question bank data updated 03/2025')) {
-    satStudentDataSs.getSheetByName('Question bank data').copyTo(satStudentDataSs).setName('Question bank data updated 03/2025').getRange('A1').setValue('=importrange("' + client['satAdminDataId'] + '", "Question bank data updated 03/2025!A1:G10000")');
-  }
-  if (!satStudentDataSs.getSheetByName('Practice test data updated 03/2025')) {
-    satStudentDataSs.getSheetByName('Practice test data').copyTo(satStudentDataSs).setName('Practice test data updated 03/2025').getRange('A1').setValue('=importrange("' + client['satAdminDataId'] + '", "Practice test data updated 03/2025!A1:E10000")');
-  }
+  newStudentQbSheet.getRange('A1').setValue('=importrange("' + satAdminDataSsId + '", "Question bank data updated ' + dataLatestDate + '!A1:G10000")');
+  newStudentPtSheet.getRange('A1').setValue('=importrange("' + satAdminDataSsId + '", "Practice test data updated ' + dataLatestDate + '!A1:E10000")');
   Logger.log('sat student data sheets updated')
-  satAdminSs.getSheetByName('Question bank data').getRange('A1').setValue('=importrange(\'Rev sheet backend\'!U5, "Question bank data updated 03/2025!A1:H10000")');
-  satAdminSs.getSheetByName('Practice test data').getRange('A1').setValue('=importrange(\'Rev sheet backend\'!U5, "Practice test data updated 03/2025!A1:J10000")');
-  Logger.log('sat admin template sheets updated')
-  satStudentSs.getSheetByName('Question bank data').getRange('A1').setValue('=importrange("' + satStudentDataSsId + '", "Question bank data updated 03/2025!A1:G10000")');
-  satStudentSs.getSheetByName('Practice test data').getRange('A1').setValue('=importrange("' + satStudentDataSsId + '", "Practice test data updated 03/2025!A1:E10000")');
-  Logger.log('sat student template sheets updated');
-}
-
-function updateConceptRows(answerSsId = '1sdnVpuX8mVkpTdrqZgwz7zph1NdFpueX6CP45JHiNP8', isAdminSs = true, isLinkedToStudentSheet=true) {
-  const qbDataSh = SpreadsheetApp.openById('1XoANqHEGfOCdO1QBVnbA3GH-z7-_FMYwoy7Ft4ojulE').getSheetByName('Question bank data updated 03/2025');
-  const ss = SpreadsheetApp.openById(answerSsId);
-  const qbDataVals = qbDataSh.getRange(1,1, getLastFilledRow(qbDataSh, 1), 15).getValues();
-
-  const subjectData = [
-    {
-      'name': 'Reading & Writing',
-      'rowOffset': 7,
-    },
-    {
-      'name': 'Math',
-      'rowOffset': 10
-    }
-  ]
-
-  for (subject of subjectData) {
-    const sh = ss.getSheetByName(subject['name']);
-    const conceptColVals = sh.getRange(subject['rowOffset'], 2, sh.getMaxRows() - subject['rowOffset']).getValues();
-    const conceptData = [];
-    const modifications = [];
-    let id = 1;
-
-    for (let x = 0; x < conceptColVals.length; x++) {
-      if (cats.includes(conceptColVals[x][0])) {
-        var row = x + subject['rowOffset'];
-        conceptData.push({
-          'name': conceptColVals[x][0],
-          'row': row,                        // row 1-indexed
-          'id': id
-        });
-        id ++;
-      }
-    }
-
-    for (concept of conceptData) {
-      for (let level = 1; level < 4; level ++) {
-        let count = 0;
-        for (let r = 0; r < qbDataVals.length; r++) {
-          if (qbDataVals[r][3].toLowerCase() === concept['name'].toLowerCase() && Number(qbDataVals[r][4]) === level && qbDataVals[r][6].slice(0,3) !== 'SAT' && qbDataVals[r][6].slice(0,4) !== 'PSAT' && qbDataVals[r][6].slice(0,3) !== 'SLT') {
-            count ++;
-          }
-        }
-        concept['level' + level] = count;
-      }
-    }
-    
-    for (concept of conceptData) {
-      const rowsNeeded = Math.max(concept['level1'], concept['level2'], concept['level3']) + 4;
-      const nextConcept = conceptData.find(c => c.id === concept['id'] + 1);
-      let rowsToAdd, endRow;
-
-      if (nextConcept) {
-        endRow = nextConcept.row;
-      }
-      else {
-        Logger.log(concept['name'] + ' is last concept');
-        endRow = sh.getMaxRows() + 1;
-      }
-      rowsToAdd = concept['row'] + rowsNeeded - endRow;
-
-      if (rowsToAdd > 0) {
-        modifications.push({
-          'position': endRow - 1,
-          'rows': rowsToAdd
-        });
-        Logger.log('Adding ' + rowsToAdd + ' to ' + concept['name'])
-      }
-      else if (rowsToAdd < 0) {
-        modifications.push({
-          'position': concept['row'] + rowsNeeded + rowsToAdd - 1, // rowsToAdd negative
-          'rows': rowsToAdd
-        });
-        Logger.log('Removing ' + -1 * rowsToAdd + ' from ' + concept['name'])
-      }
-    }
-    modifyRowsAtPositions(sh, modifications);
-
-    const shNewRange = sh.getRange(subject['rowOffset'], 1, sh.getMaxRows() - subject['rowOffset'], sh.getMaxColumns());
-    shNewRange.setNumberFormat('@STRING@');
-    const shNewVals = shNewRange.getValues();
-    const shFormulas = shNewRange.getFormulas();
-    const newConceptRows = shNewVals.map(row => row[1]);
-
-    for (let level = 1; level < 4; level++) {
-      const levelStartCol = (level - 1) * 4;
-
-      for (concept of conceptData) {
-
-        // Since newConceptRows starts at subject['rowOffset'] and includes blanks,
-        // concept['index'] is 0-indexed position of concept name starting at 1st concept
-        concept['index'] = newConceptRows.indexOf(concept['name']);
-
-        const levelRow = concept['index'] + 2;
-        shNewVals[levelRow][levelStartCol + 1] = shFormulas[levelRow][levelStartCol + 1];
-
-        for (qNum = 1; qNum <= concept['level' + level]; qNum++) {
-          const qRow = levelRow + qNum;
-  
-          // Find the matching row in Question bank data
-          const dataRow = qbDataVals.find(row => row[3].toLowerCase() === concept['name'].toLowerCase() && Number(row[4]) === level && Number(row[5]) === qNum);
-          shNewVals[qRow] = []
-          shNewVals[qRow][levelStartCol] = dataRow[0];
-          shNewVals[qRow][levelStartCol + 1] = level + '.' + qNum;
-        }
-      }
-
-      const outputValues = [];
-      for (let i = 0; i < shNewVals.length; i++) {
-        outputValues.push([
-          shNewVals[i][levelStartCol], 
-          shNewVals[i][levelStartCol + 1]
-        ]);
-      }
-
-      sh.getRange(subject['rowOffset'], levelStartCol + 1, outputValues.length, 2).setValues(outputValues);
-      sh.getRange(subject['rowOffset'], levelStartCol + 2, outputValues.length).setHorizontalAlignment('center').setFontWeight('bold')
-    }
-
-
-    const answerFormulaR1C1 = '=let(worksheetNum,R[0]C[-1],if(worksheetNum="","", if(iserror(search(".",worksheetNum)),"", let(id,R[0]C[-2], xlookup(id,\'Student responses\'!R4C1:C1,\'Student responses\'!R4C8:C8,"not found")))))'
-    const correctedFormulaR1C1 = '=let(worksheetNum,R[0]C[-2],if(worksheetNum="","", if(left(worksheetNum,5)="Level","Corrected", if(iserror(search(".",worksheetNum)), "", let(id,R[0]C[-3], result,xlookup(id,\'Question bank data\'!R2C1:C1,\'Question bank data\'!R2C8:C8,"not found"), if(result=R[0]C[-1],"",result))))))'
-    
-    if (isAdminSs) {
-      for (let level = 1; level < 4; level++) {
-        const answerCol = 4 * (level - 1) + 3;
-        if (isLinkedToStudentSheet) {
-          const answerRange = sh.getRange(subject['rowOffset'] + 3, answerCol, sh.getMaxRows() - subject['rowOffset'] - 3);
-          const answerVals = answerRange.getValues();
-
-          for (let r = 0; r < answerVals.length; r ++) {
-            let startRow = subject['rowOffset'] + 3 + r;
-            let numRows = 0;
-
-            // Set R1C1 formula for consecutive blank rows, leave values as is
-            while (r < answerVals.length && answerVals[r][0] === '') {
-              numRows ++;
-              r ++;
-            }
-            if (numRows > 0) {
-              sh.getRange(startRow, answerCol, numRows).setFormulaR1C1(answerFormulaR1C1);
-              Logger.log('Set formulas for col ' + answerCol + ' rows ' + startRow + '-' + (startRow + numRows));
-            }
-          }
-          answerRange.setHorizontalAlignment('center').setFontWeight('normal');
-        }
-        const correctedRange = sh.getRange(subject['rowOffset'] + 3, answerCol + 1, sh.getMaxRows() - subject['rowOffset'] - 3);
-        correctedRange.setHorizontalAlignment('center').setFontWeight('normal').setFormulaR1C1(correctedFormulaR1C1);
-      }
-    }
-
-    for (concept of conceptData) {
-      const headerStartRow = concept['index'] + subject['rowOffset'];
-      sh.getRange(headerStartRow, 2, 1, 11).merge().setHorizontalAlignment('left');
-      sh.getRange(headerStartRow, 2, 3, 11).setFontWeight('bold');
-    }
-    
-    modifyConceptFormatRules(sh, isAdminSs);
-  }
-}
-
-function modifyRowsAtPositions(sheet, modifications) {
-  // Sort modifications in descending order of positions to avoid shifting issues
-  modifications.sort((a, b) => b.position - a.position);
-
-  // Apply each modification
-  modifications.forEach(mod => {
-    if (mod.rows > 0) {
-      // Insert rows if `rows` is positive
-      sheet.insertRows(mod.position, mod.rows);
-    } else if (mod.rows < 0) {
-      // Delete rows if `rows` is negative
-      sheet.deleteRows(mod.position, Math.abs(mod.rows));
-    }
-  });
-  Logger.log('Row modifications complete')
-}
-
-function modifyConceptFormatRules(sheet, isAdminSs) {
-  const alertColor = '#cc0000';
-  const darkGreen = '#6aa84f';
-  const lightGreen = '#b7e1cd';
-  const darkRed = '#e06666';
-  const lightRed = '#f4c7c3';
-  const grey = '#f3f3f3';
-  const yellow = '#fff2cc';
-  // Get all existing conditional formatting rules
-  var rules = sheet.getConditionalFormatRules();
-  
-  // Create an array to store updated rules
-  var updatedRules = [];
-  
-  // Iterate through each rule
-  for (var i = 0; i < rules.length; i++) {
-    var rule = rules[i];
-    var bgColor = rule.getBooleanCondition().getBackgroundObject().asRgbColor().asHexString();
-    
-    if (bgColor === alertColor) {
-      // Modify the rule
-      rule = SpreadsheetApp.newConditionalFormatRule()
-        .setRanges([sheet.getRange('A10:A'), sheet.getRange('E10:E'), sheet.getRange('I10:I')])
-        .whenFormulaSatisfied('=and(len(A10)<>8,B10<>"",B9<>"")')
-        .setBackground(alertColor)
-        .setFontColor('#ffffff')
-        .build();
-    }
-    else if (bgColor === yellow) {
-      rule = SpreadsheetApp.newConditionalFormatRule()
-        .setRanges([sheet.getRange('C10:C'), sheet.getRange('G10:G'), sheet.getRange('K10:K')])
-        .whenFormulaSatisfied('=and(or(C10="",C10="-"),B10<>"",B9<>"")')
-        .setBackground(yellow)
-        .build();
-    }
-
-    if (isAdminSs) {  
-      if (bgColor === darkGreen) {
-        rule = SpreadsheetApp.newConditionalFormatRule()
-          .setRanges([sheet.getRange('C10:C'), sheet.getRange('G10:G'), sheet.getRange('K10:K')])
-          .whenFormulaSatisfied('=and(C10<>"",D10="",isformula(C10))')
-          .setBackground(darkGreen)
-          .setFontColor('#ffffff')
-          .build();
-      }
-      else if (bgColor === lightGreen) {
-        rule = SpreadsheetApp.newConditionalFormatRule()
-          .setRanges([sheet.getRange('C10:C'), sheet.getRange('G10:G'), sheet.getRange('K10:K')])
-          .whenFormulaSatisfied('=and(C10<>"",D10="",B9<>"")')
-          .setBackground(lightGreen)
-          .build();
-      }
-      else if (bgColor === darkRed) {
-        rule = SpreadsheetApp.newConditionalFormatRule()
-          .setRanges([sheet.getRange('C10:C'), sheet.getRange('G10:G'), sheet.getRange('K10:K')])
-          .whenFormulaSatisfied('=and(C10<>"",D10<>"",isformula(C10),B9<>"")')
-          .setBackground(darkRed)
-          .setFontColor('#ffffff')
-          .build();
-      }
-      else if (bgColor === lightRed) {
-        rule = SpreadsheetApp.newConditionalFormatRule()
-          .setRanges([sheet.getRange('C10:C'), sheet.getRange('G10:G'), sheet.getRange('K10:K')])
-          .whenFormulaSatisfied('=and(C10<>"",D10<>"",B9<>"")')
-          .setBackground(lightRed)
-          .build();
-      }
-      else if (bgColor === grey) {
-        rule = SpreadsheetApp.newConditionalFormatRule()
-          .setRanges([sheet.getRange('C10:C'), sheet.getRange('G10:G'), sheet.getRange('K10:K')])
-          .whenFormulaSatisfied('=and(not(isformula(C10)),C10="",B10<>"",B9<>"")')
-          .setBackground(grey)
-          .build();
-      }
-    }
-    
-    updatedRules.push(rule); // Add updated or existing rule
-  }
-  
-  // Reapply all rules to the sheet
-  sheet.setConditionalFormatRules(updatedRules);
 }
 
 function modifyTestFormatRules(satAnswerSheetId='1FW_3GIWmytdrgBdfSuIl2exy9hIAnQoG8IprF8k9uEY') {
@@ -1842,53 +1695,98 @@ function modifyTestFormatRules(satAnswerSheetId='1FW_3GIWmytdrgBdfSuIl2exy9hIAnQ
 
   for (test of tests) {
     const sh = ss.getSheetByName(test);
-    var rules = sh.getConditionalFormatRules();
-    const alertColor = '#cc0000';
-    const updatedRules = [];
-    
-    for (var i = 0; i < rules.length; i++) {
-      var rule = rules[i];
-      var bgColor = rule.getBooleanCondition().getBackgroundObject().asRgbColor().asHexString();
+    if (sh) {
+      var rules = sh.getConditionalFormatRules();
+      const alertColor = '#cc0000';
+      const updatedRules = [];
       
-      if (bgColor !== alertColor) {
-        updatedRules.push(rule);
+      for (var i = 0; i < rules.length; i++) {
+        var rule = rules[i];
+        var bgColor = rule.getBooleanCondition().getBackgroundObject().asRgbColor().asHexString();
+        
+        if (bgColor !== alertColor) {
+          updatedRules.push(rule);
+        }
       }
+
+      const rwRule = SpreadsheetApp.newConditionalFormatRule()
+      .setRanges([sh.getRange('A5:A31'), sh.getRange('E5:E31'), sh.getRange('I5:I31')])
+      .whenFormulaSatisfied('=A5<>$B$2&" "&B5')
+      .setBackground(alertColor)
+      .setFontColor('#ffffff')
+      .build();
+
+      const mathRule = SpreadsheetApp.newConditionalFormatRule()
+      .setRanges([sh.getRange('A36:A57'), sh.getRange('E36:E57'), sh.getRange('I36:I57')])
+      .whenFormulaSatisfied('=A36<>$B$33&" "&B36')
+      .setBackground(alertColor)
+      .setFontColor('#ffffff')
+      .build();
+    
+      updatedRules.push(rwRule, mathRule);
+      sh.setConditionalFormatRules(updatedRules);
     }
-
-    const rwRule = SpreadsheetApp.newConditionalFormatRule()
-    .setRanges([sh.getRange('A5:A31'), sh.getRange('E5:E31'), sh.getRange('I5:I31')])
-    .whenFormulaSatisfied('=A5<>$B$2&" "&B5')
-    .setBackground(alertColor)
-    .setFontColor('#ffffff')
-    .build();
-
-    const mathRule = SpreadsheetApp.newConditionalFormatRule()
-    .setRanges([sh.getRange('A36:A57'), sh.getRange('E36:E57'), sh.getRange('I36:I57')])
-    .whenFormulaSatisfied('=A36<>$B$33&" "&B36')
-    .setBackground(alertColor)
-    .setFontColor('#ffffff')
-    .build();
-  
-    updatedRules.push(rwRule, mathRule);
-    sh.setConditionalFormatRules(updatedRules);
   }
-  Logger.log('Test sheets formatting updated');
+  Logger.log('Test sheets formatting updated');  
 }
 
 
 // Scheduled recurring functions
 
-function findNewScoreReports(parentFolderId = '1_qQNYnGPFAePo8UE5NfX72irNtZGF5kF') {
-  if (typeof parentFolderId == 'object') {
-    parentFolderId = '1_qQNYnGPFAePo8UE5NfX72irNtZGF5kF';
+function updateOPTStudentFolderData() {
+  const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
+  const clientSheet = clientDataSs.getSheets()[0];
+  const teamDataSheet = clientDataSs.getSheetByName('Team OPT');
+
+  const teamParentFolder = DriveApp.getFolderById('1tSKajFOa_EVUjH8SKhrQFbHSjDmmopP9');
+  const teamFolders = teamParentFolder.getFolders();
+  const teamData = [];
+  const teamIndex = 0;
+
+  const myStudentFolderData = {
+    'index': 0,
+    'name': 'Open Path Tutoring',
+    'studentsFolderId': clientSheet.getRange(2, 15).getValue()
   }
 
-  var parentFolder = DriveApp.getFolderById(parentFolderId);
-  var fileList = getAnalysisFiles(parentFolder, (n = 3));
-  Logger.log(fileList);
+  const myStudents = updateStudentFolderData(myStudentFolderData, '1_qQNYnGPFAePo8UE5NfX72irNtZGF5kF');
+  clientSheet.getRange(2, 17).setValue(JSON.stringify(myStudents));
+  
+  while (teamFolders.hasNext()) {
+    const teamFolder = teamFolders.next();
+    const teamFolderName = teamFolder.getName();
+    const teamFolderId = teamFolder.getId();
+    teamData.push({
+      'index': teamIndex,
+      'name': teamFolderName,
+      'studentsFolderId': teamFolderId
+    })
+
+    teamDataSheet.getRange(teamIndex + 2,1,1,4).setValues([[teamIndex, teamFolderName, teamFolderId]]);
+    teamIndex ++;
+  }
+}
+
+
+function findNewScoreReports() {
+  const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
+  const clientSheet = clientDataSs.getSheets()[0];
+  const myStudentDataValue = clientSheet.getRange(2, 17).getValue();
+  const students = JSON.parse(myStudentDataValue);
+  const fileList = [];
+
+  // var parentFolder = DriveApp.getFolderById(myStudentFolderData.folderId);
+  // const fileList = getAnalysisFiles(parentFolder, (n = 3));
+
+  for (student of students) {
+    if (student.satAdminSsId && !student.name.toLowerCase().includes('template')) {
+      fileList.push(DriveApp.getFileById(student.satAdminSsId));
+    }
+  }
 
   // Sort by most recently updated first
   fileList.sort((a, b) => b.getLastUpdated() - a.getLastUpdated());
+  Logger.log(fileList);
 
   analysisSsSearch(fileList);
 }
