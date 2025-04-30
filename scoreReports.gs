@@ -360,12 +360,13 @@ async function sendPdfScoreReport(spreadsheetId, studentName, scoresUpToCurrent 
     const currentScore = scoresUpToCurrent.slice(-1)[0];
     const pdfName = 'SAT answer analysis - ' + studentName + ' - ' + currentScore.test + '.pdf'
     const answerSheetId = spreadsheet.getSheetByName(currentScore.test).getSheetId();
-    const analysisSheetId = spreadsheet.getSheetByName(currentScore.test + ' analysis').getSheetId()
+    const analysisSheetId = spreadsheet.getSheetByName(currentScore.test + ' analysis').getSheetId();
+
     const answerFileId = savePdfSheet(spreadsheetId, answerSheetId, studentName);
     const analysisFileId = savePdfSheet(spreadsheetId, analysisSheetId, studentName);
 
-    const cdnjs = "https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js";
-    eval(UrlFetchApp.fetch(cdnjs).getContentText());
+    const unpkg = 'https://unpkg.com/pdf-lib/dist/pdf-lib.min.js';
+    eval(UrlFetchApp.fetch(unpkg).getContentText());
     const pdfDoc = await PDFLib.PDFDocument.create();
 
     for (fileId of [answerFileId, analysisFileId]) {
@@ -376,9 +377,8 @@ async function sendPdfScoreReport(spreadsheetId, studentName, scoresUpToCurrent 
     }
 
     const bytes = await pdfDoc.save();
-    const mergedFile  = DriveApp.createFile(Utilities.newBlob([...new Int8Array(bytes)], MimeType.PDF, pdfName));
-    const mergedBlob = mergedFile.getBlob()
-
+    const mergedBlob = Utilities.newBlob([...new Int8Array(bytes)]);
+    const mergedFile  = DriveApp.createFile(mergedBlob, MimeType.PDF, pdfName);
 
 
     // var url_base = 'https://docs.google.com/spreadsheets/d/' + spreadsheet.getId() + '/';
@@ -483,12 +483,11 @@ function savePdfSheet(spreadsheetId, sheetId, studentName) {
     var spreadsheet = spreadsheetId ? SpreadsheetApp.openById(spreadsheetId) : SpreadsheetApp.getActiveSpreadsheet();
     var spreadsheetId = spreadsheetId ? spreadsheetId : spreadsheet.getId();
 
-    var url_base = 'https://docs.google.com/spreadsheets/d/' + spreadsheet.getId() + '/';
+    var url_base = 'https://docs.google.com/spreadsheets/d/' + spreadsheetId + '/export';
     var url_ext =
-      'export?exportFormat=pdf&format=pdf' + //export as pdf
+      '?format=pdf' + //export as pdf
       // Print either the entire Spreadsheet or the specified sheet if optSheetId is provided
-      + (sheetId ? ('&gid=' + sheetId) : ('&id=' + spreadsheetId)) +
-      // '&id=' + spreadsheetId +
+      (sheetId ? ('&gid=' + sheetId) : ('&id=' + spreadsheetId)) +
       // following parameters are optional...
       '&size=letter' + // paper size
       '&portrait=true' + // orientation, false for landscape
@@ -515,8 +514,6 @@ function savePdfSheet(spreadsheetId, sheetId, studentName) {
     const blob = response.getBlob().setName(pdfName + '.pdf');
     const rootFolder = DriveApp.getRootFolder();
     const pdfSheet = rootFolder.createFile(blob);
-    
-    Logger.log(pdfSheet.getId());
 
     return pdfSheet.getId();
   }
