@@ -467,6 +467,31 @@ function updateClientFolders() {
   }
 }
 
+function continueClientFolderUpdate() {
+  const startIndex = PropertiesService.getScriptProperties().getProperty('startIndex');
+  const isClientUpdateRunning = isFunctionRunning('continueClientFolderUpdate');
+  Logger.log(`isClientUpdateRunning ${isClientUpdateRunning}`)
+  
+  while (!isClientUpdateRunning) {
+    updateClientFolders();
+  }
+
+  // if (startIndex === 2) {
+  //   PropertiesService.getScriptProperties().setProperty('startIndex', 0);
+
+  //   const triggers = ScriptApp.getProjectTriggers();
+
+  //   for (let t = 0; t < triggers.length; t++) {
+  //     const trigger = triggers[t];
+      
+  //     if (trigger.getHandlerFunction() === 'continueClientFolderUpdate') {
+  //       ScriptApp.deleteTrigger(trigger);
+  //       Logger.log(`Removed trigger for ${trigger.getHandlerFunction()}`);
+  //     }
+  //   }
+  // }
+}
+
 function updateStudentFolderData(
   client={
     'index': null,

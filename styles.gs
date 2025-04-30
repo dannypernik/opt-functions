@@ -100,7 +100,7 @@ function styleClientSheets(satSheetIds, actSheetIds, customStyles) {
     } else if (ssName.includes('SAT')) {
       for (let j in ss.getSheets()) {
         const sh = ss.getSheets()[j];
-        const shRange = sh.getDataRange();
+        const shRange = sh.getRange(1,1, sh.getMaxRows(), sh.getMaxColumns());
         const shName = sh.getName();
         const shNameLower = shName.toLowerCase();
 

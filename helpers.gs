@@ -116,16 +116,16 @@ function getOPTPermissionsList(id) {
     .map(function (e) {
       return e.getEmail();
     });
-  var emails = '';
+  var emails = [];
 
   for (var i = 0; i < editors.length; i++) {
     // Only add openpathtutoring.com emails to email list
     if (editors[i].includes('openpathtutoring.com')) {
-      emails += editors[i] + ',';
+      emails.push(editors[i]);
     }
   }
 
-  return emails;
+  return emails.join();
 }
 
 function getSubFolderIdsByFolderId(folderId, result = []) {
@@ -153,6 +153,32 @@ function getTestCodes() {
   const testCodes = testCodeCol.filter((x, i, a) => a.indexOf(x) == i);
 
   return testCodes;
+}
+
+function isFunctionRunning(functionName) {
+  const url = "https://script.googleapis.com/v1/processes";
+  const options = {
+    method: "get",
+    headers: {
+      Authorization: "Bearer " + ScriptApp.getOAuthToken(),
+    },
+  };
+
+  const response = UrlFetchApp.fetch(url, options);
+  const processes = JSON.parse(response.getContentText()).processes;
+  const now = new Date();
+
+  // Check if any processes with the specified functionName were started within the past 6 minutes
+  const isRunning = processes.some(process => {
+    const processStartTime = new Date(process.startTime);
+    const timeDifference = (now - processStartTime) / (1000 * 60); // Convert difference to minutes
+    if (process.functionName === functionName && process.processStatus === "RUNNING" && timeDifference <= 6 && timeDifference > 0.1) {
+      Logger.log(`process.functionName: ${process.functionName}, process.processStatus: ${process.processStatus}, process.startTime ${process.startTime}`)
+    }
+    return process.functionName === functionName && process.processStatus === "RUNNING" && timeDifference <= 6 && timeDifference > 0.1;
+  });
+
+  return isRunning;
 }
 
 function isDark(hex = '#b6d7a8') {
@@ -236,16 +262,18 @@ function renameFolder(folder, currentName, newName, isStudentFolder = true) {
   }
 }
 
-const showAllExcept = (spreadsheetId='1_nRuW80ewwxEcsHLKy8U8o1nIxKNxxrih-IC-T2suJk', hiddenSheets = []) => {
+const showAllSheetsExcept = (spreadsheetId='1_nRuW80ewwxEcsHLKy8U8o1nIxKNxxrih-IC-T2suJk', sheetNamesToHide = ['RW Rev sheet', 'Math Rev sheet', 'Rev sheet backend']) => {
   SpreadsheetApp.openById(spreadsheetId)
     .getSheets()
     .forEach((sh) => {
       // If sheets are meant to be hidden, leave them hidden
-      if (!hiddenSheets.includes(sh.getName())) {
+      if (sheetNamesToHide.includes(sh.getName())) {
+        sh.hideSheet();
+      }
+      else {
         sh.showSheet();
       }
     });
-  // SpreadsheetApp.flush();
 }
 
 function trashFilesInFolder(folderId='15tJsdeOx_HucjIb6koTaafncTj-e6FO6') {
