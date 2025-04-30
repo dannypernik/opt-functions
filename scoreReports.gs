@@ -13,7 +13,18 @@ function findNewScoreReports(students, folderName) {
 
   for (student of students) {
     if (student.satAdminSsId && !student.name.toLowerCase().includes('template')) {
-      fileList.push(DriveApp.getFileById(student.satAdminSsId));
+      const satAdminFile = DriveApp.getFileById(student.satAdminSsId);
+      const satStudentFile = DriveApp.getFileById(student.satStudentSsId);
+      const lastUpdated = Math.max(satAdminFile.getLastUpdated(), satStudentFile.getLastUpdated());
+      const now = new Date();
+      const msInThreeDays = 3 * 24 * 60 * 60 * 1000;
+
+      if ((now - lastUpdated) <= msInThreeDays) {
+        fileList.push(satAdminFile);
+      }
+      else {
+        Logger.log(`${student.name} unchanged`)
+      }
     }
   }
 
