@@ -375,80 +375,16 @@ function updateClientFolders() {
   for (let client of clients) {
     const startIndex = PropertiesService.getScriptProperties().getProperty('startIndex');
 
-    if (client.index >= startIndex /* 0 is OPT folder */ ) {  
+    if (client.index >= startIndex /* 0 is OPT folder */ ) {
+
+
       const clientRow = client.index + 2;
-      const studentsDataCell = clientSheet.getRange(clientRow, 17);
-      const students = updateStudentFolderData(client, clientSheet);
+      const studentsDataStr = clientSheet.getRange(clientRow, 17).getValue();
+      client.studentsDataJSON = JSON.parse(studentsDataStr);
 
-      const qbResArrayVal = 
-        '=let(testCodes,\'Practice test data\'!$E$2:E, testResponses,\'Practice test data\'!$K$2:$K,\n' +
-        '    worksheetRanges,vstack(\'Reading & Writing\'!A10:C,\'Reading & Writing\'!E10:G,\'Reading & Writing\'!I10:K,\n' +
-        '                           Math!A13:C,Math!E13:G,Math!I13:K,\'SLT Uniques\'!A5:C,\'SLT Uniques\'!E5:G),\n' +
-        '    z,counta(A2:A),\n' +
-        '    map(offset(G1,1,0,z),offset(B1,1,0,z),offset(E1,1,0,z),offset(A1,1,0,z),\n' +
-        '    lambda(    skillCode,       subject,         difficulty,      id,\n' +
-        '           if(or(left(skillCode,3)="SAT",left(skillCode,4)="PSAT"),\n' +
-        '           xlookup(skillCode,testCodes,testResponses,"not found"),\n' +
-        '           vlookup(id,worksheetRanges,3,FALSE)))))'
+      const students = createStudentFolders.findStudentFileIds(client);
 
-      const sltFilterR1C1 = "=FILTER({'Question bank data'!R2C1:C1,'Question bank data'!R2C7:C7},left('Question bank data'!R2C7:C7,3)=\"SLT\",'Question bank data'!R2C2:C2=R[-3]C[1])"
-
-      
-      // iterate through all folders in Students including template folder
-      for (student of students) {
-        if(student.satAdminSsId) {
-          for (ssId of [student.satAdminSsId, student.satStudentSsId]) {
-            const ss = SpreadsheetApp.openById(ssId);
-
-            for (sheetName of ['Reading & Writing', 'Math']) {
-              const sheet = ss.getSheetByName(sheetName);
-
-              sheet.getRange('A10:A').setFontColor('#ffffff');
-              sheet.getRange('E10:E').setFontColor('#ffffff');
-              sheet.getRange('I10:I').setFontColor('#ffffff');
-            }
-          }
-        }
-        
-        // if (student.satAdminSsId && !student.updateComplete) {
-        //   Logger.log('Starting student: ' + student['name'] + ' ' + student['satAdminSsId'] + ' ' + student['satStudentSsId']);
-        //   const adminSs = SpreadsheetApp.openById(student['satAdminSsId']);
-        //   adminSs.getSheetByName('Question bank data').getRange('I2').setValue(qbResArrayVal);
-
-        //   const revBackendSheet = adminSs.getSheetByName('Rev sheet backend');
-        //   if (revBackendSheet) {
-        //     revBackendSheet.getRange('U5').setValue(client['satAdminDataId']);
-        //   }
-        //   Logger.log('Admin values updated')
-        //   adminSs.getSheetByName('SLT Uniques').getRange('B5').setValue('');
-        //   adminSs.getSheetByName('SLT Uniques').getRange('F5').setValue('');
-        //   adminSs.getSheetByName('SLT Uniques').getRange('A5').setValue(sltFilterR1C1);
-        //   adminSs.getSheetByName('SLT Uniques').getRange('E5').setValue(sltFilterR1C1);
-        //   Logger.log('SLT Uniques filter fixed')
-
-        //   const studentSs = SpreadsheetApp.openById(student['satStudentSsId']);
-        //   const studentRevSheet = studentSs.getSheetByName('Rev sheets');
-        //   if (studentRevSheet) {
-        //     studentRevSheet.getRange('B5:B').setFontWeight('bold');
-        //     studentRevSheet.getRange('F5:F').setFontWeight('bold');
-        //   }
-        //   modifyTestFormatRules(student['satAdminSsId']);
-        //   createStudentFolders.updateConceptData(student['satAdminSsId'], student['satStudentSsId']);
-        //   student.updateComplete = true;
-        //   studentsDataCell.setValue(JSON.stringify(students));
-        // }
-        // else if (student.updateComplete) {
-        //   Logger.log(`${student.name} data is updated`);
-        // }
-        // else if (!student.satAdminSsId) {
-        //   student.updateComplete = true;
-        //   studentsDataCell.setValue(JSON.stringify(students));
-        //   Logger.log(`No SAT data found for ${student.name}`)
-        // }
-
-      }
-
-      // updateSatDataSheets(client['satAdminDataId'], client['satStudentDataId']);
+      createStudentFolders.ssUpdate202505(students);
       
       PropertiesService.getScriptProperties().setProperty('startIndex', client.index + 1);
       Logger.log(client.index + '. ' + client.name + ' complete');
@@ -466,6 +402,8 @@ function updateClientFolders() {
     }
   }
 }
+
+
 
 function continueClientFolderUpdate() {
   const startIndex = PropertiesService.getScriptProperties().getProperty('startIndex');
@@ -492,103 +430,6 @@ function continueClientFolderUpdate() {
   // }
 }
 
-function updateStudentFolderData(
-  client={
-    'index': null,
-    'name': null,
-    'studentsFolderId': null,
-  },
-  dataSheet)
-  {
-  const clientRow = client.index + 2;
-  Logger.log(client.index + '. ' + client.name + ' started');
-
-  const studentFolders = DriveApp.getFolderById(client.studentsFolderId).getFolders();
-  const studentFolderIds = [];
-  const studentsDataCell = dataSheet.getRange(clientRow, 17);
-  const studentsValue = studentsDataCell.getValue();
-  let students = JSON.parse(studentsValue);
-
-  while (studentFolders.hasNext()) {
-    const studentFolder = studentFolders.next();
-    const studentFolderId = studentFolder.getId();
-    const studentFolderName = studentFolder.getName();
-
-    studentFolderIds.push(studentFolderId);
-    
-    if (!studentFolderName.includes('Ξ')) {  
-      const studentObj = students.find(obj => obj.folderId === studentFolderId);
-      if (studentObj) {
-        Logger.log(`${studentFolderName} found with folder ID ${studentFolderId}`);
-
-        if (studentObj && studentObj.name !== studentFolderName) {
-          // Update the name property
-          studentObj.name = studentFolderName;
-          Logger.log(`Updated name for folder ID ${studentFolderId} to ${studentFolderName}`);
-        }
-      }
-      else {
-        Logger.log(`Adding ${studentFolderName} to students data`);
-        const adminFiles = studentFolder.getFiles();
-        let satAdminSsId, satStudentSsId;
-
-        while (adminFiles.hasNext()) {
-          const adminFile = adminFiles.next();
-          if (adminFile.getName().toLowerCase().includes('sat admin')) {
-            satAdminSsId = adminFile.getId();
-            break;
-          }
-        }
-
-        if (satAdminSsId) {
-          satStudentSsId = SpreadsheetApp.openById(satAdminSsId).getSheetByName('Student responses').getRange('B1').getValue();
-        }
-
-        students.push({
-          'name': studentFolderName,
-          'folderId': studentFolderId,
-          'satAdminSsId': satAdminSsId,
-          'satStudentSsId': satStudentSsId,
-          'updateComplete': false
-        })
-      }
-    }
-
-    // only for clients with grouped student folders
-    // const subfolders = studentFolder.getFolders();
-    // while (subfolders.hasNext()) {
-    //   const subfolder = subfolders.next();
-    //   const subfiles = subfolder.getFiles();
-
-    //   while (subfiles.hasNext()) {
-    //     const subfile = subfiles.next();
-    //     if (subfile.getName().toLowerCase().includes('sat admin')) {
-    //       satAdminSsId = subfile.getId();
-    //       break;
-    //     }
-    //   }
-
-    //   if (satAdminSsId) {
-    //     satStudentSsId = SpreadsheetApp.openById(satAdminSsId).getSheetByName('Student responses').getRange('B1').getValue();
-    //   }
-
-    //   students.push({
-    //     'name': subfolder.getName(),
-    //     'satAdminSsId': satAdminSsId,
-    //     'satStudentSsId': satStudentSsId
-    //   })
-    // }
-  }
-
-  students = students.filter(student => studentFolderIds.includes(student.folderId));
-
-  const studentFolderCount = students.length
-  dataSheet.getRange(clientRow, 17).setValue(JSON.stringify(students));
-  dataSheet.getRange(clientRow, 16).setValue(studentFolderCount);
-
-  return students;
-}
-
 function getStudentFolderCount(studentsFolderId) {
   const studentFolder = DriveApp.getFolderById(studentsFolderId);
   const studentSubfolders = studentFolder.getFolders();
@@ -602,31 +443,3 @@ function getStudentFolderCount(studentsFolderId) {
   return studentFolderCount;
 }
 
-function updateSatDataSheets(satAdminDataSsId, satStudentDataSsId) {
-  const satAdminDataSs = SpreadsheetApp.openById(satAdminDataSsId);
-  const satStudentDataSs = SpreadsheetApp.openById(satStudentDataSsId);
-  let newAdminQbSheet = satAdminDataSs.getSheetByName('Question bank data updated ' + dataLatestDate);
-  let newAdminPtSheet = satAdminDataSs.getSheetByName('Practice test data updated ' + dataLatestDate);
-  let newStudentQbSheet = satStudentDataSs.getSheetByName('Question bank data updated ' + dataLatestDate);
-  let newStudentPtSheet = satStudentDataSs.getSheetByName('Practice test data updated ' + dataLatestDate);
-
-  if (!newAdminQbSheet) {
-    newAdminQbSheet = satAdminDataSs.getSheetByName('Question bank data').copyTo(satAdminDataSs).setName('Question bank data updated ' + dataLatestDate);
-  }
-  if (!newAdminPtSheet) {
-    newAdminPtSheet = satAdminDataSs.getSheetByName('Practice test data').copyTo(satAdminDataSs).setName('Practice test data updated ' + dataLatestDate);
-  }
-  if (!newStudentQbSheet) {
-    newStudentQbSheet = satStudentDataSs.getSheetByName('Question bank data').copyTo(satStudentDataSs).setName('Question bank data updated ' + dataLatestDate);
-  }
-  if (!newStudentPtSheet) {
-    newStudentPtSheet = satStudentDataSs.getSheetByName('Practice test data').copyTo(satStudentDataSs).setName('Practice test data updated ' + dataLatestDate);
-  }
-
-  newAdminQbSheet.getRange('A1').setValue('=importrange("1XoANqHEGfOCdO1QBVnbA3GH-z7-_FMYwoy7Ft4ojulE", "Question bank data updated ' + dataLatestDate + '!A1:H10000")');
-  newAdminPtSheet.getRange('A1').setValue('=importrange("1XoANqHEGfOCdO1QBVnbA3GH-z7-_FMYwoy7Ft4ojulE", "Practice test data updated ' + dataLatestDate + '!A1:J10000")');
-  Logger.log('sat admin data sheets updated')
-  newStudentQbSheet.getRange('A1').setValue('=importrange("' + satAdminDataSsId + '", "Question bank data updated ' + dataLatestDate + '!A1:G10000")');
-  newStudentPtSheet.getRange('A1').setValue('=importrange("' + satAdminDataSsId + '", "Practice test data updated ' + dataLatestDate + '!A1:E10000")');
-  Logger.log('sat student data sheets updated')
-}

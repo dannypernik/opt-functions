@@ -214,7 +214,7 @@ async function sendPdfScoreReport(spreadsheetId, studentName, scoresUpToCurrent 
     }
 
     const currentScore = scoresUpToCurrent.slice(-1)[0];
-    const pdfName = 'SAT answer analysis - ' + studentName + ' - ' + currentScore.test + '.pdf'
+    const pdfName = currentScore.test + ' answer analysis - ' + studentName + '.pdf'
     const answerSheetId = spreadsheet.getSheetByName(currentScore.test).getSheetId();
     const analysisSheetId = spreadsheet.getSheetByName(currentScore.test + ' analysis').getSheetId();
 
