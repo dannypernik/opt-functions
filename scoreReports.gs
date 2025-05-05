@@ -60,28 +60,35 @@ function updateOPTStudentFolderData() {
     const tutorFolderName = tutorFolder.getName();
     const tutorFolderId = tutorFolder.getId();
 
+    const tutorStudentsStr = teamDataSheet.getRange(tutorIndex + 2, 4).getValue();
+    let tutorStudents = tutorStudentsStr ? JSON.parse(tutorStudentsStr) : [];
+
     tutorData = {
       'index': tutorIndex,
       'name': tutorFolderName,
-      'studentsFolderId': tutorFolderId
+      'studentsFolderId': tutorFolderId,
+      'studentsDataJSON': tutorStudents
     }
 
-    const students = updateStudentFolderData(tutorData, teamDataSheet);
+    tutorStudents = createStudentFolders.findStudentFileIds(tutorData)
 
-    teamDataSheet.getRange(tutorIndex + 2,1,1,4).setValues([[tutorIndex, tutorFolderName, tutorFolderId, JSON.stringify(students)]]);
+    teamDataSheet.getRange(tutorIndex + 2,1,1,4).setValues([[tutorIndex, tutorFolderName, tutorFolderId, JSON.stringify(tutorStudents)]]);
     tutorIndex ++;
   }
   
   const clientSheet = clientDataSs.getSheetByName('Clients')
+  const myStudentsStr = clientSheet.getRange(2, 17).getValue();
+  let myStudents = JSON.parse(myStudentsStr);
+
   const myStudentFolderData = {
     'index': 0,
     'name': 'Open Path Tutoring',
-    'studentsFolderId': clientSheet.getRange(2, 15).getValue()
+    'studentsFolderId': clientSheet.getRange(2, 15).getValue(),
+    'studentsDataJSON': myStudents
   }
 
-  const myStudents = updateStudentFolderData(myStudentFolderData, clientSheet);
+  myStudents = createStudentFolders.findStudentFileIds(myStudentFolderData);
   clientSheet.getRange(2, 17).setValue(JSON.stringify(myStudents));
-  
 }
 
 function findNewCompletedTests(fileList) {
