@@ -17,7 +17,7 @@ function findNewScoreReports(students, folderName) {
       const satStudentFile = DriveApp.getFileById(student.satStudentSsId);
       const lastUpdated = Math.max(satAdminFile.getLastUpdated(), satStudentFile.getLastUpdated());
       const now = new Date();
-      const msInThreeDays = 3 * 24 * 60 * 60 * 1000;
+      const msInThreeDays = 5 * 24 * 60 * 60 * 1000;
 
       if ((now - lastUpdated) <= msInThreeDays) {
         fileList.push(satAdminFile);
@@ -38,10 +38,10 @@ function findNewScoreReports(students, folderName) {
 function findTeamScoreReports() {
   const studentDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
   const teamDataSheet = studentDataSs.getSheetByName('Team OPT');
-  const teamDataValues = teamDataSheet.getRange(2,1,getLastFilledRow(teamDataSheet, 1) - 1, 17).getValues();
+  const teamDataValues = teamDataSheet.getRange(2,1,getLastFilledRow(teamDataSheet, 1) - 1, 4).getValues();
 
   for (let i = 0; i < teamDataValues.length; i ++) {
-    const studentsStr = teamDataValues[i][16];
+    const studentsStr = teamDataValues[i][3];
     const folderName = teamDataValues[i][1];
     const students = JSON.parse(studentsStr);
     findNewScoreReports(students, folderName);
