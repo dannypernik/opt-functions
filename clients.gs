@@ -21,7 +21,7 @@ function newClient(clientTemplateFolderId, clientParentFolderId) {
   let clientFolderId = clientFolder.getId();
 
   copyClientFolder(clientTemplateFolder, clientFolder, clientName);
-  addClientData(clientFolderId);
+  // addClientData(clientFolderId);
   linkClientSheets(clientFolderId);
   setClientDataUrls(clientFolderId);
 
@@ -103,6 +103,8 @@ function linkClientSheets(folderId, testType = 'all') {
     const subFolder = subFolders.next();
     linkClientSheets(subFolder.getId(), testType);
   }
+
+  Logger.log(satSheetIds.admin);
 
   if (satSheetIds.student && satSheetIds.admin) {
     let satAdminSheet = SpreadsheetApp.openById(satSheetIds.admin);

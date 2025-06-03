@@ -275,16 +275,3 @@ const showAllSheetsExcept = (spreadsheetId='1_nRuW80ewwxEcsHLKy8U8o1nIxKNxxrih-I
       }
     });
 }
-
-function trashFilesInFolder(folderId='15tJsdeOx_HucjIb6koTaafncTj-e6FO6') {
-  const folder = DriveApp.getFolderById(folderId);
-  const files = folder.getFiles();
-  let fileCount = 0;
-
-  while(files.hasNext()) {
-    const file = files.next();
-    file.setTrashed(true);
-    fileCount += 1;
-  }
-  Logger.log('Moved ' + fileCount + ' files to trash');
-}

@@ -17,9 +17,9 @@ function findNewScoreReports(students, folderName) {
       const satStudentFile = DriveApp.getFileById(student.satStudentSsId);
       const lastUpdated = Math.max(satAdminFile.getLastUpdated(), satStudentFile.getLastUpdated());
       const now = new Date();
-      const msInThreeDays = 5 * 24 * 60 * 60 * 1000;
+      const msInTimeLimit = 5 * 24 * 60 * 60 * 1000;
 
-      if ((now - lastUpdated) <= msInThreeDays) {
+      if ((now - lastUpdated) <= msInTimeLimit) {
         fileList.push(satAdminFile);
       }
       else {
