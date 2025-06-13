@@ -1,6 +1,6 @@
 ## Summary of `findNewScoreReports()`
 
-The `findNewScoreReports()` function identifies recently updated SAT admin spreadsheets within a specified time limit (default: 5 days). It processes these files to check for new completed tests and generates score reports for them. If no `students` parameter is provided, it retrieves student data from the "Clients" sheet in the `clientDataSs` spreadsheet.
+The `findNewScoreReports()` function identifies SAT admin spreadsheets within a parent folder that have been updated within a specified time limit (default: 5 days). It processes these files to check for new completed tests and generates score reports for them. If no `students` parameter is provided, it retrieves student data from the "Clients" sheet in the `clientDataSs` spreadsheet.
 
 ---
 
