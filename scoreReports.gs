@@ -155,8 +155,6 @@ function findNewCompletedTests(fileList) {
         else {
           createStudentFolders.addTestSheets(ssId);
         }
-
-        
       }
     }
 
@@ -167,23 +165,16 @@ function findNewCompletedTests(fileList) {
   }
 }
 
-function createSatScoreReports(spreadsheetId, scores) {
+function createSatScoreReports(spreadsheetId, allTestData) {
   spreadsheetId = spreadsheetId ? spreadsheetId : SpreadsheetApp.getActiveSpreadsheet().getId();
-  const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
-  const upToPresentScores = [];
+  const pastTestData = [];
   
   try {
-    for (score of scores) {
-      if (score.isNew) {
-        const filename = spreadsheet.getName();
-        const studentName = filename.slice(filename.indexOf('-') + 2);
-        upToPresentScores.push(score);
-
-        sendPdfScoreReport(spreadsheetId, studentName, upToPresentScores);
+    for (testData of allTestData) {
+      if (testData.isNew) {
+        sendPdfScoreReport(spreadsheetId, testData, pastTestData);
       }
-      else {
-        upToPresentScores.push(score)
-      }
+      pastTestData.push(testData)
     }
   }
   catch (err) {
@@ -191,11 +182,13 @@ function createSatScoreReports(spreadsheetId, scores) {
   }
 }
 
-async function sendPdfScoreReport(spreadsheetId, studentName, scoresUpToCurrent = []) {
+async function sendPdfScoreReport(spreadsheetId, currentTestData, pastTestData = []) {
   try {
-    var spreadsheet = spreadsheetId ? SpreadsheetApp.openById(spreadsheetId) : SpreadsheetApp.getActiveSpreadsheet();
-    var spreadsheetId = spreadsheetId ? spreadsheetId : spreadsheet.getId();
-    var practiceDataSheet = spreadsheet.getSheetByName('Practice test data');
+    const spreadsheet = spreadsheetId ? SpreadsheetApp.openById(spreadsheetId) : SpreadsheetApp.getActiveSpreadsheet();
+    spreadsheetId = spreadsheetId ? spreadsheetId : spreadsheet.getId();
+    const ssName = spreadsheet.getName();
+    const studentName = ssName.slice(ssName.indexOf('-') + 2);
+    const practiceDataSheet = spreadsheet.getSheetByName('Practice test data');
     let scoreReportFolderId;
 
     if (practiceDataSheet.getRange('V1').getValue() === 'Score report folder ID:' && practiceDataSheet.getRange('W1').getValue() !== '') {
@@ -220,12 +213,11 @@ async function sendPdfScoreReport(spreadsheetId, studentName, scoresUpToCurrent 
       practiceDataSheet.getRange('V1:W1').setValues([['Score report folder ID:', scoreReportFolderId]]);
     }
 
-    const currentScore = scoresUpToCurrent.slice(-1)[0];
-    const pdfName = currentScore.test + ' answer analysis - ' + studentName + '.pdf'
-    const answerSheetId = spreadsheet.getSheetByName(currentScore.test).getSheetId();
-    const analysisSheetId = spreadsheet.getSheetByName(currentScore.test + ' analysis').getSheetId();
+    const pdfName = currentTestData.test + ' answer analysis - ' + studentName + '.pdf'
+    const answerSheetId = spreadsheet.getSheetByName(currentTestData.test).getSheetId();
+    const analysisSheetId = spreadsheet.getSheetByName(currentTestData.test + ' analysis').getSheetId();
 
-    Logger.log(`Starting ${currentScore.test} score report for ${studentName}`);
+    Logger.log(`Starting ${currentTestData.test} score report for ${studentName}`);
 
     const answerFileId = savePdfSheet(spreadsheetId, answerSheetId, studentName);
     const analysisFileId = savePdfSheet(spreadsheetId, analysisSheetId, studentName);
@@ -243,23 +235,23 @@ async function sendPdfScoreReport(spreadsheetId, studentName, scoresUpToCurrent 
         'Hi PARENTNAME, please find the score report from ' +
         studentFirstName +
         "'s recent practice test attached. " +
-        currentScore.total +
+        currentTestData.total +
         ' overall (' +
-        currentScore.rw +
+        currentTestData.rw +
         ' Reading & Writing, ' +
-        currentScore.m +
+        currentTestData.m +
         ' Math)<br><br>As of the session on ' +
         studentData.recentSessionDate +
         ', we have ' +
         studentData.hours +
         ' hours remaining on the current package. Let me know if you have any questions. Thanks!<br><br>';
 
-      if (scoresUpToCurrent.length > 1) {
+      if (pastTestData.length > 1) {
         message += 'All scores - most recent last:<br><ul>';
 
-        for (i = 0; i < scoresUpToCurrent.length; i++) {
-          const score = scoresUpToCurrent[i];
-          message += '<li>' + score.test + ': ' + score.total + ' (' + score.rw + ' RW, ' + score.m + ' M)</li>';
+        for (i = 0; i < pastTestData.length; i++) {
+          const data = pastTestData[i];
+          message += '<li>' + data.test + ': ' + data.total + ' (' + data.rw + ' RW, ' + data.m + ' M)</li>';
         }
         message += '</ul><br>';
       }
@@ -268,11 +260,11 @@ async function sendPdfScoreReport(spreadsheetId, studentName, scoresUpToCurrent 
       var message = 'Hi PARENTNAME, please find the score report from ' +
         studentFirstName +
         "'s recent practice test attached. " +
-        currentScore.total +
+        currentTestData.total +
         ' overall (' +
-        currentScore.rw +
+        currentTestData.rw +
         ' Reading & Writing, ' +
-        currentScore.m +
+        currentTestData.m +
         ' Math)<br><br>'
     }
 
@@ -280,17 +272,17 @@ async function sendPdfScoreReport(spreadsheetId, studentName, scoresUpToCurrent 
     if (email) {
       MailApp.sendEmail({
         to: email,
-        subject: currentScore.test + ' score report for ' + studentFirstName,
+        subject: currentTestData.test + ' score report for ' + studentFirstName,
         htmlBody: message,
         attachments: [mergedBlob],
       });
     }
 
-    const testSheet = spreadsheet.getSheetByName(currentScore.test);
+    const testSheet = spreadsheet.getSheetByName(currentTestData.test);
     const completionCheckCell = testSheet.getRange('M1');
     completionCheckCell.setValue('✔');
     completionCheckCell.setVerticalAlignment('middle');
-    Logger.log(studentName + ' ' + currentScore.test + ' score report complete');
+    Logger.log(studentName + ' ' + currentTestData.test + ' score report complete');
   }
 
   catch (err) {
@@ -320,6 +312,8 @@ async function mergePDFs(fileIds, destinationFolderId, name="merged.pdf") {
   const mergedBlob = Utilities.newBlob([...new Int8Array(bytes)], MimeType.PDF, "merged.pdf");
   const destinationFolder = DriveApp.getFolderById(destinationFolderId);
   const mergedFile = destinationFolder.createFile(mergedBlob).setName(name);
+
+  fileIds.forEach(id => DriveApp.getFileById(id).setTrashed(true));
 
   return mergedFile;
 }

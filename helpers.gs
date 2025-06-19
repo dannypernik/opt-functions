@@ -245,7 +245,7 @@ function renameFolder(folder, currentName, newName, isStudentFolder = true) {
       subfolder.setName(newSubfolderName);
     }
 
-    renameStudentFolder(subfolder, currentName, newName);
+    renameFolder(subfolder, currentName, newName, isStudentFolder);
   }
 
   if (adminSsId && isStudentFolder) {

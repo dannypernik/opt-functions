@@ -6,11 +6,11 @@ const satSheetIds = {
   rev: null,
 };
 
-const satSheetDataUrls = {
-  admin: null,
-  student: null,
-  rev: null,
-};
+// const satSheetDataUrls = {
+//   admin: null,
+//   student: null,
+//   rev: null,
+// };
 
 const actSheetIds = {
   admin: null,
@@ -19,9 +19,9 @@ const actSheetIds = {
   adminData: null,
 };
 
-const actSheetDataUrls = {
-  admin: null,
-  student: null,
-};
+// const actSheetDataUrls = {
+//   admin: null,
+//   student: null,
+// };
 
 const dataLatestDate = createStudentFolders.dataLatestDate;

@@ -21,9 +21,9 @@ function newClient(clientTemplateFolderId, clientParentFolderId) {
   let clientFolderId = clientFolder.getId();
 
   copyClientFolder(clientTemplateFolder, clientFolder, clientName);
-  // addClientData(clientFolderId);
   linkClientSheets(clientFolderId);
   setClientDataUrls(clientFolderId);
+  addClientData(clientFolderId);
 
   if (useCustomStyle === ui.Button.YES) {
     getAnswerSheets(clientFolder);
@@ -129,11 +129,9 @@ function setClientDataUrls(folderId) {
     if (filename.includes('sat admin data')) {
       Logger.log('found sat admin data');
       satSheetIds.adminData = fileId;
-      satSheetDataUrls.admin = '"https://docs.google.com/spreadsheets/d/' + satSheetIds.adminData + '/edit?usp=sharing"';
     } else if (filename.includes('sat student data')) {
       Logger.log('found sat student data');
       satSheetIds.studentData = fileId;
-      satSheetDataUrls.student = '"https://docs.google.com/spreadsheets/d/' + satSheetIds.studentData + '/edit?usp=sharing"';
       DriveApp.getFileById(satSheetIds.studentData).setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
     } else if (filename.includes('sat student answer sheet')) {
       Logger.log('found sat student answer sheet');
@@ -149,11 +147,9 @@ function setClientDataUrls(folderId) {
     } else if (filename.includes('act admin data')) {
       Logger.log('found act admin data');
       actSheetIds.adminData = fileId;
-      actSheetDataUrls.admin = '"https://docs.google.com/spreadsheets/d/' + actSheetIds.adminData + '/edit?usp=sharing"';
     } else if (filename.includes('act student data')) {
       Logger.log('found act student data');
       actSheetIds.studentData = fileId;
-      actSheetDataUrls.student = '"https://docs.google.com/spreadsheets/d/' + actSheetIds.studentData + '/edit?usp=sharing"';
       DriveApp.getFileById(actSheetIds.studentData).setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
     } else if (filename.includes('act student answer sheet')) {
       Logger.log('found act student answer sheet');
@@ -170,38 +166,38 @@ function setClientDataUrls(folderId) {
     setClientDataUrls(subFolder.getId());
   }
 
-  // if (!isSet.satStudentToAdmin && satSheetIds.admin && satSheetIds.student) {
   if (satSheetIds.admin && satSheetIds.student) {
     SpreadsheetApp.openById(satSheetIds.admin).getSheetByName('Student responses').getRange('B1').setValue(satSheetIds.student);
-    // isSet.satStudentToAdmin = true;
   }
 
-  // if (!isSet.satStudentToData && satSheetIds.student && satSheetDataUrls.student) {
-  if (satSheetIds.student && satSheetDataUrls.student) {
+  if (satSheetIds.student && satSheetIds.studentData) {
     SpreadsheetApp.openById(satSheetIds.student)
       .getSheetByName('Question bank data')
       .getRange('U7')
-      .setValue(satSheetDataUrls.student);
-
-
-    // isSet.satStudentToData = true;
+      .setValue(satSheetIds.studentData);
   }
-  if (satSheetIds.admin && satSheetDataUrls.admin) {
+  if (satSheetIds.admin && satSheetIds.adminData) {
     SpreadsheetApp.openById(satSheetIds.admin)
       .getSheetByName('Rev sheet backend')
       .getRange('U5')
       .setValue(satSheetIds.adminData);
   }
 
-  if (satSheetDataUrls.admin && satSheetIds.studentData) {
-    SpreadsheetApp.openById(satSheetIds.studentData)
+  if (satSheetIds.adminData && satSheetIds.studentData) {
+    const studentDataSs = SpreadsheetApp.openById(satSheetIds.studentData);
+    
+    studentDataSs
       .getSheetByName('Question bank data')
       .getRange('A1')
-      .setValue('=IMPORTRANGE(' + satSheetDataUrls.admin + ', "Question bank data!A1:G10000")');
-    SpreadsheetApp.openById(satSheetIds.studentData)
+      .setValue('=IMPORTRANGE("' + satSheetIds.adminData + '", "Question bank data!A1:G10000")');
+    studentDataSs
       .getSheetByName('Practice test data')
       .getRange('A1')
-      .setValue('=IMPORTRANGE(' + satSheetDataUrls.admin + ', "Practice test data!A1:E10000")');
+      .setValue('=IMPORTRANGE("' + satSheetIds.adminData + '", "Practice test data!A1:E10000")');
+    studentDataSs
+      .getSheetByName('Links')
+      .getRange('A1')
+      .setValue('=IMPORTRANGE("' + satSheetIds.adminData + '", "Links!A1:D50")')
   }
 
   if (satSheetIds.admin && satSheetIds.rev) {
@@ -215,29 +211,29 @@ function setClientDataUrls(folderId) {
     studentSheet.getRange('U3').setValue(satSheetIds.rev);
   }
 
-  if (actSheetIds.student && actSheetDataUrls.student) {
+  if (actSheetIds.student && actSheetIds.studentData) {
     SpreadsheetApp.openById(actSheetIds.student)
       .getSheetByName('Data')
       .getRange('A1')
-      .setValue('=IMPORTRANGE(' + actSheetDataUrls.student + ', "Data!A1:D10000")');
+      .setValue('=IMPORTRANGE("' + actSheetIds.studentData + '", "Data!A1:D10000")');
   }
 
-  if (actSheetIds.admin && actSheetDataUrls.admin) {
+  if (actSheetIds.admin && actSheetIds.adminData) {
     var ss = SpreadsheetApp.openById(actSheetIds.admin);
     ss.getSheetByName('Data')
       .getRange('A1')
-      .setValue('=IMPORTRANGE(' + actSheetDataUrls.admin + ', "Data!A1:G10000")');
+      .setValue('=IMPORTRANGE("' + actSheetIds.adminData + '", "Data!A1:G10000")');
     ss.getSheets()[0]
       .getRange('J1')
-      .setValue('=IMPORTRANGE(' + actSheetDataUrls.admin + ', "Data!Q1")');
+      .setValue('=IMPORTRANGE("' + actSheetIds.adminData + '", "Data!Q1")');
     ss.getSheets()[0].getRange('G1:I1').mergeAcross().setValue('=iferror(J1,"Click to connect data >>")');
   }
 
-  if (actSheetDataUrls.admin && actSheetIds.studentData) {
+  if (actSheetIds.adminData && actSheetIds.studentData) {
     SpreadsheetApp.openById(actSheetIds.studentData)
       .getSheetByName('Data')
       .getRange('A1')
-      .setValue('=IMPORTRANGE(' + actSheetDataUrls.admin + ', "Data!A1:D10000")');
+      .setValue('=IMPORTRANGE("' + actSheetIds.adminData + '", "Data!A1:D10000")');
   }
 
   Logger.log('setClientDataUrls complete');
