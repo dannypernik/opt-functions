@@ -3,12 +3,12 @@ function findNewActScoreReports(students, folderName) {
     // if students is null, get OPT data row
     const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
     const clientSheet = clientDataSs.getSheetByName('Clients');
-    const myDataRange = clientSheet.getRange(2,1,1,17).getValues();
+    const myDataRange = clientSheet.getRange(2, 1, 1, 17).getValues();
     const myStudentDataValue = myDataRange[0][16];
-    folderName = myDataRange[0][1]; 
+    folderName = myDataRange[0][1];
     students = JSON.parse(myStudentDataValue);
   }
-  
+
   const fileList = [];
 
   for (student of students) {
@@ -19,11 +19,10 @@ function findNewActScoreReports(students, folderName) {
       const now = new Date();
       const msInTimeLimit = 5 * 24 * 60 * 60 * 1000;
 
-      if ((now - lastUpdated) <= msInTimeLimit) {
+      if (now - lastUpdated <= msInTimeLimit) {
         fileList.push(actAdminFile);
-      }
-      else {
-        Logger.log(`${student.name} unchanged`)
+      } else {
+        Logger.log(`${student.name} unchanged`);
       }
     }
   }
@@ -38,9 +37,9 @@ function findNewActScoreReports(students, folderName) {
 function findTeamActScoreReports() {
   const studentDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
   const teamDataSheet = studentDataSs.getSheetByName('Team OPT');
-  const teamDataValues = teamDataSheet.getRange(2,1,getLastFilledRow(teamDataSheet, 1) - 1, 4).getValues();
+  const teamDataValues = teamDataSheet.getRange(2, 1, getLastFilledRow(teamDataSheet, 1) - 1, 4).getValues();
 
-  for (let i = 0; i < teamDataValues.length; i ++) {
+  for (let i = 0; i < teamDataValues.length; i++) {
     const studentsStr = teamDataValues[i][3];
     const folderName = teamDataValues[i][1];
     const students = studentsStr ? JSON.parse(studentsStr) : [];
@@ -66,11 +65,11 @@ function findNewCompletedActs(fileList) {
     Logger.log('Starting new test check for ' + studentName);
 
     for (testCode of testCodes) {
-      const completedEnglishCount = allData.filter(row => row[0] === testCode && row[1] === 'English' && row[7] !== '').length;
-      const completedMathCount = allData.filter(row => row[0] === testCode && row[1] === 'Math' && row[7] !== '').length;
-      const completedReadingCount = allData.filter(row => row[0] === testCode && row[1] === 'Reading' && row[7] !== '').length;
-      const completedScienceCount = allData.filter(row => row[0] === testCode && row[1] === 'Science' && row[7] !== '').length;
-      
+      const completedEnglishCount = allData.filter((row) => row[0] === testCode && row[1] === 'English' && row[7] !== '').length;
+      const completedMathCount = allData.filter((row) => row[0] === testCode && row[1] === 'Math' && row[7] !== '').length;
+      const completedReadingCount = allData.filter((row) => row[0] === testCode && row[1] === 'Reading' && row[7] !== '').length;
+      const completedScienceCount = allData.filter((row) => row[0] === testCode && row[1] === 'Science' && row[7] !== '').length;
+
       if (completedEnglishCount > 37 && completedMathCount > 30 && completedReadingCount > 20 && completedScienceCount > 20) {
         let testSheet = ss.getSheetByName(testCode);
 
@@ -86,19 +85,18 @@ function findNewCompletedActs(fileList) {
 
           if (totalScore) {
             scores.push({
-              'studentName': studentName,
-              'test': testCode,
-              'eScore': eScore,
-              'mScore': mScore,
-              'rScore': rScore,
-              'sScore': sScore,
-              'total': totalScore,
-              'date': dateSubmitted,
-              'isNew': isTestNew
-            })
+              studentName: studentName,
+              test: testCode,
+              eScore: eScore,
+              mScore: mScore,
+              rScore: rScore,
+              sScore: sScore,
+              total: totalScore,
+              date: dateSubmitted,
+              isNew: isTestNew,
+            });
           }
-        }
-        else {
+        } else {
           createStudentFolders.addSatTestSheets(ssId);
         }
       }
@@ -114,16 +112,15 @@ function findNewCompletedActs(fileList) {
 function createActScoreReports(spreadsheetId, allTestData) {
   spreadsheetId = spreadsheetId ? spreadsheetId : SpreadsheetApp.getActiveSpreadsheet().getId();
   const pastTestData = [];
-  
+
   try {
     for (testData of allTestData) {
       if (testData.isNew) {
         sendActScoreReportPdf(spreadsheetId, testData, pastTestData);
       }
-      pastTestData.push(testData)
+      pastTestData.push(testData);
     }
-  }
-  catch (err) {
+  } catch (err) {
     Logger.log(err.message + '\n\n' + err.stack);
   }
 }
@@ -139,8 +136,7 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
 
     if (dataSheet.getRange('V1').getValue() === 'Score report folder ID:' && dataSheet.getRange('W1').getValue() !== '') {
       scoreReportFolderId = practiceDataSheet.getRange('W1').getValue();
-    }
-    else {
+    } else {
       var parentFolderId = DriveApp.getFileById(spreadsheetId).getParents().next().getId();
       const subfolderIds = getSubFolderIdsByFolderId(parentFolderId);
 
@@ -151,8 +147,7 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
         if (subfolderName.toLowerCase().includes('score report')) {
           scoreReportFolderId = subfolderId;
           break;
-        }
-        else if (subfolderName.includes(studentName)) {
+        } else if (subfolderName.includes(studentName)) {
           studentFolderId = subFolderId;
         }
       }
@@ -176,28 +171,38 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
     if (!scoreReportFolderId) {
       scoreReportFolderId = DriveApp.getFolderById(parentId).createFolder('Score reports').getId();
     }
-    
+
     if (dataSheet.getRange('W1').getValue() !== scoreReportFolderId) {
       dataSheet.getRange('V1:W1').setValues([['Score report folder ID:', scoreReportFolderId]]);
     }
 
-    const pdfName = `ACT ${currentTestData.test} answer analysis - ${studentName}.pdf`
+    const pdfName = `ACT ${currentTestData.test} answer analysis - ${studentName}.pdf`;
     const answerSheetId = spreadsheet.getSheetByName(currentTestData.test).getSheetId();
-    const analysisSheetName = currentTestData.test + ' analysis'
-    let analysisSheetId = spreadsheet.getSheetByName(analysisSheetName).getSheetId();
+    const analysisSheetName = currentTestData.test + ' analysis';
+    let analysisSheet = spreadsheet.getSheetByName(analysisSheetName).getSheetId();
 
-    if (!analysisSheetId) {
+    if (!analysisSheet) {
       const testAnalysisSheet = spreadsheet.getSheetByName('Test analysis');
-      analysisSheetId = testAnalysisSheet.copyTo(spreadsheet).setName(analysisSheetName);
-      spreadsheet.getSheetByName(analysisSheetName).getPivotTables()[0];
+      analysisSheet = testAnalysisSheet.copyTo(spreadsheet).setName(analysisSheetName);
+      const analysisPivot = analysisSheet.getPivotTables()[0];
+
+      // Clear the "Test code" filter, then set it to currentTestData.test
+      if (analysisPivot) {
+        // Remove any existing filter on "Test code"
+        analysisPivot.removeFilter('Test code');
+        // Set the filter to only include the current test code
+        analysisPivot.addFilter('Test code', [currentTestData.test]);
+      }
     }
+
+    const analysisSheetId = analysisSheet.getSheetId();
 
     Logger.log(`Starting ${currentTestData.test} score report for ${studentName}`);
 
     const answerFileId = savePdfSheet(spreadsheetId, answerSheetId, studentName);
     const analysisFileId = savePdfSheet(spreadsheetId, analysisSheetId, studentName);
 
-    const fileIdsToMerge= [analysisFileId, answerFileId];
+    const fileIdsToMerge = [analysisFileId, answerFileId];
 
     const mergedFile = await mergePDFs(fileIdsToMerge, scoreReportFolderId, pdfName);
     const mergedBlob = mergedFile.getBlob();
@@ -212,10 +217,14 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
         "'s recent practice test attached. " +
         currentTestData.total +
         ' overall (' +
-        currentTestData.rw +
-        ' Reading & Writing, ' +
-        currentTestData.m +
-        ' Math)<br><br>As of the session on ' +
+        currentTestData.eScore +
+        ' English, ' +
+        currentTestData.mScore +
+        ' Math, ' +
+        currentTestData.rScore +
+        ' Reading, ' +
+        currentTestData.sScore +
+        ' Science, )<br><br>As of the session on ' +
         studentData.recentSessionDate +
         ', we have ' +
         studentData.hours +
@@ -226,42 +235,33 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
 
         for (i = 0; i < pastTestData.length; i++) {
           const data = pastTestData[i];
-          message += '<li>' + data.test + ': ' + data.total + ' (' + data.rw + ' RW, ' + data.m + ' M)</li>';
+          message += '<li>' + data.test + ': ' + data.total + ' (' + data.eScore + 'E, ' + data.mScore + 'M, ' + data.rScore + 'R, ' + data.sScore + 'S)</li>';
         }
         message += '</ul><br>';
       }
-    }
-    else {
-      var message = 'Hi PARENTNAME, please find the score report from ' +
-        studentFirstName +
-        "'s recent practice test attached. " +
-        currentTestData.total +
-        ' overall (' +
-        currentTestData.rw +
-        ' Reading & Writing, ' +
-        currentTestData.m +
-        ' Math)<br><br>'
+    } else {
+      var message =
+        'Hi PARENTNAME, please find the score report from ' + studentFirstName + "'s recent practice test attached. " + currentTestData.total + ' overall (' + currentTestData.eScore + 'E, ' + currentTestData.mScore + 'M, ' + currentTestData.rScore + 'R, ' + currentTestData.sScore + 'S)<br><br>';
     }
 
     const email = getOPTPermissionsList(spreadsheetId);
     if (email) {
       MailApp.sendEmail({
         to: email,
-        subject: currentTestData.test + ' score report for ' + studentFirstName,
+        subject: 'ACT ' + currentTestData.test + ' score report for ' + studentFirstName,
         htmlBody: message,
         attachments: [mergedBlob],
       });
     }
 
     const testSheet = spreadsheet.getSheetByName(currentTestData.test);
-    const completionCheckCell = testSheet.getRange('M1');
-    completionCheckCell.setValue('✔');
-    completionCheckCell.setVerticalAlignment('middle');
+    const completionCheckCell = testSheet.getRange('G1:I1').merge();
+    completionCheckCell.setValue('Submitted on:');
+    completionCheckCell.setVerticalAlignment('right');
+    testSheet.getRange('J1').setValue(currentTestData.date);
     Logger.log(studentName + ' ' + currentTestData.test + ' score report complete');
-  }
-
-  catch (err) {
+  } catch (err) {
     Logger.log(err.stack);
-    throw new Error(err.message + '\n\n' + err.stack)
+    throw new Error(err.message + '\n\n' + err.stack);
   }
 }
