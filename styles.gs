@@ -39,7 +39,7 @@ function styleClientSheets(satSheetIds, actSheetIds, customStyles) {
   for (let id of [satSheetIds.admin, satSheetIds.student, actSheetIds.admin, actSheetIds.student]) {
     const ss = SpreadsheetApp.openById(id);
     const ssName = ss.getName();
-    const satTestSheets = getTestCodes();
+    const satTestSheets = getSatTestCodes();
     const satDataSheets = ['question bank data', 'practice test data', 'rev sheet backend'];
     const actDataSheets = ['data', 'scoring'];
 

@@ -33,9 +33,9 @@ function newClient(clientTemplateFolderId, clientParentFolderId) {
 
   var htmlOutput = HtmlService
     .createHtmlOutput('<a href="https://drive.google.com/drive/u/0/folders/' + clientFolderId + '" target="_blank" onclick="google.script.host.close()">' + clientName + "'s folder</a>" +
-      '<p><a href="https://docs.google.com/spreadsheets/d/' + PropertiesService.getScriptProperties().getProperty('clientDataSsId') + '">Client data IDs</a></p>')
+      '<p><a href="https://docs.google.com/spreadsheets/d/' + PropertiesService.getScriptProperties().getProperty('clientDataSsId') + '"target="_blank">Client data IDs</a></p>')
     .setWidth(250) //optional
-    .setHeight(50); //optional
+    .setHeight(100); //optional
   SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Client folder created successfully');
 }
 

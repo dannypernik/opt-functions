@@ -1,4 +1,4 @@
-function findNewScoreReports(students, folderName) {
+function findNewSatScoreReports(students, folderName) {
   if (!students || students.triggerUid) {
     // if students is null, get OPT data row
     const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
@@ -32,10 +32,10 @@ function findNewScoreReports(students, folderName) {
   fileList.sort((a, b) => b.getLastUpdated() - a.getLastUpdated());
   Logger.log(`${folderName}: ${fileList}`);
 
-  findNewCompletedTests(fileList);
+  findNewCompletedSats(fileList);
 }
 
-function findTeamScoreReports() {
+function findTeamSatScoreReports() {
   const studentDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
   const teamDataSheet = studentDataSs.getSheetByName('Team OPT');
   const teamDataValues = teamDataSheet.getRange(2,1,getLastFilledRow(teamDataSheet, 1) - 1, 4).getValues();
@@ -44,9 +44,11 @@ function findTeamScoreReports() {
     const studentsStr = teamDataValues[i][3];
     const folderName = teamDataValues[i][1];
     const students = JSON.parse(studentsStr);
-    findNewScoreReports(students, folderName);
+    findNewSatScoreReports(students, folderName);
   }
 }
+
+
 
 function updateOPTStudentFolderData() {
   const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
@@ -78,7 +80,7 @@ function updateOPTStudentFolderData() {
   
   const clientSheet = clientDataSs.getSheetByName('Clients')
   const myStudentsStr = clientSheet.getRange(2, 17).getValue();
-  let myStudents = JSON.parse(myStudentsStr);
+  let myStudents = myStudentsStr? JSON.parse(myStudentsStr) : [];
 
   const myStudentFolderData = {
     'index': 0,
@@ -91,9 +93,9 @@ function updateOPTStudentFolderData() {
   clientSheet.getRange(2, 17).setValue(JSON.stringify(myStudents));
 }
 
-function findNewCompletedTests(fileList) {
-  const testCodes = getTestCodes();
-  const scoreSheet = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('optSheetId')).getSheetByName('Scores');
+function findNewCompletedSats(fileList) {
+  const testCodes = getSatTestCodes();
+  const scoreSheet = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('optSheetId')).getSheetByName('SAT scores');
   let nextOpenRow = getLastFilledRow(scoreSheet, 1) + 1;
 
   // Loop through analysis spreadsheets
@@ -153,7 +155,7 @@ function findNewCompletedTests(fileList) {
           }
         }
         else {
-          createStudentFolders.addTestSheets(ssId);
+          createStudentFolders.addSatTestSheets(ssId);
         }
       }
     }
@@ -172,7 +174,7 @@ function createSatScoreReports(spreadsheetId, allTestData) {
   try {
     for (testData of allTestData) {
       if (testData.isNew) {
-        sendPdfScoreReport(spreadsheetId, testData, pastTestData);
+        sendSatScoreReportPdf(spreadsheetId, testData, pastTestData);
       }
       pastTestData.push(testData)
     }
@@ -182,7 +184,7 @@ function createSatScoreReports(spreadsheetId, allTestData) {
   }
 }
 
-async function sendPdfScoreReport(spreadsheetId, currentTestData, pastTestData = []) {
+async function sendSatScoreReportPdf(spreadsheetId, currentTestData, pastTestData = []) {
   try {
     const spreadsheet = spreadsheetId ? SpreadsheetApp.openById(spreadsheetId) : SpreadsheetApp.getActiveSpreadsheet();
     spreadsheetId = spreadsheetId ? spreadsheetId : spreadsheet.getId();

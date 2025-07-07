@@ -143,8 +143,20 @@ function getSubFolderIdsByFolderId(folderId, result = []) {
   return result.filter(onlyUnique);
 }
 
-function getTestCodes() {
+function getSatTestCodes() {
   const practiceTestDataSheet = SpreadsheetApp.openById('1XoANqHEGfOCdO1QBVnbA3GH-z7-_FMYwoy7Ft4ojulE').getSheetByName(`Practice test data updated ${dataLatestDate}`);
+  const lastFilledRow = getLastFilledRow(practiceTestDataSheet, 1);
+  const testCodeCol = practiceTestDataSheet
+    .getRange(2, 1, lastFilledRow - 1)
+    .getValues()
+    .map((row) => row[0]);
+  const testCodes = testCodeCol.filter((x, i, a) => a.indexOf(x) == i);
+
+  return testCodes;
+}
+
+function getActTestCodes() {
+  const practiceTestDataSheet = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('actDataSheetId')).getSheetByName(`ACT Answers`);
   const lastFilledRow = getLastFilledRow(practiceTestDataSheet, 1);
   const testCodeCol = practiceTestDataSheet
     .getRange(2, 1, lastFilledRow - 1)
@@ -212,7 +224,7 @@ function renameFolder(folder, currentName, newName, isStudentFolder = true) {
   let folderName = folder.getName();
   let files = folder.getFiles();
   let subfolders = folder.getFolders();
-  let revDataSsId, adminSsId, adminSs, revBackendSheet;
+  let revDataSsId, revBackendSheet, satAdminSsId, satAdminSs;
 
   if (folderName.includes(currentName) && !folderName.includes(newName)) {
     let newFoldername = folderName.replace(currentName, newName);
@@ -229,10 +241,15 @@ function renameFolder(folder, currentName, newName, isStudentFolder = true) {
     }
 
     if (filename.toLowerCase().includes('sat admin answer analysis') && isStudentFolder) {
-      adminSsId = file.getId();
-      adminSs = SpreadsheetApp.openById(adminSsId);
-      revBackendSheet = adminSs.getSheetByName('Rev sheet backend');
+      satAdminSsId = file.getId();
+      satAdminSs = SpreadsheetApp.openById(satAdminSsId);
+      revBackendSheet = satAdminSs.getSheetByName('Rev sheet backend');
       revBackendSheet.getRange('K2').setValue(newName);
+    }
+    else if (filename.toLowerCase().includes('act admin answer analysis') && isStudentFolder) {
+      actAdminSsId = file.getId();
+      actAdminSs = SpreadsheetApp.openById(actAdminSsId);
+      actAdminSs.getSheetByName('Student responses').getRange('G1').setValue(newName);
     }
   }
 
@@ -248,7 +265,7 @@ function renameFolder(folder, currentName, newName, isStudentFolder = true) {
     renameFolder(subfolder, currentName, newName, isStudentFolder);
   }
 
-  if (adminSsId && isStudentFolder) {
+  if (satAdminSsId && isStudentFolder && revDataSsId) {
     revDataSsId = revBackendSheet.getRange('U3');
     revDataSs = SpreadsheetApp.openById(revDataSsId);
 
