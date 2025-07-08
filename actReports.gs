@@ -96,8 +96,6 @@ function findNewCompletedActs(fileList) {
               isNew: isTestNew,
             });
           }
-        } else {
-          createStudentFolders.addSatTestSheets(ssId);
         }
       }
     }
