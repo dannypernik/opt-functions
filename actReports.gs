@@ -136,8 +136,7 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
 
     if (dataSheet.getRange('V1').getValue() === 'Score report folder ID:' && dataSheet.getRange('W1').getValue() !== '') {
       scoreReportFolderId = dataSheet.getRange('W1').getValue();
-    } 
-    else {
+    } else {
       var parentFolderId = DriveApp.getFileById(spreadsheetId).getParents().next().getId();
       const subfolderIds = getSubFolderIdsByFolderId(parentFolderId);
 
@@ -196,17 +195,11 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
         // Remove any existing "Test code" filter and set it to currentTestData.test
         const filters = analysisPivot.getFilters();
         // Remove any filter for "Test code"
-        const newFilters = filters.filter(f => f.getSourceDataColumn().getName() !== 'Test code');
+        const newFilters = filters.filter((f) => f.getSourceDataColumn().getName() !== 'Test code');
         // Add the new filter for the current test code
-        const testCodeColumn = analysisPivot.getSourceDataColumnByName
-          ? analysisPivot.getSourceDataColumnByName('Test code')
-          : null;
+        const testCodeColumn = analysisPivot.getSourceDataColumnByName ? analysisPivot.getSourceDataColumnByName('Test code') : null;
         if (testCodeColumn) {
-          newFilters.push(
-            SpreadsheetApp.newPivotFilter()
-              .setSourceDataColumn(testCodeColumn)
-              .setValues([currentTestData.test])
-          );
+          newFilters.push(SpreadsheetApp.newPivotFilter().setSourceDataColumn(testCodeColumn).setValues([currentTestData.test]));
           analysisPivot.setFilters(newFilters);
         }
       }
@@ -216,12 +209,12 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
 
     Logger.log(`Starting ${currentTestData.test} score report for ${studentName}`);
 
-    const answerSheetMargins = {'top': '0.3', 'bottom': '0.25', 'left': '0.35', 'right': '0.35'}
+    const answerSheetMargins = { top: '0.3', bottom: '0.25', left: '0.35', right: '0.35' };
     const answerFileId = savePdfSheet(spreadsheetId, answerSheetId, studentName, answerSheetMargins);
 
     const analysisSheetWidth = 1296;
-    const analysisSheetMargin = {'top': '0.25', 'bottom': null, 'left': '0.25', 'right': '0.25'}
-    const pageScaleFactor = 576 / analysisSheetWidth;     // fitw=true scales page to 576px given 0.25in left/right margins
+    const analysisSheetMargin = { top: '0.25', bottom: null, left: '0.25', right: '0.25' };
+    const pageScaleFactor = 576 / analysisSheetWidth; // fitw=true scales page to 576px given 0.25in left/right margins
     const headerHeightPixels = 24 * 8;
     const mathTotalRow = findActMathTotalRow(analysisSheet, 3);
     const bodyHeightPixels = (mathTotalRow - 8) * 21;
@@ -229,13 +222,13 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
     const pageHeightScaled = pageHeightPixels / pageScaleFactor;
     const marginTopPixels = parseInt(analysisSheetMargin.top);
     const pageBreakHeight = pageHeightScaled + marginTopPixels;
-    analysisSheetMargin.bottom = String((792 - pageBreakHeight) / 72);    // PDF is 792px tall and 72px/in when fitw=true
+    analysisSheetMargin.bottom = String((792 - pageBreakHeight) / 72); // PDF is 792px tall and 72px/in when fitw=true
     // const exportRangeEquals = '&range=A1:L' + grandTotalRow;
     const analysisFileId = savePdfSheet(spreadsheetId, analysisSheetId, studentName, analysisSheetMargin);
 
     const fileIdsToMerge = [analysisFileId, answerFileId];
 
-    const mergedFile = await mergePDFs(fileIdsToMerge, scoreReportFolderId, pdfName);
+    const mergedFile = mergePDFs(fileIdsToMerge, scoreReportFolderId, pdfName);
     const mergedBlob = mergedFile.getBlob();
 
     const studentFirstName = studentName.split(' ')[0];
