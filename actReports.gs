@@ -226,10 +226,11 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
     const mathTotalRow = findActMathTotalRow(analysisSheet, 3);
     const bodyHeightPixels = (mathTotalRow - 8) * 21;
     const pageHeightPixels = headerHeightPixels + bodyHeightPixels;
-    const pageHeightScaled = pageHeightPixels / pageScaleFactor;
-    const marginTopPixels = parseInt(analysisSheetMargin.top);
+    const pageHeightScaled = pageHeightPixels * pageScaleFactor;
+    const marginTopPixels = 0.5 * 72; // 0.25 margin_top + fudge factor
     const pageBreakHeight = pageHeightScaled + marginTopPixels;
-    analysisSheetMargin.bottom = String((792 - pageBreakHeight) / 72); // PDF is 792px tall and 72px/in when fitw=true
+    const bottomMargin = (792 - pageBreakHeight) / 72 ; // PDF is 792px tall and 72px/in when fitw=true
+    analysisSheetMargin.bottom = bottomMargin.toFixed(2);
     // const exportRangeEquals = '&range=A1:L' + grandTotalRow;
     const analysisFileId = savePdfSheet(spreadsheetId, analysisSheetId, studentName, analysisSheetMargin);
 

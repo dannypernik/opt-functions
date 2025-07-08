@@ -291,9 +291,8 @@ const showAllSheetsExcept = (spreadsheetId = '1_nRuW80ewwxEcsHLKy8U8o1nIxKNxxrih
 function findActMathTotalRow(sheet, mathTotalColumn) {
   const data = sheet.getRange(1, mathTotalColumn, sheet.getMaxRows()).getValues();
 
-  for (let r = 0; r < data[0].length; r++) {
-    if (data[0][r].toLowerCase() === 'math total') {
-      Logger.log(`${r} ${data[0][r]}`);
+  for (let r = 0; r < data.length; r++) {
+    if (data[r][0].toLowerCase() === 'math total') {
       return r + 1;
     }
   }
@@ -354,7 +353,7 @@ function savePdfSheet(
       '&size=letter' + // paper size
       '&portrait=true' + // orientation, false for landscape
       '&fitw=true' + // fit to width, false for actual size
-      '&fzr=false' + // do not repeat row headers (frozen rows) on each page
+      '&fzr=true' + // do not repeat row headers (frozen rows) on each page
       '&top_margin=' +
       margin.top +
       '&bottom_margin=' +
