@@ -360,14 +360,13 @@ function savePdfSheet(
       '&bottom_margin=' +
       margin.bottom +
       '&left_margin=' +
-      margin.left;
-    '&right_margin=' + margin.right + '&printnotes=false' + '&sheetnames=false' + '&printtitle=false' + '&pagenumbers=false'; //hide optional headers and footers
-
+      margin.left +
+      '&right_margin=' + margin.right + '&printnotes=false' + '&sheetnames=false' + '&printtitle=false' + '&pagenumbers=false'; //hide optional headers and footers
+      
     var options = {
       headers: {
         Authorization: 'Bearer ' + ScriptApp.getOAuthToken(),
       },
-      muteHttpExceptions: true,
     };
 
     // Create PDF
@@ -447,15 +446,24 @@ function updateOPTStudentFolderData() {
 }
 
 function mergePDFsWithILovePDF(fileIds, destinationFolderId, name = 'merged.pdf') {
-  const publicKey = 'YOUR_PUBLIC_KEY';
-  const secretKey = 'YOUR_SECRET_KEY';
+  const publicKey = PropertiesService.getScriptProperties().getProperty('iLovePDFPublicKey');
+  const secretKey = PropertiesService.getScriptProperties().getProperty('iLovePDFSecretKey');
+
+  let files = []
+  fileIds.forEach(function (fileId) {
+    fileIds.push({'file_id': fileId});
+  })
 
   // 1. Start a new merge task
   const startTaskOptions = {
     method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify({ public_key: publicKey }),
+    headers: {
+      "Authorization": "Bearer " + publicKey, // Example JWT Authentication
+      "Content-Type": "application/json"
+    },
+    payload: JSON.stringify({ files: files })
   };
+
   const startTaskResponse = UrlFetchApp.fetch('https://api.ilovepdf.com/v1/start/merge', startTaskOptions);
   const task = JSON.parse(startTaskResponse.getContentText());
   const taskId = task.task;

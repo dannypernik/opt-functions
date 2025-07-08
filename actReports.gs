@@ -213,7 +213,7 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
     const answerFileId = savePdfSheet(spreadsheetId, answerSheetId, studentName, answerSheetMargins);
 
     const analysisSheetWidth = 1296;
-    const analysisSheetMargin = { top: '0.25', bottom: null, left: '0.25', right: '0.25' };
+    const analysisSheetMargin = { top: '0.25', bottom: '0.25', left: '0.25', right: '0.25' };
     const pageScaleFactor = 576 / analysisSheetWidth; // fitw=true scales page to 576px given 0.25in left/right margins
     const headerHeightPixels = 24 * 8;
     const mathTotalRow = findActMathTotalRow(analysisSheet, 3);
@@ -228,7 +228,7 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
 
     const fileIdsToMerge = [analysisFileId, answerFileId];
 
-    const mergedFile = await mergePDFs(fileIdsToMerge, scoreReportFolderId, pdfName);
+    const mergedFile = mergePDFs(fileIdsToMerge, scoreReportFolderId, pdfName);
     const mergedBlob = mergedFile.getBlob();
 
     const studentFirstName = studentName.split(' ')[0];
