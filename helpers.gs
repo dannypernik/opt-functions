@@ -292,3 +292,166 @@ const showAllSheetsExcept = (spreadsheetId='1_nRuW80ewwxEcsHLKy8U8o1nIxKNxxrih-I
       }
     });
 }
+
+function findActMathTotalRow(sheet, mathTotalColumn) {
+  const rows = sheet.getRange(1, mathTotalColumn, sheet.getMaxRows()).getValues();
+
+  const count = 0;
+  for (row of rows) {
+    count += 1;
+
+    if (row.toLowerCase() === "math total") {
+      return count;
+    }
+  }
+}
+
+
+async function mergePDFs(fileIds, destinationFolderId, name="merged.pdf") {
+  // Retrieve PDF data as byte arrays
+  const data = fileIds.map(id => new Uint8Array(DriveApp.getFileById(id).getBlob().getBytes()));
+
+  // Load pdf-lib from CDN
+  const cdnjs = "https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js";
+  eval(UrlFetchApp.fetch(cdnjs).getContentText().replace(/setTimeout\(.*?,.*?(\d*?)\)/g, "Utilities.sleep($1);return t();"));
+
+  // Merge PDFs
+  const pdfDoc = await PDFLib.PDFDocument.create();
+  for (let i = 0; i < data.length; i++) {
+    const pdfData = await PDFLib.PDFDocument.load(data[i]);
+    const pages = await pdfDoc.copyPages(pdfData, pdfData.getPageIndices());
+    pages.forEach(page => pdfDoc.addPage(page));
+  }
+
+  // Save merged PDF to Drive
+  const bytes = await pdfDoc.save();
+  const mergedBlob = Utilities.newBlob([...new Int8Array(bytes)], MimeType.PDF, "merged.pdf");
+  const destinationFolder = DriveApp.getFolderById(destinationFolderId);
+  const mergedFile = destinationFolder.createFile(mergedBlob).setName(name);
+
+  fileIds.forEach(id => DriveApp.getFileById(id).setTrashed(true));
+
+  return mergedFile;
+}
+
+
+function savePdfSheet(spreadsheetId,
+  sheetId,
+  studentName,
+  margin={
+    'top': '0.5',
+    'bottom': '0.5',
+    'left': '0.3',
+    'right': '0.3'
+  },
+  exportRangeEquals='') {
+  try {
+    var spreadsheet = spreadsheetId ? SpreadsheetApp.openById(spreadsheetId) : SpreadsheetApp.getActiveSpreadsheet();
+    var spreadsheetId = spreadsheetId ? spreadsheetId : spreadsheet.getId();
+
+    var url_base = 'https://docs.google.com/spreadsheets/d/' + spreadsheetId + '/export';
+    var url_ext =
+      '?format=pdf' + //export as pdf
+      // Print either the entire Spreadsheet or the specified sheet if optSheetId is provided
+      (sheetId ? ('&gid=' + sheetId) : ('&id=' + spreadsheetId)) +
+      // following parameters are optional...
+      '&size=letter' + // paper size
+      '&portrait=true' + // orientation, false for landscape
+      '&fitw=true' + // fit to width, false for actual size
+      '&fzr=false' + // do not repeat row headers (frozen rows) on each page
+      '&top_margin=' + margin.top +
+      '&bottom_margin=' + margin.bottom +
+      '&left_margin=' + margin.left
+      '&right_margin=' + margin.right +
+      '&printnotes=false' +
+      '&sheetnames=false' +
+      '&printtitle=false' +
+      '&pagenumbers=false' +  //hide optional headers and footers
+      exportRangeEquals; 
+
+    var options = {
+      headers: {
+        Authorization: 'Bearer ' + ScriptApp.getOAuthToken(),
+      },
+    };
+
+    // Create PDF
+    const pdfName = spreadsheet.getSheetById(sheetId).getName() + ' sheet for ' + studentName;
+    const response = UrlFetchApp.fetch(url_base + url_ext, options);
+    const blob = response.getBlob().setName(pdfName + '.pdf');
+    const rootFolder = DriveApp.getRootFolder();
+    const pdfSheet = rootFolder.createFile(blob);
+
+    return pdfSheet.getId();
+  }
+
+  catch (err) {
+    Logger.log(err.stack);
+    throw new Error(err.message + '\n\n' + err.stack)
+  }
+}
+
+function getStudentsSpreadsheetData(studentName) {
+  const summarySheet = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('optSheetId')).getSheetByName('Summary');
+  const lastFilledRow = getLastFilledRow(summarySheet, 1);
+  const summaryData = summarySheet.getRange(1, 1, lastFilledRow, 26).getValues();
+  const studentData = {
+    'name': null,
+    'hours': null,
+    'recentSessionDate': null
+  };
+
+  for (let r = 0; r < lastFilledRow; r++) {
+    if (summaryData[r][0] === studentName) {
+      studentData.name = summaryData[r][0],
+      studentData.hours = summaryData[r][3],
+      studentData.recentSessionDate = Utilities.formatDate(new Date(summaryData[r][16]), 'GMT', 'EEE M/d');
+      break;
+    }
+  }
+  return studentData;
+}
+
+
+function updateOPTStudentFolderData() {
+  const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
+  const teamDataSheet = clientDataSs.getSheetByName('Team OPT');
+  const teamFolder = DriveApp.getFolderById('1tSKajFOa_EVUjH8SKhrQFbHSjDmmopP9');
+  const tutorFolders = teamFolder.getFolders();
+  let tutorIndex = 0;
+  
+  while (tutorFolders.hasNext()) {
+    const tutorFolder = tutorFolders.next();
+    const tutorFolderName = tutorFolder.getName();
+    const tutorFolderId = tutorFolder.getId();
+
+    const tutorStudentsStr = teamDataSheet.getRange(tutorIndex + 2, 4).getValue();
+    let tutorStudents = tutorStudentsStr ? JSON.parse(tutorStudentsStr) : [];
+
+    tutorData = {
+      'index': tutorIndex,
+      'name': tutorFolderName,
+      'studentsFolderId': tutorFolderId,
+      'studentsDataJSON': tutorStudents
+    }
+
+    tutorStudents = createStudentFolders.findStudentFileIds(tutorData)
+
+    teamDataSheet.getRange(tutorIndex + 2,1,1,4).setValues([[tutorIndex, tutorFolderName, tutorFolderId, JSON.stringify(tutorStudents)]]);
+    tutorIndex ++;
+  }
+  
+  const clientSheet = clientDataSs.getSheetByName('Clients')
+  const myStudentsStr = clientSheet.getRange(2, 17).getValue();
+  let myStudents = myStudentsStr? JSON.parse(myStudentsStr) : [];
+
+  const myStudentFolderData = {
+    'index': 0,
+    'name': 'Open Path Tutoring',
+    'studentsFolderId': clientSheet.getRange(2, 15).getValue(),
+    'studentsDataJSON': myStudents
+  }
+
+  myStudents = createStudentFolders.findStudentFileIds(myStudentFolderData);
+  clientSheet.getRange(2, 17).setValue(JSON.stringify(myStudents));
+}

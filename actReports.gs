@@ -48,7 +48,7 @@ function findTeamActScoreReports() {
 }
 
 function findNewCompletedActs(fileList) {
-  const testCodes = getTestCodes();
+  const testCodes = getActTestCodes();
   const scoreSheet = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('optSheetId')).getSheetByName('ACT scores');
   let nextOpenRow = getLastFilledRow(scoreSheet, 1) + 1;
 
@@ -81,7 +81,7 @@ function findNewCompletedActs(fileList) {
           const sScore = parseInt(testHeaderValues[2][13]) || 0;
           const totalScore = parseInt(testHeaderValues[0][5]) || '';
           const dateSubmitted = testHeaderValues[0][9];
-          const isTestNew = testHeaderValues[0][6] === 'Submitted on:';
+          const isTestNew = testHeaderValues[0][6] !== 'Submitted on:';
 
           if (totalScore) {
             scores.push({
@@ -132,11 +132,12 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
     const ssName = spreadsheet.getName();
     const studentName = ssName.slice(ssName.indexOf('-') + 2);
     const dataSheet = spreadsheet.getSheetByName('Data');
-    let scoreReportFolderId;
+    let scoreReportFolderId, studentFolderId;
 
     if (dataSheet.getRange('V1').getValue() === 'Score report folder ID:' && dataSheet.getRange('W1').getValue() !== '') {
-      scoreReportFolderId = practiceDataSheet.getRange('W1').getValue();
-    } else {
+      scoreReportFolderId = dataSheet.getRange('W1').getValue();
+    } 
+    else {
       var parentFolderId = DriveApp.getFileById(spreadsheetId).getParents().next().getId();
       const subfolderIds = getSubFolderIdsByFolderId(parentFolderId);
 
@@ -148,7 +149,7 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
           scoreReportFolderId = subfolderId;
           break;
         } else if (subfolderName.includes(studentName)) {
-          studentFolderId = subFolderId;
+          studentFolderId = subfolderId;
         }
       }
 
@@ -164,6 +165,10 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
             scoreReportFolderId = subfolderId;
             break;
           }
+        }
+
+        if (!scoreReportFolderId) {
+          scoreReportFolderId = DriveApp.getFolderById(studentFolderId).createFolder('Score reports').getId();
         }
       }
     }
@@ -199,8 +204,22 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
 
     Logger.log(`Starting ${currentTestData.test} score report for ${studentName}`);
 
-    const answerFileId = savePdfSheet(spreadsheetId, answerSheetId, studentName);
-    const analysisFileId = savePdfSheet(spreadsheetId, analysisSheetId, studentName);
+    const answerSheetMargins = {'top': '0.3', 'bottom': '0.25', 'left': '0.35', 'right': '0.35'}
+    const answerFileId = savePdfSheet(spreadsheetId, answerSheetId, studentName, answerSheetMargins);
+
+    const analysisSheetWidth = 1296;
+    const analysisSheetMargin = {'top': '0.25', 'bottom': null, 'left': '0.25', 'right': '0.25'}
+    const pageScaleFactor = 576 / analysisSheetWidth;     // fitw=true scales page to 576px given 0.25in left/right margins
+    const headerHeightPixels = 24 * 8;
+    const mathTotalRow = findActMathTotalRow(analysisSheet, 3);
+    const bodyHeightPixels = (mathTotalRow - 8) * 21;
+    const pageHeightPixels = headerHeightPixels + bodyHeightPixels;
+    const pageHeightScaled = pageHeightPixels / pageScaleFactor;
+    const marginTopPixels = parseInt(analysisSheetMargin.top);
+    const pageBreakHeight = pageHeightScaled + marginTopPixels;
+    analysisSheetMargin.bottom = String((792 - pageBreakHeight) / 72);    // PDF is 792px tall and 72px/in when fitw=true
+    // const exportRangeEquals = '&range=A1:L' + grandTotalRow;
+    const analysisFileId = savePdfSheet(spreadsheetId, analysisSheetId, studentName, analysisSheetMargin);
 
     const fileIdsToMerge = [analysisFileId, answerFileId];
 
@@ -257,8 +276,8 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
     const testSheet = spreadsheet.getSheetByName(currentTestData.test);
     const completionCheckCell = testSheet.getRange('G1:I1').merge();
     completionCheckCell.setValue('Submitted on:');
-    completionCheckCell.setVerticalAlignment('right');
-    testSheet.getRange('J1').setValue(currentTestData.date);
+    completionCheckCell.setHorizontalAlignment('right').setFontWeight('normal');
+    testSheet.getRange('J1').setValue(currentTestData.date).setHorizontalAlignment('center').setFontWeight('normal');
     Logger.log(studentName + ' ' + currentTestData.test + ' score report complete');
   } catch (err) {
     Logger.log(err.stack);
