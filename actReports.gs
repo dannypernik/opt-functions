@@ -205,6 +205,13 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
       }
     }
 
+    const answerSheetPosition = spreadsheet.getSheetByName(currentTestData.test).getIndex();
+
+    if (analysisSheet.getIndex() !== answerSheetPosition + 1) {
+      spreadsheet.setActiveSheet(analysisSheet);
+      spreadsheet.moveActiveSheet(answerSheetPosition + 1);
+    }
+
     const analysisSheetId = analysisSheet.getSheetId();
 
     Logger.log(`Starting ${currentTestData.test} score report for ${studentName}`);
