@@ -184,7 +184,7 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
     const pdfName = `ACT ${currentTestData.test} answer analysis - ${studentName}.pdf`;
     const answerSheetId = spreadsheet.getSheetByName(currentTestData.test).getSheetId();
     const analysisSheetName = currentTestData.test + ' analysis';
-    let analysisSheet = spreadsheet.getSheetByName(analysisSheetName).getSheetId();
+    let analysisSheet = spreadsheet.getSheetByName(analysisSheetName);
 
     if (!analysisSheet) {
       const testAnalysisSheet = spreadsheet.getSheetByName('Test analysis');
@@ -193,10 +193,22 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
 
       // Clear the "Test code" filter, then set it to currentTestData.test
       if (analysisPivot) {
-        // Remove any existing filter on "Test code"
-        analysisPivot.removeFilter('Test code');
-        // Set the filter to only include the current test code
-        analysisPivot.addFilter('Test code', [currentTestData.test]);
+        // Remove any existing "Test code" filter and set it to currentTestData.test
+        const filters = analysisPivot.getFilters();
+        // Remove any filter for "Test code"
+        const newFilters = filters.filter(f => f.getSourceDataColumn().getName() !== 'Test code');
+        // Add the new filter for the current test code
+        const testCodeColumn = analysisPivot.getSourceDataColumnByName
+          ? analysisPivot.getSourceDataColumnByName('Test code')
+          : null;
+        if (testCodeColumn) {
+          newFilters.push(
+            SpreadsheetApp.newPivotFilter()
+              .setSourceDataColumn(testCodeColumn)
+              .setValues([currentTestData.test])
+          );
+          analysisPivot.setFilters(newFilters);
+        }
       }
     }
 

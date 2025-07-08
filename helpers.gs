@@ -294,14 +294,12 @@ const showAllSheetsExcept = (spreadsheetId='1_nRuW80ewwxEcsHLKy8U8o1nIxKNxxrih-I
 }
 
 function findActMathTotalRow(sheet, mathTotalColumn) {
-  const rows = sheet.getRange(1, mathTotalColumn, sheet.getMaxRows()).getValues();
+  const data = sheet.getRange(1, mathTotalColumn, sheet.getMaxRows()).getValues();
 
-  const count = 0;
-  for (row of rows) {
-    count += 1;
-
-    if (row.toLowerCase() === "math total") {
-      return count;
+  for (let r = 0; r < data[0].length; r++) {
+    if (data[0][r].toLowerCase() === "math total") {
+      Logger.log(`${r} ${data[0][r]}`)
+      return r + 1;
     }
   }
 }
@@ -343,8 +341,7 @@ function savePdfSheet(spreadsheetId,
     'bottom': '0.5',
     'left': '0.3',
     'right': '0.3'
-  },
-  exportRangeEquals='') {
+  }) {
   try {
     var spreadsheet = spreadsheetId ? SpreadsheetApp.openById(spreadsheetId) : SpreadsheetApp.getActiveSpreadsheet();
     var spreadsheetId = spreadsheetId ? spreadsheetId : spreadsheet.getId();
@@ -366,13 +363,13 @@ function savePdfSheet(spreadsheetId,
       '&printnotes=false' +
       '&sheetnames=false' +
       '&printtitle=false' +
-      '&pagenumbers=false' +  //hide optional headers and footers
-      exportRangeEquals; 
+      '&pagenumbers=false';  //hide optional headers and footers
 
     var options = {
       headers: {
         Authorization: 'Bearer ' + ScriptApp.getOAuthToken(),
       },
+      muteHttpExceptions: true
     };
 
     // Create PDF
