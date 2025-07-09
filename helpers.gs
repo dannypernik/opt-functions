@@ -298,7 +298,7 @@ function findActMathTotalRow(sheet, mathTotalColumn) {
   }
 }
 
-function mergePDFs(fileIds, destinationFolderId, name = 'merged.pdf') {
+async function mergePDFs(fileIds, destinationFolderId, name = 'merged.pdf') {
   // Retrieve PDF data as byte arrays
   const data = fileIds.map((id) => new Uint8Array(DriveApp.getFileById(id).getBlob().getBytes()));
 
@@ -311,15 +311,15 @@ function mergePDFs(fileIds, destinationFolderId, name = 'merged.pdf') {
   );
 
   // Merge PDFs
-  const pdfDoc = PDFLib.PDFDocument.create();
+  const pdfDoc = await PDFLib.PDFDocument.create();
   for (let i = 0; i < data.length; i++) {
-    const pdfData = PDFLib.PDFDocument.load(data[i]);
-    const pages = pdfDoc.copyPages(pdfData, pdfData.getPageIndices());
+    const pdfData = await PDFLib.PDFDocument.load(data[i]);
+    const pages = await pdfDoc.copyPages(pdfData, pdfDoc.getPageIndices());
     pages.forEach((page) => pdfDoc.addPage(page));
   }
 
   // Save merged PDF to Drive
-  const bytes = pdfDoc.save();
+  const bytes = await pdfDoc.save();
   const mergedBlob = Utilities.newBlob([...new Int8Array(bytes)], MimeType.PDF, 'merged.pdf');
   const destinationFolder = DriveApp.getFolderById(destinationFolderId);
   const mergedFile = destinationFolder.createFile(mergedBlob).setName(name);
@@ -510,4 +510,12 @@ function mergePDFsWithILovePDF(fileIds, destinationFolderId, name = 'merged.pdf'
   const mergedFile = folder.createFile(mergedBlob);
 
   return mergedFile;
+}
+
+
+function formatDateYYYYMMDD(date) {
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  const yyyy = date.getFullYear();
+  return `${yyyy}-${mm}-${dd}`;
 }

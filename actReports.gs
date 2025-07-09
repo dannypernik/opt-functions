@@ -1,4 +1,4 @@
-function findNewActScoreReports(students, folderName) {
+async function findNewActScoreReports(students, folderName) {
   if (!students || students.triggerUid) {
     // if students is null, get OPT data row
     const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
@@ -31,10 +31,10 @@ function findNewActScoreReports(students, folderName) {
   fileList.sort((a, b) => b.getLastUpdated() - a.getLastUpdated());
   Logger.log(`${folderName}: ${fileList}`);
 
-  findNewCompletedActs(fileList);
+  await findNewCompletedActs(fileList);
 }
 
-function findTeamActScoreReports() {
+async function findTeamActScoreReports() {
   const studentDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
   const teamDataSheet = studentDataSs.getSheetByName('Team OPT');
   const teamDataValues = teamDataSheet.getRange(2, 1, getLastFilledRow(teamDataSheet, 1) - 1, 4).getValues();
@@ -43,11 +43,11 @@ function findTeamActScoreReports() {
     const studentsStr = teamDataValues[i][3];
     const folderName = teamDataValues[i][1];
     const students = studentsStr ? JSON.parse(studentsStr) : [];
-    findNewActScoreReports(students, folderName);
+    await findNewActScoreReports(students, folderName);
   }
 }
 
-function findNewCompletedActs(fileList) {
+async function findNewCompletedActs(fileList) {
   const testCodes = getActTestCodes();
   const scoreSheet = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('optSheetId')).getSheetByName('ACT scores');
   let nextOpenRow = getLastFilledRow(scoreSheet, 1) + 1;
@@ -80,8 +80,13 @@ function findNewCompletedActs(fileList) {
           const rScore = parseInt(testHeaderValues[2][9]) || 0;
           const sScore = parseInt(testHeaderValues[2][13]) || 0;
           const totalScore = parseInt(testHeaderValues[0][5]) || '';
-          const dateSubmitted = testHeaderValues[0][9];
+          let dateSubmitted = testHeaderValues[0][9];
           const isTestNew = testHeaderValues[0][6] !== 'Submitted on:';
+
+          if (!dateSubmitted) {
+            const today = new Date();
+            dateSubmitted = formatDateYYYYMMDD(today);
+          }
 
           if (totalScore) {
             scores.push({
@@ -103,18 +108,18 @@ function findNewCompletedActs(fileList) {
     scores = scores.sort((a, b) => new Date(a.date) - new Date(b.date));
 
     // scores array will include reported scores of all completed tests
-    createActScoreReports(ssId, scores);
+    await createActScoreReports(ssId, scores);
   }
 }
 
-function createActScoreReports(spreadsheetId, allTestData) {
+async function createActScoreReports(spreadsheetId, allTestData) {
   spreadsheetId = spreadsheetId ? spreadsheetId : SpreadsheetApp.getActiveSpreadsheet().getId();
   const pastTestData = [];
 
   try {
     for (testData of allTestData) {
       if (testData.isNew) {
-        sendActScoreReportPdf(spreadsheetId, testData, pastTestData);
+        await sendActScoreReportPdf(spreadsheetId, testData, pastTestData);
       }
       pastTestData.push(testData);
     }
@@ -202,7 +207,6 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
             .build();
           
           filter.setFilterCriteria(newCriteria);
-          Logger.log("Pivot table filter for 'Test code' updated.");
           break;
         }
       }
@@ -223,6 +227,7 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
 
     const answerSheetMargins = { top: '0.3', bottom: '0.25', left: '0.35', right: '0.35' };
     const answerFileId = savePdfSheet(spreadsheetId, answerSheetId, studentName, answerSheetMargins);
+    Utilities.sleep(1000);
 
     const analysisSheetWidth = 1296;
     const analysisSheetMargin = { top: '0.25', bottom: '0.25', left: '0.25', right: '0.25' };
@@ -238,10 +243,11 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
     analysisSheetMargin.bottom = bottomMargin.toFixed(2);
     // const exportRangeEquals = '&range=A1:L' + grandTotalRow;
     const analysisFileId = savePdfSheet(spreadsheetId, analysisSheetId, studentName, analysisSheetMargin);
+    Utilities.sleep(1000);
 
     const fileIdsToMerge = [analysisFileId, answerFileId];
 
-    const mergedFile = mergePDFs(fileIdsToMerge, scoreReportFolderId, pdfName);
+    const mergedFile = await mergePDFs(fileIdsToMerge, scoreReportFolderId, pdfName);
     const mergedBlob = mergedFile.getBlob();
 
     const studentFirstName = studentName.split(' ')[0];
