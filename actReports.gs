@@ -171,7 +171,7 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
     }
 
     if (!scoreReportFolderId) {
-      scoreReportFolderId = DriveApp.getFolderById(parentId).createFolder('Score reports').getId();
+      scoreReportFolderId = DriveApp.getFolderById(parentFolderId).createFolder('Score reports').getId();
     }
 
     if (dataSheet.getRange('W1').getValue() !== scoreReportFolderId) {
@@ -186,39 +186,28 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
     if (!analysisSheet) {
       const testAnalysisSheet = spreadsheet.getSheetByName('Test analysis');
       analysisSheet = testAnalysisSheet.copyTo(spreadsheet).setName(analysisSheetName);
-      const analysisPivot = analysisSheet.getPivotTables()[0];
+    }
+    const analysisPivot = analysisSheet.getPivotTables()[0];
 
-      // Clear the "Test code" filter, then set it to currentTestData.test
-      if (analysisPivot) {
-        // Remove any existing "Test code" filter and set it to currentTestData.test
-        const filters = analysisPivot.getFilters();
+    if (analysisPivot) {
+      const filters = analysisPivot.getFilters();
+      const testCodeColumnIndex = 1;
 
-        for (var i = 0; i < filters.length; i++) {
-          var filter = filters[i];
-          if (filter.getSourceDataColumn() === testCodeColumnIndex) {
-            // --- Define your new filter criteria here ---
-            var newCriteria = SpreadsheetApp.newFilterCriteria()
-              .setVisibleValues([currentTestData.test]) // Example: show only "Value1" and "Value2"
-              .build();
-
-            filter.setFilterCriteria(newCriteria);
-            Logger.log("Pivot table filter for 'Test code' updated.");
-            return; // Exit the loop after finding and updating the filter
-          }
+      for (var i = 0; i < filters.length; i++) {
+        var filter = filters[i];
+        
+        if (filter.getSourceDataColumn() === testCodeColumnIndex) {
+          var newCriteria = SpreadsheetApp.newFilterCriteria()
+            .setVisibleValues([currentTestData.test])
+            .build();
+          
+          filter.setFilterCriteria(newCriteria);
+          Logger.log("Pivot table filter for 'Test code' updated.");
+          break;
         }
-        Logger.log("Pivot table filter for 'Test code' not found.");
-      } else {
-        Logger.log('No Pivot Table found at the specified range.');
       }
-      //   // Remove any filter for "Test code"
-      //   const newFilters = filters.filter((f) => f.getSourceDataColumn().getName() !== 'Test code');
-      //   // Add the new filter for the current test code
-      //   const testCodeColumn = analysisPivot.getSourceDataColumnByName ? analysisPivot.getSourceDataColumnByName('Test code') : null;
-      //   if (testCodeColumn) {
-      //     newFilters.push(SpreadsheetApp.newPivotFilter().setSourceDataColumn(testCodeColumn).setValues([currentTestData.test]));
-      //     analysisPivot.setFilters(newFilters);
-      //   }
-      // }
+    } else {
+      Logger.log('No Pivot Table found at the specified range.');
     }
 
     const answerSheetPosition = spreadsheet.getSheetByName(currentTestData.test).getIndex();
@@ -243,7 +232,7 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
     const bodyHeightPixels = (mathTotalRow - 8) * 21;
     const pageHeightPixels = headerHeightPixels + bodyHeightPixels;
     const pageHeightScaled = pageHeightPixels * pageScaleFactor;
-    const marginTopPixels = 0.5 * 72; // 0.25 margin_top + fudge factor
+    const marginTopPixels = 0.25 * 72; // 0.25 margin_top + fudge factor
     const pageBreakHeight = pageHeightScaled + marginTopPixels;
     const bottomMargin = (792 - pageBreakHeight) / 72; // PDF is 792px tall and 72px/in when fitw=true
     analysisSheetMargin.bottom = bottomMargin.toFixed(2);
