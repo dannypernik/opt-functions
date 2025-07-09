@@ -298,7 +298,19 @@ function findActMathTotalRow(sheet, mathTotalColumn) {
   }
 }
 
-async function mergePDFs(fileIds, destinationFolderId, name = 'merged.pdf') {
+async function mergePDFs(fileIds, destinationFolderId, name = 'merged.pdf', attempt = 1) {
+  const validFileIds = fileIds.filter(isValidPdf);
+
+  if (validFileIds.length !== fileIds.length) {
+    if (attempt > 5) {
+      throw new Error('mergePDFs: Too many attempts, some files are still not valid PDFs.');
+    }
+    // Exponential backoff: wait 2^attempt * 1000 ms
+    const waitMs = Math.pow(2, attempt) * 1000;
+    Logger.log(`mergePDFs: Not all files are valid PDFs. Retrying in ${waitMs / 1000}s (attempt ${attempt})`);
+    Utilities.sleep(waitMs);
+    return await mergePDFs(fileIds, destinationFolderId, name, attempt + 1);
+  }
   // Retrieve PDF data as byte arrays
   const data = fileIds.map((id) => new Uint8Array(DriveApp.getFileById(id).getBlob().getBytes()));
 
@@ -371,7 +383,7 @@ function savePdfSheet(
       headers: {
         Authorization: 'Bearer ' + ScriptApp.getOAuthToken(),
       },
-      muteHttpExceptions: true
+      muteHttpExceptions: true,
     };
 
     // Create PDF
@@ -386,6 +398,14 @@ function savePdfSheet(
     Logger.log(err.stack);
     throw new Error(err.message + '\n\n' + err.stack);
   }
+}
+
+function isValidPdf(fileId) {
+  const blob = DriveApp.getFileById(fileId).getBlob();
+  if (blob.getContentType() !== MimeType.PDF) return false;
+  const bytes = blob.getBytes();
+  const header = String.fromCharCode.apply(null, bytes.slice(0, 5));
+  return header === '%PDF-';
 }
 
 function getStudentsSpreadsheetData(studentName) {
@@ -512,7 +532,6 @@ function mergePDFsWithILovePDF(fileIds, destinationFolderId, name = 'merged.pdf'
 
   return mergedFile;
 }
-
 
 function formatDateYYYYMMDD(date) {
   const mm = String(date.getMonth() + 1).padStart(2, '0');
