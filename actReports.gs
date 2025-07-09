@@ -252,7 +252,7 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
 
     const fileIdsToMerge = [analysisFileId, answerFileId];
 
-    const mergedFile = await mergePDFs(fileIdsToMerge, scoreReportFolderId, pdfName);
+    const mergedFile = mergePDFs(fileIdsToMerge, scoreReportFolderId, pdfName);
     const mergedBlob = mergedFile.getBlob();
 
     const studentFirstName = studentName.split(' ')[0];

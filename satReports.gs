@@ -3,12 +3,12 @@ function findNewSatScoreReports(students, folderName) {
     // if students is null, get OPT data row
     const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
     const clientSheet = clientDataSs.getSheetByName('Clients');
-    const myDataRange = clientSheet.getRange(2,1,1,17).getValues();
+    const myDataRange = clientSheet.getRange(2, 1, 1, 17).getValues();
     const myStudentDataValue = myDataRange[0][16];
-    folderName = myDataRange[0][1]; 
+    folderName = myDataRange[0][1];
     students = JSON.parse(myStudentDataValue);
   }
-  
+
   const fileList = [];
 
   for (student of students) {
@@ -19,11 +19,10 @@ function findNewSatScoreReports(students, folderName) {
       const now = new Date();
       const msInTimeLimit = 5 * 24 * 60 * 60 * 1000;
 
-      if ((now - lastUpdated) <= msInTimeLimit) {
+      if (now - lastUpdated <= msInTimeLimit) {
         fileList.push(satAdminFile);
-      }
-      else {
-        Logger.log(`${student.name} unchanged`)
+      } else {
+        Logger.log(`${student.name} unchanged`);
       }
     }
   }
@@ -38,16 +37,15 @@ function findNewSatScoreReports(students, folderName) {
 function findTeamSatScoreReports() {
   const studentDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
   const teamDataSheet = studentDataSs.getSheetByName('Team OPT');
-  const teamDataValues = teamDataSheet.getRange(2,1,getLastFilledRow(teamDataSheet, 1) - 1, 4).getValues();
+  const teamDataValues = teamDataSheet.getRange(2, 1, getLastFilledRow(teamDataSheet, 1) - 1, 4).getValues();
 
-  for (let i = 0; i < teamDataValues.length; i ++) {
+  for (let i = 0; i < teamDataValues.length; i++) {
     const studentsStr = teamDataValues[i][3];
     const folderName = teamDataValues[i][1];
     const students = JSON.parse(studentsStr);
     findNewSatScoreReports(students, folderName);
   }
 }
-
 
 function findNewCompletedSats(fileList) {
   const testCodes = getSatTestCodes();
@@ -67,8 +65,8 @@ function findNewCompletedSats(fileList) {
     Logger.log('Starting new test check for ' + studentName);
 
     for (testCode of testCodes) {
-      const completedRwTestRows = practiceTestData.filter(row => row[0] === testCode && row[1] === 'Reading & Writing' && row[10] !== '');
-      const completedMathTestRows = practiceTestData.filter(row => row[0] === testCode && row[1] === 'Math' && row[10] !== '');
+      const completedRwTestRows = practiceTestData.filter((row) => row[0] === testCode && row[1] === 'Reading & Writing' && row[10] !== '');
+      const completedMathTestRows = practiceTestData.filter((row) => row[0] === testCode && row[1] === 'Math' && row[10] !== '');
       const completedRwQuestionCount = completedRwTestRows.length;
       const completedMathQuestionCount = completedMathTestRows.length;
 
@@ -86,31 +84,29 @@ function findNewCompletedSats(fileList) {
 
           if (rwScore && mScore) {
             scores.push({
-              'test': testCode,
-              'rw': rwScore,
-              'm': mScore,
-              'total': totalScore,
-              'date': dateSubmitted,
-              'isNew': isTestNew
-            })
-          }
-          else if (completionCheck !== '?') {
+              test: testCode,
+              rw: rwScore,
+              m: mScore,
+              total: totalScore,
+              date: dateSubmitted,
+              isNew: isTestNew,
+            });
+          } else if (completionCheck !== '?') {
             Logger.log(`Add scores for ${studentName} on ${testCode}`);
             const email = getOPTPermissionsList(ssId);
             if (email) {
               MailApp.sendEmail({
                 to: email,
                 subject: `Enter scores for ${studentName}`,
-                htmlBody: `It appears that ${testCode} was completed for ${studentName}, but scores are missing. Please add them asap to generate a score analysis. \n` +
-                `<a href="https://docs.google.com/spreadsheets/d/${ssId}/edit?gid=${testSheet.getSheetId()}">${studentName}'s admin spreadsheet</a>`,
+                htmlBody:
+                  `It appears that ${testCode} was completed for ${studentName}, but scores are missing. Please add them asap to generate a score analysis. \n` + `<a href="https://docs.google.com/spreadsheets/d/${ssId}/edit?gid=${testSheet.getSheetId()}">${studentName}'s admin spreadsheet</a>`,
               });
               const completionCheckRange = testSheet.getRange('M1');
               completionCheckRange.setValue('?');
               completionCheckRange.setVerticalAlignment('middle');
             }
           }
-        }
-        else {
+        } else {
           createStudentFolders.addSatTestSheets(ssId);
         }
       }
@@ -126,16 +122,15 @@ function findNewCompletedSats(fileList) {
 function createSatScoreReports(spreadsheetId, allTestData) {
   spreadsheetId = spreadsheetId ? spreadsheetId : SpreadsheetApp.getActiveSpreadsheet().getId();
   const pastTestData = [];
-  
+
   try {
     for (testData of allTestData) {
       if (testData.isNew) {
         sendSatScoreReportPdf(spreadsheetId, testData, pastTestData);
       }
-      pastTestData.push(testData)
+      pastTestData.push(testData);
     }
-  }
-  catch (err) {
+  } catch (err) {
     Logger.log(err.message + '\n\n' + err.stack);
   }
 }
@@ -151,8 +146,7 @@ async function sendSatScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
 
     if (practiceDataSheet.getRange('V1').getValue() === 'Score report folder ID:' && practiceDataSheet.getRange('W1').getValue() !== '') {
       scoreReportFolderId = practiceDataSheet.getRange('W1').getValue();
-    }
-    else {
+    } else {
       var parentId = DriveApp.getFileById(spreadsheetId).getParents().next().getId();
       const subfolderIds = getSubFolderIdsByFolderId(parentId);
 
@@ -171,7 +165,7 @@ async function sendSatScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
       practiceDataSheet.getRange('V1:W1').setValues([['Score report folder ID:', scoreReportFolderId]]);
     }
 
-    const pdfName = currentTestData.test + ' answer analysis - ' + studentName + '.pdf'
+    const pdfName = currentTestData.test + ' answer analysis - ' + studentName + '.pdf';
     const answerSheetId = spreadsheet.getSheetByName(currentTestData.test).getSheetId();
     const analysisSheetId = spreadsheet.getSheetByName(currentTestData.test + ' analysis').getSheetId();
 
@@ -180,9 +174,9 @@ async function sendSatScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
     const answerFileId = savePdfSheet(spreadsheetId, answerSheetId, studentName);
     const analysisFileId = savePdfSheet(spreadsheetId, analysisSheetId, studentName);
 
-    const fileIdsToMerge= [analysisFileId, answerFileId];
+    const fileIdsToMerge = [analysisFileId, answerFileId];
 
-    const mergedFile = await mergePDFs(fileIdsToMerge, scoreReportFolderId, pdfName);
+    const mergedFile = mergePDFs(fileIdsToMerge, scoreReportFolderId, pdfName);
     const mergedBlob = mergedFile.getBlob();
 
     const studentFirstName = studentName.split(' ')[0];
@@ -213,17 +207,8 @@ async function sendSatScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
         }
         message += '</ul><br>';
       }
-    }
-    else {
-      var message = 'Hi PARENTNAME, please find the score report from ' +
-        studentFirstName +
-        "'s recent practice test attached. " +
-        currentTestData.total +
-        ' overall (' +
-        currentTestData.rw +
-        ' Reading & Writing, ' +
-        currentTestData.m +
-        ' Math)<br><br>'
+    } else {
+      var message = 'Hi PARENTNAME, please find the score report from ' + studentFirstName + "'s recent practice test attached. " + currentTestData.total + ' overall (' + currentTestData.rw + ' Reading & Writing, ' + currentTestData.m + ' Math)<br><br>';
     }
 
     const email = getOPTPermissionsList(spreadsheetId);
@@ -241,10 +226,8 @@ async function sendSatScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
     completionCheckCell.setValue('✔');
     completionCheckCell.setVerticalAlignment('middle');
     Logger.log(studentName + ' ' + currentTestData.test + ' score report complete');
-  }
-
-  catch (err) {
+  } catch (err) {
     Logger.log(err.stack);
-    throw new Error(err.message + '\n\n' + err.stack)
+    throw new Error(err.message + '\n\n' + err.stack);
   }
 }

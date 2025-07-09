@@ -298,7 +298,7 @@ function findActMathTotalRow(sheet, mathTotalColumn) {
   }
 }
 
-async function mergePDFs(fileIds, destinationFolderId, name = 'merged.pdf') {
+function mergePDFs(fileIds, destinationFolderId, name = 'merged.pdf') {
   // Retrieve PDF data as byte arrays
   const data = fileIds.map((id) => new Uint8Array(DriveApp.getFileById(id).getBlob().getBytes()));
 
@@ -311,15 +311,15 @@ async function mergePDFs(fileIds, destinationFolderId, name = 'merged.pdf') {
   );
 
   // Merge PDFs
-  const pdfDoc = await PDFLib.PDFDocument.create();
+  const pdfDoc = PDFLib.PDFDocument.create();
   for (let i = 0; i < data.length; i++) {
-    const pdfData = await PDFLib.PDFDocument.load(data[i]);
-    const pages = await pdfDoc.copyPages(pdfData, pdfData.getPageIndices());
+    const pdfData = PDFLib.PDFDocument.load(data[i]);
+    const pages = pdfDoc.copyPages(pdfData, pdfData.getPageIndices());
     pages.forEach((page) => pdfDoc.addPage(page));
   }
 
   // Save merged PDF to Drive
-  const bytes = await pdfDoc.save();
+  const bytes = pdfDoc.save();
   const mergedBlob = Utilities.newBlob([...new Int8Array(bytes)], MimeType.PDF, 'merged.pdf');
   const destinationFolder = DriveApp.getFolderById(destinationFolderId);
   const mergedFile = destinationFolder.createFile(mergedBlob).setName(name);
@@ -360,8 +360,13 @@ function savePdfSheet(
       margin.bottom +
       '&left_margin=' +
       margin.left +
-      '&right_margin=' + margin.right + '&printnotes=false' + '&sheetnames=false' + '&printtitle=false' + '&pagenumbers=false'; //hide optional headers and footers
-      
+      '&right_margin=' +
+      margin.right +
+      '&printnotes=false' +
+      '&sheetnames=false' +
+      '&printtitle=false' +
+      '&pagenumbers=false'; //hide optional headers and footers
+
     var options = {
       headers: {
         Authorization: 'Bearer ' + ScriptApp.getOAuthToken(),
@@ -448,19 +453,19 @@ function mergePDFsWithILovePDF(fileIds, destinationFolderId, name = 'merged.pdf'
   const publicKey = PropertiesService.getScriptProperties().getProperty('iLovePDFPublicKey');
   const secretKey = PropertiesService.getScriptProperties().getProperty('iLovePDFSecretKey');
 
-  let files = []
+  let files = [];
   fileIds.forEach(function (fileId) {
-    fileIds.push({'file_id': fileId});
-  })
+    fileIds.push({ file_id: fileId });
+  });
 
   // 1. Start a new merge task
   const startTaskOptions = {
     method: 'post',
     headers: {
-      "Authorization": "Bearer " + publicKey, // Example JWT Authentication
-      "Content-Type": "application/json"
+      Authorization: 'Bearer ' + publicKey, // Example JWT Authentication
+      'Content-Type': 'application/json',
     },
-    payload: JSON.stringify({ files: files })
+    payload: JSON.stringify({ files: files }),
   };
 
   const startTaskResponse = UrlFetchApp.fetch('https://api.ilovepdf.com/v1/start/merge', startTaskOptions);
