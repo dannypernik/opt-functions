@@ -324,7 +324,7 @@ function mergePDFs(fileIds, destinationFolderId, name = 'merged.pdf') {
   const destinationFolder = DriveApp.getFolderById(destinationFolderId);
   const mergedFile = destinationFolder.createFile(mergedBlob).setName(name);
 
-  fileIds.forEach((id) => DriveApp.getFileById(id).setTrashed(true));
+  // fileIds.forEach((id) => DriveApp.getFileById(id).setTrashed(true));
 
   return mergedFile;
 }
@@ -353,7 +353,7 @@ function savePdfSheet(
       '&size=letter' + // paper size
       '&portrait=true' + // orientation, false for landscape
       '&fitw=true' + // fit to width, false for actual size
-      '&fzr=true' + // do not repeat row headers (frozen rows) on each page
+      '&fzr=true' + // repeat row headers (frozen rows) on each page
       '&top_margin=' +
       margin.top +
       '&bottom_margin=' +
