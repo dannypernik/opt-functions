@@ -314,7 +314,7 @@ async function mergePDFs(fileIds, destinationFolderId, name = 'merged.pdf') {
   const pdfDoc = await PDFLib.PDFDocument.create();
   for (let i = 0; i < data.length; i++) {
     const pdfData = await PDFLib.PDFDocument.load(data[i]);
-    const pages = await pdfDoc.copyPages(pdfData, pdfDoc.getPageIndices());
+    const pages = await pdfDoc.copyPages(pdfData, pdfData.getPageIndices());
     pages.forEach((page) => pdfDoc.addPage(page));
   }
 
@@ -371,6 +371,7 @@ function savePdfSheet(
       headers: {
         Authorization: 'Bearer ' + ScriptApp.getOAuthToken(),
       },
+      muteHttpExceptions: true
     };
 
     // Create PDF
