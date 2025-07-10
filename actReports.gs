@@ -227,23 +227,24 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
 
     const answerSheetMargins = { top: '0.3', bottom: '0.25', left: '0.35', right: '0.35' };
     const answerFileId = savePdfSheet(spreadsheetId, answerSheetId, studentName, answerSheetMargins);
-    Utilities.sleep(1000);
+    // Utilities.sleep(1000);
 
     const analysisSheetWidth = 1296;
     const analysisSheetMargin = { top: '0.25', bottom: '0.25', left: '0.25', right: '0.25' };
     const pageScaleFactor = 576 / analysisSheetWidth; // fitw=true scales page to 576px given 0.25in left/right margins
     const headerHeightPixels = 24 * 8;
-    const mathTotalRow = findActMathTotalRow(analysisSheet, 3);
-    const bodyHeightPixels = (mathTotalRow - 8) * 21;
+    const pageBreakRow = findActPageBreakRow(analysisSheet, 3);
+    const bodyHeightPixels = (pageBreakRow - 8) * 21;
     const pageHeightPixels = headerHeightPixels + bodyHeightPixels;
     const pageHeightScaled = pageHeightPixels * pageScaleFactor;
     const marginTopPixels = 0.25 * 72; // 0.25 margin_top + fudge factor
     const pageBreakHeight = pageHeightScaled + marginTopPixels;
     const bottomMargin = (792 - pageBreakHeight) / 72; // PDF is 792px tall and 72px/in when fitw=true
     analysisSheetMargin.bottom = bottomMargin.toFixed(2);
+    Logger.log(analysisSheetMargin.bottom + typeof analysisSheetMargin.bottom)
     // const exportRangeEquals = '&range=A1:L' + grandTotalRow;
     const analysisFileId = savePdfSheet(spreadsheetId, analysisSheetId, studentName, analysisSheetMargin);
-    Utilities.sleep(1000);
+    // Utilities.sleep(1000);
 
     const fileIdsToMerge = [analysisFileId, answerFileId];
 

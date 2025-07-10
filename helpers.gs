@@ -288,14 +288,35 @@ const showAllSheetsExcept = (spreadsheetId = '1_nRuW80ewwxEcsHLKy8U8o1nIxKNxxrih
     });
 };
 
-function findActMathTotalRow(sheet, mathTotalColumn) {
-  const data = sheet.getRange(1, mathTotalColumn, sheet.getMaxRows()).getValues();
+function findActPageBreakRow(sheet) {
+  const grandColData = sheet.getRange(1, 2, 111).getValues();
+  const mathColData = sheet.getRange(1, 3, 111).getValues();
+  Logger.log(grandColData);
+  Logger.log(mathColData);
 
-  for (let r = 0; r < data.length; r++) {
-    if (data[r][0].toLowerCase() === 'math total') {
-      return r + 1;
-    }
+  const grandTotalIndex = grandColData.indexOf('Grand Total');
+  if (0 < grandTotalIndex && grandTotalIndex < 77) {
+    Logger.log(`Single page ending at ${grandTotalIndex}`);
+    sheet.hideRows(grandTotalIndex + 2, 55);
+    return 77;
   }
+
+  const mathTotalIndex = mathColData.indexOf('Math Total');
+  if (0 < mathTotalIndex && mathTotalIndex < 77) {
+    Logger.log(`Page break at ${mathTotalIndex}`)
+    return mathTotalIndex + 1;
+  }
+  else {
+    return 77;
+  }
+
+  // for (let r = 0; r < 77; r++) {
+  //   Logger.log(data[r][0])
+  //   if (data[r][0].toLowerCase() === 'math total') {
+  //     Logger.log(r + 1)
+  //     return r + 1;
+  //   }
+  // }
 }
 
 async function mergePDFs(fileIds, destinationFolderId, name = 'merged.pdf', attempt = 1) {
