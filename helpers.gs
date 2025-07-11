@@ -289,8 +289,14 @@ const showAllSheetsExcept = (spreadsheetId = '1_nRuW80ewwxEcsHLKy8U8o1nIxKNxxrih
 };
 
 function getActPageBreakRow(sheet) {
-  const grandColData = sheet.getRange(1, 2, 111).getValues().map(row => row[0]);
-  const mathColData = sheet.getRange(1, 3, 111).getValues().map(row => row[0]);
+  const grandColData = sheet
+    .getRange(1, 2, 111)
+    .getValues()
+    .map((row) => row[0]);
+  const mathColData = sheet
+    .getRange(1, 3, 111)
+    .getValues()
+    .map((row) => row[0]);
 
   const grandTotalIndex = grandColData.indexOf('Grand Total');
   if (0 < grandTotalIndex && grandTotalIndex < 77) {
@@ -301,20 +307,11 @@ function getActPageBreakRow(sheet) {
 
   const mathTotalIndex = mathColData.indexOf('Math Total');
   if (0 < mathTotalIndex && mathTotalIndex < 77) {
-    Logger.log(`Page break at ${mathTotalIndex + 1}`)
+    Logger.log(`Page break at ${mathTotalIndex + 1}`);
     return mathTotalIndex + 1;
-  }
-  else {
+  } else {
     return 77;
   }
-
-  // for (let r = 0; r < 77; r++) {
-  //   Logger.log(data[r][0])
-  //   if (data[r][0].toLowerCase() === 'math total') {
-  //     Logger.log(r + 1)
-  //     return r + 1;
-  //   }
-  // }
 }
 
 async function mergePDFs(fileIds, destinationFolderId, name = 'merged.pdf', attempt = 1) {

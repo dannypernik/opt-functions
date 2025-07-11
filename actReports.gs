@@ -200,12 +200,10 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
 
       for (var i = 0; i < filters.length; i++) {
         var filter = filters[i];
-        
+
         if (filter.getSourceDataColumn() === testCodeColumnIndex) {
-          var newCriteria = SpreadsheetApp.newFilterCriteria()
-            .setVisibleValues([currentTestData.test])
-            .build();
-          
+          var newCriteria = SpreadsheetApp.newFilterCriteria().setVisibleValues([currentTestData.test]).build();
+
           filter.setFilterCriteria(newCriteria);
           break;
         }
@@ -228,22 +226,29 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
     const answerSheetMargins = { top: '0.3', bottom: '0.25', left: '0.35', right: '0.35' };
     const answerFileId = savePdfSheet(spreadsheetId, answerSheetId, studentName, answerSheetMargins);
 
-    const analysisSheetWidth = 1296;
-    const analysisSheetMargin = { top: '0.25', bottom: '0.25', left: '0.25', right: '0.25' };
-    const pageScaleFactor = 768 / analysisSheetWidth; // fitw=true scales page to 576px given 0.25in left/right margins
-    const headerHeightPixels = 24 * 8;
     const pageBreakRow = getActPageBreakRow(analysisSheet, 3);
+    const analysisSheetMargin = { top: '0.25', bottom: '0.25', left: '0.25', right: '0.25' };
 
     if (pageBreakRow < 77) {
-      const bodyHeightPixels = (pageBreakRow - 8) * 21;
-      const marginTopPixels = 0.25 * 96; // 0.25 margin_top + fudge factor
-      const pageHeightPixels = headerHeightPixels + bodyHeightPixels + marginTopPixels;
-      const pageBreakHeight = pageHeightPixels * pageScaleFactor;
-      const bottomMargin = (1056 - pageBreakHeight) / 96; // PDF is 792px tall and 72px/in when fitw=true
+      const analysisSheetWidth = 1296;
+      const pixelsPerInch = 1296 / 8; // 1296px wide for 8in page width = 162px/inch
+      // const maxHeightPixels = 10.5 * pixelsPerInch; // 10.5in * 162px/inch = 1701px tall
+      const headerHeightInches = (24 * 8) / pixelsPerInch; // 24px header height at 96dpi
+      const bodyHeightInches = ((pageBreakRow - 8) * 21) / pixelsPerInch; // 8 rows of header
+      const marginTopInches = 0.25;
+      const pageBreakHeight = headerHeightInches + bodyHeightInches + marginTopInches;
+      const bottomMargin = 11 - pageBreakHeight; // 11in total height - pageBreakHeight;
+
       analysisSheetMargin.bottom = bottomMargin.toFixed(2);
+      // const bodyHeightPixels = (pageBreakRow - 8) * 21;
+      // const marginTopPixels = 0.25 * 96; // 0.25 margin_top + fudge factor
+      // const pageHeightPixels = headerHeightPixels + bodyHeightPixels + marginTopPixels;
+      // const pageBreakHeight = pageHeightPixels * pageScaleFactor;
+      // const bottomMargin = (1056 - pageBreakHeight) / 96; // PDF is 792px tall and 72px/in when fitw=true
+      // analysisSheetMargin.bottom = bottomMargin.toFixed(2);
     }
-    
-    Logger.log(analysisSheetMargin.bottom)
+
+    Logger.log(analysisSheetMargin.bottom);
     const analysisFileId = savePdfSheet(spreadsheetId, analysisSheetId, studentName, analysisSheetMargin);
 
     const fileIdsToMerge = [analysisFileId, answerFileId];
