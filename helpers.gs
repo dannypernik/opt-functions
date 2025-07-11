@@ -288,22 +288,20 @@ const showAllSheetsExcept = (spreadsheetId = '1_nRuW80ewwxEcsHLKy8U8o1nIxKNxxrih
     });
 };
 
-function findActPageBreakRow(sheet) {
-  const grandColData = sheet.getRange(1, 2, 111).getValues();
-  const mathColData = sheet.getRange(1, 3, 111).getValues();
-  Logger.log(grandColData);
-  Logger.log(mathColData);
+function getActPageBreakRow(sheet) {
+  const grandColData = sheet.getRange(1, 2, 111).getValues().map(row => row[0]);
+  const mathColData = sheet.getRange(1, 3, 111).getValues().map(row => row[0]);
 
   const grandTotalIndex = grandColData.indexOf('Grand Total');
   if (0 < grandTotalIndex && grandTotalIndex < 77) {
-    Logger.log(`Single page ending at ${grandTotalIndex}`);
-    sheet.hideRows(grandTotalIndex + 2, 55);
+    Logger.log(`Single page ending at ${grandTotalIndex + 1}`);
+    sheet.hideRows(grandTotalIndex + 2, 111);
     return 77;
   }
 
   const mathTotalIndex = mathColData.indexOf('Math Total');
   if (0 < mathTotalIndex && mathTotalIndex < 77) {
-    Logger.log(`Page break at ${mathTotalIndex}`)
+    Logger.log(`Page break at ${mathTotalIndex + 1}`)
     return mathTotalIndex + 1;
   }
   else {
