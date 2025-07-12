@@ -299,18 +299,19 @@ function getActPageBreakRow(sheet) {
     .map((row) => row[0]);
 
   const grandTotalIndex = grandColData.indexOf('Grand Total');
-  if (0 < grandTotalIndex && grandTotalIndex < 77) {
+  if (0 < grandTotalIndex && grandTotalIndex < 80) {
     Logger.log(`Single page ending at ${grandTotalIndex + 1}`);
     sheet.hideRows(grandTotalIndex + 2, 111);
-    return 77;
+    SpreadsheetApp.flush();
+    return 80;
   }
 
   const mathTotalIndex = mathColData.indexOf('Math Total');
-  if (0 < mathTotalIndex && mathTotalIndex < 77) {
+  if (0 < mathTotalIndex && mathTotalIndex < 80) {
     Logger.log(`Page break at ${mathTotalIndex + 1}`);
     return mathTotalIndex + 1;
   } else {
-    return 77;
+    return 80;
   }
 }
 
@@ -486,68 +487,6 @@ function updateOPTStudentFolderData() {
   clientSheet.getRange(2, 17).setValue(JSON.stringify(myStudents));
 }
 
-function mergePDFsWithILovePDF(fileIds, destinationFolderId, name = 'merged.pdf') {
-  const publicKey = PropertiesService.getScriptProperties().getProperty('iLovePDFPublicKey');
-  const secretKey = PropertiesService.getScriptProperties().getProperty('iLovePDFSecretKey');
-
-  let files = [];
-  fileIds.forEach(function (fileId) {
-    fileIds.push({ file_id: fileId });
-  });
-
-  // 1. Start a new merge task
-  const startTaskOptions = {
-    method: 'post',
-    headers: {
-      Authorization: 'Bearer ' + publicKey, // Example JWT Authentication
-      'Content-Type': 'application/json',
-    },
-    payload: JSON.stringify({ files: files }),
-  };
-
-  const startTaskResponse = UrlFetchApp.fetch('https://api.ilovepdf.com/v1/start/merge', startTaskOptions);
-  const task = JSON.parse(startTaskResponse.getContentText());
-  const taskId = task.task;
-
-  // 2. Upload each file
-  const server = task.server;
-  const uploadedFiles = [];
-  fileIds.forEach(function (fileId) {
-    const file = DriveApp.getFileById(fileId);
-    const blob = file.getBlob();
-    const uploadOptions = {
-      method: 'post',
-      payload: {
-        task: taskId,
-        file: blob,
-      },
-    };
-    const uploadResponse = UrlFetchApp.fetch(server + '/v1/upload', uploadOptions);
-    uploadedFiles.push(JSON.parse(uploadResponse.getContentText()));
-  });
-
-  // 3. Process the merge
-  const processOptions = {
-    method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify({
-      task: taskId,
-      files: uploadedFiles.map((f) => f.server_filename),
-    }),
-  };
-  UrlFetchApp.fetch(server + '/v1/process', processOptions);
-
-  // 4. Download the merged PDF
-  const downloadOptions = { method: 'get' };
-  const downloadResponse = UrlFetchApp.fetch(server + '/v1/download/' + taskId, downloadOptions);
-  const mergedBlob = downloadResponse.getBlob().setName(name);
-
-  // 5. Save to Drive
-  const folder = DriveApp.getFolderById(destinationFolderId);
-  const mergedFile = folder.createFile(mergedBlob);
-
-  return mergedFile;
-}
 
 function formatDateYYYYMMDD(date) {
   const mm = String(date.getMonth() + 1).padStart(2, '0');

@@ -15,12 +15,15 @@ async function findNewActScoreReports(students, folderName) {
     if (student.actAdminSsId && !student.name.toLowerCase().includes('template')) {
       const actAdminFile = DriveApp.getFileById(student.actAdminSsId);
       const actStudentFile = DriveApp.getFileById(student.actStudentSsId);
-      const lastUpdated = Math.max(actAdminFile.getLastUpdated(), actStudentFile.getLastUpdated());
+      const lastUpdated = new Date(Math.max(actAdminFile.getLastUpdated(), actStudentFile.getLastUpdated()));
       const now = new Date();
-      const msInTimeLimit = 14 * 24 * 60 * 60 * 1000;
+      const msInTimeLimit = 14 /* days */ * 24 * 60 * 60 * 1000;
 
       if (now - lastUpdated <= msInTimeLimit) {
-        fileList.push(actAdminFile);
+        fileList.push({
+          'file': actAdminFile,
+          'date': lastUpdated
+        });
       } else {
         Logger.log(`${student.name} unchanged`);
       }
@@ -28,8 +31,8 @@ async function findNewActScoreReports(students, folderName) {
   }
 
   // Sort by most recently updated first
-  fileList.sort((a, b) => b.getLastUpdated() - a.getLastUpdated());
-  Logger.log(`${folderName}: ${fileList}`);
+  fileList.sort((a, b) => b.file.getLastUpdated() - a.file.getLastUpdated());
+  Logger.log(`${folderName}: ${fileList.file}`);
 
   await findNewCompletedActs(fileList);
 }
@@ -54,7 +57,7 @@ async function findNewCompletedActs(fileList) {
 
   // Loop through analysis spreadsheets
   for (var i = 0; i < fileList.length; i++) {
-    const ssId = fileList[i].getId();
+    const ssId = fileList[i]['file'].getId();
     const ss = SpreadsheetApp.openById(ssId);
     const ssName = ss.getName();
     const studentName = ssName.slice(ssName.indexOf('-') + 2);
@@ -79,14 +82,16 @@ async function findNewCompletedActs(fileList) {
           const mScore = parseInt(testHeaderValues[2][5]) || 0;
           const rScore = parseInt(testHeaderValues[2][9]) || 0;
           const sScore = parseInt(testHeaderValues[2][13]) || 0;
-          const totalScore = parseInt(testHeaderValues[0][5]) || '';
-          let dateSubmitted = testHeaderValues[0][9];
+          const totalScore = Math.round(Number(testHeaderValues[0][5])) || '';
+          // let dateSubmitted = testHeaderValues[0][9];
+          const dateSubmitted = formatDateYYYYMMDD(fileList[i]['date']);
           const isTestNew = testHeaderValues[0][6] !== 'Submitted on:';
 
-          if (!dateSubmitted) {
-            const today = new Date();
-            dateSubmitted = formatDateYYYYMMDD(today);
-          }
+
+          // if (!dateSubmitted) {
+          //   const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+          //   dateSubmitted = formatDateYYYYMMDD(yesterday);
+          // }
 
           if (totalScore) {
             scores.push({
@@ -229,23 +234,16 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
     const pageBreakRow = getActPageBreakRow(analysisSheet, 3);
     const analysisSheetMargin = { top: '0.25', bottom: '0.25', left: '0.25', right: '0.25' };
 
-    if (pageBreakRow < 77) {
-      const analysisSheetWidth = 1296;
-      const pixelsPerInch = 1296 / 8; // 1296px wide for 8in page width = 162px/inch
-      // const maxHeightPixels = 10.5 * pixelsPerInch; // 10.5in * 162px/inch = 1701px tall
+    if (pageBreakRow < 80) {
+      const analysisSheetWidth = 1306;  // 1296px + 10px interior border padding
+      const pixelsPerInch = analysisSheetWidth / 8; // (1296px + 10px) wide for 8in page width = 163.25px/inch
       const headerHeightInches = (24 * 8) / pixelsPerInch; // 24px header height at 96dpi
       const bodyHeightInches = ((pageBreakRow - 8) * 21) / pixelsPerInch; // 8 rows of header
       const marginTopInches = 0.25;
       const pageBreakHeight = headerHeightInches + bodyHeightInches + marginTopInches;
       const bottomMargin = 11 - pageBreakHeight; // 11in total height - pageBreakHeight;
 
-      analysisSheetMargin.bottom = bottomMargin.toFixed(2);
-      // const bodyHeightPixels = (pageBreakRow - 8) * 21;
-      // const marginTopPixels = 0.25 * 96; // 0.25 margin_top + fudge factor
-      // const pageHeightPixels = headerHeightPixels + bodyHeightPixels + marginTopPixels;
-      // const pageBreakHeight = pageHeightPixels * pageScaleFactor;
-      // const bottomMargin = (1056 - pageBreakHeight) / 96; // PDF is 792px tall and 72px/in when fitw=true
-      // analysisSheetMargin.bottom = bottomMargin.toFixed(2);
+      analysisSheetMargin.bottom = String(Math.floor(bottomMargin * 1000) / 1000);
     }
 
     Logger.log(analysisSheetMargin.bottom);
@@ -307,7 +305,7 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
     const completionCheckCell = testSheet.getRange('G1:I1').merge();
     completionCheckCell.setValue('Submitted on:');
     completionCheckCell.setHorizontalAlignment('right').setFontWeight('normal');
-    testSheet.getRange('J1').setValue(currentTestData.date).setHorizontalAlignment('center').setFontWeight('normal');
+    testSheet.getRange('J1').setValue(currentTestData.date).setHorizontalAlignment('center').setFontWeight('normal').setNumberFormat('MM/DD/YYYY');
     Logger.log(studentName + ' ' + currentTestData.test + ' score report complete');
   } catch (err) {
     Logger.log(err.stack);
