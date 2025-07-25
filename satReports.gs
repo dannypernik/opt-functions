@@ -114,7 +114,15 @@ function findNewCompletedSats(fileList) {
       }
     }
 
-    scores = scores.sort((a, b) => new Date(a.date) - new Date(b.date));
+    scores = scores.sort((a, b) => {
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      if (dateA !== dateB) {
+        return dateA - dateB;
+      }
+
+      return a.sheetIndex - b.sheetIndex;
+    });
 
     // scores array will include reported scores of all completed tests
     createSatScoreReports(ssId, scores);
