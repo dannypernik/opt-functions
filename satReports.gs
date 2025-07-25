@@ -80,6 +80,7 @@ function findNewCompletedSats(fileList) {
           const totalScore = rwScore + mScore;
           const dateSubmitted = testHeaderValues[1][3];
           const completionCheck = testHeaderValues[0][12];
+          const sheetIndex = testSheet.getIndex();
           const isTestNew = completionCheck !== '✔';
 
           if (rwScore && mScore) {
@@ -89,6 +90,7 @@ function findNewCompletedSats(fileList) {
               m: mScore,
               total: totalScore,
               date: dateSubmitted,
+              sheetIndex: sheetIndex,
               isNew: isTestNew,
             });
           } else if (completionCheck !== '?') {
