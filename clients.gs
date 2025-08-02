@@ -375,12 +375,11 @@ function updateClientFolders() {
 
     if (client.index >= startIndex /* 0 is OPT folder */ ) {
 
-
       const clientRow = client.index + 2;
       const studentsDataStr = clientSheet.getRange(clientRow, 17).getValue();
       client.studentsDataJSON = JSON.parse(studentsDataStr);
 
-      const students = createStudentFolders.findStudentFileIds(client);
+      const students = createStudentFolders.getStudentFileIds(client);
 
       createStudentFolders.ssUpdate202505(students);
       
@@ -400,7 +399,6 @@ function updateClientFolders() {
     }
   }
 }
-
 
 
 function continueClientFolderUpdate() {

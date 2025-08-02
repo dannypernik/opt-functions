@@ -483,7 +483,7 @@ function updateOPTStudentFolderData() {
     studentsDataJSON: myStudents,
   };
 
-  myStudents = createStudentFolders.findStudentFileIds(myStudentFolderData);
+  myStudents = createStudentFolders.getStudentFileIds(myStudentFolderData);
   clientSheet.getRange(2, 17).setValue(JSON.stringify(myStudents));
 }
 
@@ -493,4 +493,25 @@ function formatDateYYYYMMDD(date) {
   const dd = String(date.getDate()).padStart(2, '0');
   const yyyy = date.getFullYear();
   return `${yyyy}-${mm}-${dd}`;
+}
+
+
+function addStudentDataToJson(
+  studentData = {
+    'name': null,
+    'folderId': null,
+    'satAdminSsId': null,
+    'satStudentSsId': null,
+    'actAdminSsId': null,
+    'actStudentSsId': null,
+    'homeworkSsId': null
+  }
+) {
+  const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
+  const myStudentsJsonCell = clientDataSs.getSheetByName('Clients').getRange('Q2');
+  let myStudentsStr = myStudentsJsonCell.getValue();
+  const myStudentsJson = myStudentsStr ? JSON.parse(myStudentsStr) : [];
+  myStudentsJson.push(studentData);
+  myStudentsStr = JSON.stringify(myStudentsJson);
+  myStudentsJsonCell.setValue(myStudentsStr);
 }
