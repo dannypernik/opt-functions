@@ -21,8 +21,8 @@ async function findNewActScoreReports(students, folderName) {
 
       if (now - lastUpdated <= msInTimeLimit) {
         fileList.push({
-          'file': actAdminFile,
-          'date': lastUpdated
+          file: actAdminFile,
+          date: lastUpdated,
         });
       } else {
         Logger.log(`${student.name} unchanged`);
@@ -86,7 +86,6 @@ async function findNewCompletedActs(fileList) {
           // let dateSubmitted = testHeaderValues[0][9];
           const dateSubmitted = formatDateYYYYMMDD(fileList[i]['date']);
           const isTestNew = testHeaderValues[0][6] !== 'Submitted on:';
-
 
           // if (!dateSubmitted) {
           //   const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -235,7 +234,7 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
     const analysisSheetMargin = { top: '0.25', bottom: '0.25', left: '0.25', right: '0.25' };
 
     if (pageBreakRow < 80) {
-      const analysisSheetWidth = 1306;  // 1296px + 10px interior border padding
+      const analysisSheetWidth = 1306; // 1296px + 10px interior border padding
       const pixelsPerInch = analysisSheetWidth / 8; // (1296px + 10px) wide for 8in page width = 163.25px/inch
       const headerHeightInches = (24 * 8) / pixelsPerInch; // 24px header height at 96dpi
       const bodyHeightInches = ((pageBreakRow - 8) * 21) / pixelsPerInch; // 8 rows of header

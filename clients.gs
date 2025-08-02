@@ -31,9 +31,16 @@ function newClient(clientTemplateFolderId, clientParentFolderId) {
     styleClientSheets(satSheetIds, actSheetIds, customStyles);
   }
 
-  var htmlOutput = HtmlService
-    .createHtmlOutput('<a href="https://drive.google.com/drive/u/0/folders/' + clientFolderId + '" target="_blank" onclick="google.script.host.close()">' + clientName + "'s folder</a>" +
-      '<p><a href="https://docs.google.com/spreadsheets/d/' + PropertiesService.getScriptProperties().getProperty('clientDataSsId') + '"target="_blank">Client data IDs</a></p>')
+  var htmlOutput = HtmlService.createHtmlOutput(
+    '<a href="https://drive.google.com/drive/u/0/folders/' +
+      clientFolderId +
+      '" target="_blank" onclick="google.script.host.close()">' +
+      clientName +
+      "'s folder</a>" +
+      '<p><a href="https://docs.google.com/spreadsheets/d/' +
+      PropertiesService.getScriptProperties().getProperty('clientDataSsId') +
+      '"target="_blank">Client data IDs</a></p>'
+  )
     .setWidth(250) //optional
     .setHeight(100); //optional
   SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Client folder created successfully');
@@ -171,21 +178,15 @@ function setClientDataUrls(folderId) {
   }
 
   if (satSheetIds.student && satSheetIds.studentData) {
-    SpreadsheetApp.openById(satSheetIds.student)
-      .getSheetByName('Question bank data')
-      .getRange('U7')
-      .setValue(satSheetIds.studentData);
+    SpreadsheetApp.openById(satSheetIds.student).getSheetByName('Question bank data').getRange('U7').setValue(satSheetIds.studentData);
   }
   if (satSheetIds.admin && satSheetIds.adminData) {
-    SpreadsheetApp.openById(satSheetIds.admin)
-      .getSheetByName('Rev sheet backend')
-      .getRange('U5')
-      .setValue(satSheetIds.adminData);
+    SpreadsheetApp.openById(satSheetIds.admin).getSheetByName('Rev sheet backend').getRange('U5').setValue(satSheetIds.adminData);
   }
 
   if (satSheetIds.adminData && satSheetIds.studentData) {
     const studentDataSs = SpreadsheetApp.openById(satSheetIds.studentData);
-    
+
     studentDataSs
       .getSheetByName('Question bank data')
       .getRange('A1')
@@ -197,7 +198,7 @@ function setClientDataUrls(folderId) {
     studentDataSs
       .getSheetByName('Links')
       .getRange('A1')
-      .setValue('=IMPORTRANGE("' + satSheetIds.adminData + '", "Links!A1:D50")')
+      .setValue('=IMPORTRANGE("' + satSheetIds.adminData + '", "Links!A1:D50")');
   }
 
   if (satSheetIds.admin && satSheetIds.rev) {
@@ -239,47 +240,47 @@ function setClientDataUrls(folderId) {
   Logger.log('setClientDataUrls complete');
 }
 
-function updateClientsList(parentClientFolderId='130wX98bJM4wW6aE6J-e6VffDNwqvgeNS') {
+function updateClientsList(parentClientFolderId = '130wX98bJM4wW6aE6J-e6VffDNwqvgeNS') {
   const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
   const parentClientFolder = DriveApp.getFolderById(parentClientFolderId);
   const clientFolders = parentClientFolder.getFolders();
   const clientSheet = clientDataSs.getSheetByName('Clients');
   let newRow = getLastFilledRow(clientSheet, 1) + 1;
-  
+
   while (clientFolders.hasNext()) {
     const clientFolder = clientFolders.next();
     const clientFolderId = clientFolder.getId();
     const clientFolderName = clientFolder.getName();
 
-    if (!(clientFolderName.includes('_')  || clientFolderName.includes('Ξ'))) {
+    if (!(clientFolderName.includes('_') || clientFolderName.includes('Ξ'))) {
       addClientData(clientFolderId, newRow);
       newRow++;
     }
   }
 }
 
-function addClientData(clientFolderId='1Fd99S1DPdWuvr1VxkeEbdAZn_ZmP9PPj', newRow=null) {
+function addClientData(clientFolderId = '1Fd99S1DPdWuvr1VxkeEbdAZn_ZmP9PPj', newRow = null) {
   const clientFolder = DriveApp.getFolderById(clientFolderId);
   const clientName = clientFolder.getName();
   const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
   const clientSheet = clientDataSs.getSheetByName('Clients');
   const collaborators = clientFolder.getEditors();
-  const emailList = []
-  collaborators.forEach(c => {
+  const emailList = [];
+  collaborators.forEach((c) => {
     if (!PropertiesService.getScriptProperties().getProperty('myEmails').includes(c.getEmail())) {
       Logger.log(c.getEmail());
       // emailList.push(c.getEmail());
     }
   });
-  
-  if(!newRow) {
+
+  if (!newRow) {
     newRow = getLastFilledRow(clientSheet, 1) + 1;
   }
-  
+
   const savedClientFolderIds = clientSheet.getRange(2, 4, newRow).getValues();
-  let clientIndex = savedClientFolderIds.findIndex(subArray => subArray.includes(clientFolderId));
+  let clientIndex = savedClientFolderIds.findIndex((subArray) => subArray.includes(clientFolderId));
   let studentFolder, studentFolderId, studentFolderCount;
-    
+
   if (clientIndex === -1) {
     clientIndex = newRow - 2;
     Logger.log(clientIndex + '. ' + clientName);
@@ -288,7 +289,12 @@ function addClientData(clientFolderId='1Fd99S1DPdWuvr1VxkeEbdAZn_ZmP9PPj', newRo
     processFolders(clientFolder.getFolders(), getAnswerSheets);
 
     const clientSubfolders = clientFolder.getFolders();
-    let dataFolderId, satAdminDataId, satStudentDataId, actAdminDataId, actStudentDataId, revDataId = '';
+    let dataFolderId,
+      satAdminDataId,
+      satStudentDataId,
+      actAdminDataId,
+      actStudentDataId,
+      revDataId = '';
 
     while (clientSubfolders.hasNext()) {
       const clientSubfolder = clientSubfolders.next();
@@ -299,37 +305,34 @@ function addClientData(clientFolderId='1Fd99S1DPdWuvr1VxkeEbdAZn_ZmP9PPj', newRo
         studentFolderId = studentFolder.getId();
 
         studentFolderCount = getStudentFolderCount(studentFolderId);
-      }
-      else if (clientSubfolder.getName().toLowerCase().includes('data')) {
+      } else if (clientSubfolder.getName().toLowerCase().includes('data')) {
         dataFolder = clientSubfolder;
         dataFolderId = clientSubfolder.getId();
-        const dataFiles = dataFolder.getFiles()
-        while(dataFiles.hasNext()) {
+        const dataFiles = dataFolder.getFiles();
+        while (dataFiles.hasNext()) {
           const file = dataFiles.next();
           const filenameLower = file.getName().toLowerCase();
           if (filenameLower.includes('sat admin')) {
             satAdminDataId = file.getId();
-          }
-          else if (filenameLower.includes('sat student')) {
+          } else if (filenameLower.includes('sat student')) {
             satStudentDataId = file.getId();
-          }
-          else if (filenameLower.includes('act admin')) {
+          } else if (filenameLower.includes('act admin')) {
             actAdminDataId = file.getId();
-          }
-          else if (filenameLower.includes('act student')) {
+          } else if (filenameLower.includes('act student')) {
             actStudentDataId = file.getId();
-          }
-          else if (filenameLower.includes('rev sheet data')) {
+          } else if (filenameLower.includes('rev sheet data')) {
             revDataId = file.getId();
           }
         }
       }
     }
 
-    clientDataSs.getSheetByName('Clients').getRange(newRow, 1, 1, 16).setValues([[clientIndex, clientName, emailList, clientFolder.getId(), satSheetIds.admin, satSheetIds.student, actSheetIds.admin, actSheetIds.student, dataFolderId, satAdminDataId, satStudentDataId, actAdminDataId, actStudentDataId, revDataId, studentFolderId, studentFolderCount]]);
-    newRow ++;
-  }
-  else {
+    clientDataSs
+      .getSheetByName('Clients')
+      .getRange(newRow, 1, 1, 16)
+      .setValues([[clientIndex, clientName, emailList, clientFolder.getId(), satSheetIds.admin, satSheetIds.student, actSheetIds.admin, actSheetIds.student, dataFolderId, satAdminDataId, satStudentDataId, actAdminDataId, actStudentDataId, revDataId, studentFolderId, studentFolderCount]]);
+    newRow++;
+  } else {
     studentFolderId = clientSheet.getRange(clientIndex + 2, 15).getValue();
     studentFolderCount = getStudentFolderCount(studentFolderId);
     // clientSheet.getRange(clientIndex + 2, 16).setValue(studentFolderCount);
@@ -350,31 +353,31 @@ function updateClientFolders() {
   const clientDataRange = clientSheet.getDataRange().getValues();
   const clients = [];
 
-  for (let row = 1; row < lastFilledRow; row++) {       // starts at 1
+  for (let row = 1; row < lastFilledRow; row++) {
+    // starts at 1
     clients.push({
-      'index': clientDataRange[row][0],
-      'name': clientDataRange[row][1],
-      'emails': clientDataRange[row][2],
-      'folderId': clientDataRange[row][3],
-      'satAdminSsId': clientDataRange[row][4],
-      'satStudentSsId': clientDataRange[row][5],
-      'actAdminSsId': clientDataRange[row][6],
-      'actStudentSsId': clientDataRange[row][7],
-      'dataFolderId': clientDataRange[row][8],
-      'satAdminDataId': clientDataRange[row][9],
-      'satStudentDataId': clientDataRange[row][10],
-      'actAdminDataId': clientDataRange[row][11],
-      'actStudentDataId': clientDataRange[row][12],
-      'revDataId': clientDataRange[row][13],
-      'studentsFolderId': clientDataRange[row][14],
-    })
+      index: clientDataRange[row][0],
+      name: clientDataRange[row][1],
+      emails: clientDataRange[row][2],
+      folderId: clientDataRange[row][3],
+      satAdminSsId: clientDataRange[row][4],
+      satStudentSsId: clientDataRange[row][5],
+      actAdminSsId: clientDataRange[row][6],
+      actStudentSsId: clientDataRange[row][7],
+      dataFolderId: clientDataRange[row][8],
+      satAdminDataId: clientDataRange[row][9],
+      satStudentDataId: clientDataRange[row][10],
+      actAdminDataId: clientDataRange[row][11],
+      actStudentDataId: clientDataRange[row][12],
+      revDataId: clientDataRange[row][13],
+      studentsFolderId: clientDataRange[row][14],
+    });
   }
 
   for (let client of clients) {
     const startIndex = PropertiesService.getScriptProperties().getProperty('startIndex');
 
-    if (client.index >= startIndex /* 0 is OPT folder */ ) {
-
+    if (client.index >= startIndex /* 0 is OPT folder */) {
       const clientRow = client.index + 2;
       const studentsDataStr = clientSheet.getRange(clientRow, 17).getValue();
       client.studentsDataJSON = JSON.parse(studentsDataStr);
@@ -382,7 +385,7 @@ function updateClientFolders() {
       const students = createStudentFolders.getStudentFileIds(client);
 
       createStudentFolders.ssUpdate202505(students);
-      
+
       PropertiesService.getScriptProperties().setProperty('startIndex', client.index + 1);
       Logger.log(client.index + '. ' + client.name + ' complete');
     }
@@ -392,7 +395,7 @@ function updateClientFolders() {
 
   for (let t = 0; t < triggers.length; t++) {
     const trigger = triggers[t];
-    
+
     if (trigger.getHandlerFunction() === 'continueClientFolderUpdate') {
       ScriptApp.deleteTrigger(trigger);
       Logger.log(`Removed trigger for ${trigger.getHandlerFunction()}`);
@@ -400,12 +403,11 @@ function updateClientFolders() {
   }
 }
 
-
 function continueClientFolderUpdate() {
   const startIndex = PropertiesService.getScriptProperties().getProperty('startIndex');
   const isClientUpdateRunning = isFunctionRunning('continueClientFolderUpdate');
-  Logger.log(`isClientUpdateRunning ${isClientUpdateRunning}`)
-  
+  Logger.log(`isClientUpdateRunning ${isClientUpdateRunning}`);
+
   while (!isClientUpdateRunning) {
     updateClientFolders();
   }
@@ -417,7 +419,7 @@ function continueClientFolderUpdate() {
 
   //   for (let t = 0; t < triggers.length; t++) {
   //     const trigger = triggers[t];
-      
+
   //     if (trigger.getHandlerFunction() === 'continueClientFolderUpdate') {
   //       ScriptApp.deleteTrigger(trigger);
   //       Logger.log(`Removed trigger for ${trigger.getHandlerFunction()}`);
@@ -433,9 +435,8 @@ function getStudentFolderCount(studentsFolderId) {
 
   while (studentSubfolders.hasNext()) {
     studentSubfolders.next();
-    studentFolderCount ++;
+    studentFolderCount++;
   }
 
   return studentFolderCount;
 }
-

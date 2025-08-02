@@ -1,6 +1,6 @@
 function checkAllNewAssignments() {
   const ss = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
-  const studentsStr = ss.getSheetByName('Clients').getRange(2,17).getValue();
+  const studentsStr = ss.getSheetByName('Clients').getRange(2, 17).getValue();
   const students = studentsStr ? JSON.parse(studentsStr) : [];
 
   for (s in students) {
@@ -8,10 +8,9 @@ function checkAllNewAssignments() {
   }
 }
 
-
 function checkAllDueAssignments() {
   const ss = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
-  const studentsStr = ss.getSheetByName('Clients').getRange(2,17).getValue();
+  const studentsStr = ss.getSheetByName('Clients').getRange(2, 17).getValue();
   const students = studentsStr ? JSON.parse(studentsStr) : [];
 
   for (s in students) {
@@ -19,7 +18,6 @@ function checkAllDueAssignments() {
     Homework.checkPastDueAssignments(s.homeworkSsId);
   }
 }
-
 
 function checkTeamNewAssignments() {
   const studentDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
@@ -29,13 +27,12 @@ function checkTeamNewAssignments() {
   for (let i = 0; i < teamDataValues.length; i++) {
     const studentsStr = teamDataValues[i][3];
     const students = studentsStr ? JSON.parse(studentsStr) : [];
-    
+
     for (s in students) {
       Homework.checkNewAssignments(s.homeworkSsId);
     }
   }
 }
-
 
 function checkTeamDueAssignments() {
   const studentDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
@@ -45,7 +42,7 @@ function checkTeamDueAssignments() {
   for (let i = 0; i < teamDataValues.length; i++) {
     const studentsStr = teamDataValues[i][3];
     const students = studentsStr ? JSON.parse(studentsStr) : [];
-    
+
     for (s in students) {
       Homework.checkDueTodayAssignments(s.homeworkSsId);
       Homework.checkPastDueAssignments(s.homeworkSsId);
@@ -53,15 +50,14 @@ function checkTeamDueAssignments() {
   }
 }
 
-
 function addHomeworkSs(
   studentData = {
-    'name': null,
-    'folderId': null,
-    'satAdminSsId': null,
-    'actAdminSsId': null,
-    'satStudentSsId': null,
-    'actStudentSsId': null
+    name: null,
+    folderId: null,
+    satAdminSsId: null,
+    actAdminSsId: null,
+    satStudentSsId: null,
+    actStudentSsId: null,
   }
 ) {
   const adminFolder = DriveApp.getFolderById(studentData.folderId);
@@ -80,7 +76,7 @@ function addHomeworkSs(
   const studentFiles = studentFolder.getFiles();
   while (studentFiles.hasNext()) {
     const studentFile = studentFiles.next();
-    
+
     if (studentFile.getName() === `Homework - ${studentData.name}`) {
       homeworkSsId = studentFile.getId();
       break;
@@ -111,7 +107,7 @@ function addHomeworkSs(
 
     satAdminSs.getSheetByName('Rev sheet backend').getRange('U8').setValue(homeworkSsId);
     satStudentSs.getSheetByName('Question bank data').getRange('U8').setValue(homeworkSsId);
-    
+
     actAdminSs.getSheetByName('Data').getRange('U2').setValue(homeworkSsId);
     actStudentSs.getSheetByName('Data').getRange('U2').setValue(homeworkSsId);
 
@@ -119,8 +115,7 @@ function addHomeworkSs(
     homeworkSs.getSheetByName('Info').getRange('C17').setValue(studentData.actStudentSsId);
 
     // TODO: Add homeworkSsId to JSON data
-  }
-  else {
+  } else {
     Logger.log('Homework file not found.');
     return;
   }

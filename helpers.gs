@@ -466,7 +466,7 @@ function updateOPTStudentFolderData() {
       studentsDataJSON: tutorStudents,
     };
 
-    tutorStudents = createStudentFolders.findStudentFileIds(tutorData);
+    tutorStudents = createStudentFolders.getStudentFileIds(tutorData);
 
     teamDataSheet.getRange(tutorIndex + 2, 1, 1, 4).setValues([[tutorIndex, tutorFolderName, tutorFolderId, JSON.stringify(tutorStudents)]]);
     tutorIndex++;
