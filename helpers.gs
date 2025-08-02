@@ -487,7 +487,6 @@ function updateOPTStudentFolderData() {
   clientSheet.getRange(2, 17).setValue(JSON.stringify(myStudents));
 }
 
-
 function formatDateYYYYMMDD(date) {
   const mm = String(date.getMonth() + 1).padStart(2, '0');
   const dd = String(date.getDate()).padStart(2, '0');
@@ -495,22 +494,33 @@ function formatDateYYYYMMDD(date) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-
 function addStudentDataToJson(
   studentData = {
-    'name': null,
-    'folderId': null,
-    'satAdminSsId': null,
-    'satStudentSsId': null,
-    'actAdminSsId': null,
-    'actStudentSsId': null,
-    'homeworkSsId': null
+    name: null,
+    folderId: null,
+    satAdminSsId: null,
+    satStudentSsId: null,
+    actAdminSsId: null,
+    actStudentSsId: null,
+    homeworkSsId: null,
   }
 ) {
   const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
   const myStudentsJsonCell = clientDataSs.getSheetByName('Clients').getRange('Q2');
   let myStudentsStr = myStudentsJsonCell.getValue();
   const myStudentsJson = myStudentsStr ? JSON.parse(myStudentsStr) : [];
+  if (studentData.name && myStudentsJson.some((s) => s.name === studentData.name)) {
+    const ui = SpreadsheetApp.getUi();
+    const response = ui.alert(`Student "${studentData.name}" already exists in data. Overwrite?`, ui.ButtonSet.YES_NO);
+    if (response !== ui.Button.YES) {
+      return;
+    }
+    // Remove existing entry
+    const idx = myStudentsJson.findIndex((s) => s.name === studentData.name);
+    if (idx !== -1) {
+      myStudentsJson.splice(idx, 1);
+    }
+  }
   myStudentsJson.push(studentData);
   myStudentsStr = JSON.stringify(myStudentsJson);
   myStudentsJsonCell.setValue(myStudentsStr);
