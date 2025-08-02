@@ -5,7 +5,8 @@ function newClient(clientTemplateFolderId, clientParentFolderId) {
 
   if (prompt.getSelectedButton() == ui.Button.CANCEL) {
     return;
-  } else {
+  } //
+  else {
     clientName = prompt.getResponseText();
   }
 
@@ -59,7 +60,8 @@ function copyClientFolder(sourceFolder, newFolder, clientName) {
 
       if (filename.toLowerCase().includes('data - client')) {
         filename = rootName + clientName;
-      } else {
+      } //
+      else {
         filename = rootName + 'Template for ' + clientName;
       }
     }
@@ -88,7 +90,8 @@ function linkClientSheets(folderId, testType = 'all') {
       if (filename.includes('student answer sheet')) {
         satSheetIds.student = file.getId();
         DriveApp.getFileById(satSheetIds.student).setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
-      } else if (filename.includes('answer analysis')) {
+      } //
+      else if (filename.includes('answer analysis')) {
         satSheetIds.admin = file.getId();
       }
     }
@@ -97,7 +100,8 @@ function linkClientSheets(folderId, testType = 'all') {
       if (filename.toLowerCase().includes('student answer sheet')) {
         actSheetIds.student = file.getId();
         DriveApp.getFileById(actSheetIds.student).setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
-      } else if (filename.toLowerCase().includes('answer analysis')) {
+      } //
+      else if (filename.toLowerCase().includes('answer analysis')) {
         actSheetIds.admin = file.getId();
       }
     }
@@ -136,33 +140,41 @@ function setClientDataUrls(folderId) {
     if (filename.includes('sat admin data')) {
       Logger.log('found sat admin data');
       satSheetIds.adminData = fileId;
-    } else if (filename.includes('sat student data')) {
+    } //
+    else if (filename.includes('sat student data')) {
       Logger.log('found sat student data');
       satSheetIds.studentData = fileId;
       DriveApp.getFileById(satSheetIds.studentData).setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
-    } else if (filename.includes('sat student answer sheet')) {
+    } //
+    else if (filename.includes('sat student answer sheet')) {
       Logger.log('found sat student answer sheet');
       satSheetIds.student = fileId;
       DriveApp.getFileById(satSheetIds.student).setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
-    } else if (filename.includes('sat admin answer analysis')) {
+    } //
+    else if (filename.includes('sat admin answer analysis')) {
       Logger.log('found sat admin answer sheet');
       satSheetIds.admin = fileId;
-    } else if (filename.includes('rev sheet data')) {
+    } //
+    else if (filename.includes('rev sheet data')) {
       Logger.log('found rev sheet data');
       satSheetIds.rev = fileId;
       DriveApp.getFileById(satSheetIds.rev).setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
-    } else if (filename.includes('act admin data')) {
+    } //
+    else if (filename.includes('act admin data')) {
       Logger.log('found act admin data');
       actSheetIds.adminData = fileId;
-    } else if (filename.includes('act student data')) {
+    } //
+    else if (filename.includes('act student data')) {
       Logger.log('found act student data');
       actSheetIds.studentData = fileId;
       DriveApp.getFileById(actSheetIds.studentData).setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
-    } else if (filename.includes('act student answer sheet')) {
+    } //
+    else if (filename.includes('act student answer sheet')) {
       Logger.log('found act student answer sheet');
       actSheetIds.student = fileId;
       DriveApp.getFileById(actSheetIds.student).setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
-    } else if (filename.includes('act admin answer analysis')) {
+    } //
+    else if (filename.includes('act admin answer analysis')) {
       Logger.log('found act admin answer sheet');
       actSheetIds.admin = fileId;
     }
@@ -305,7 +317,8 @@ function addClientData(clientFolderId = '1Fd99S1DPdWuvr1VxkeEbdAZn_ZmP9PPj', new
         studentFolderId = studentFolder.getId();
 
         studentFolderCount = getStudentFolderCount(studentFolderId);
-      } else if (clientSubfolder.getName().toLowerCase().includes('data')) {
+      } //
+      else if (clientSubfolder.getName().toLowerCase().includes('data')) {
         dataFolder = clientSubfolder;
         dataFolderId = clientSubfolder.getId();
         const dataFiles = dataFolder.getFiles();
@@ -314,13 +327,17 @@ function addClientData(clientFolderId = '1Fd99S1DPdWuvr1VxkeEbdAZn_ZmP9PPj', new
           const filenameLower = file.getName().toLowerCase();
           if (filenameLower.includes('sat admin')) {
             satAdminDataId = file.getId();
-          } else if (filenameLower.includes('sat student')) {
+          } //
+          else if (filenameLower.includes('sat student')) {
             satStudentDataId = file.getId();
-          } else if (filenameLower.includes('act admin')) {
+          } //
+          else if (filenameLower.includes('act admin')) {
             actAdminDataId = file.getId();
-          } else if (filenameLower.includes('act student')) {
+          } //
+          else if (filenameLower.includes('act student')) {
             actStudentDataId = file.getId();
-          } else if (filenameLower.includes('rev sheet data')) {
+          } //
+          else if (filenameLower.includes('rev sheet data')) {
             revDataId = file.getId();
           }
         }
@@ -332,7 +349,8 @@ function addClientData(clientFolderId = '1Fd99S1DPdWuvr1VxkeEbdAZn_ZmP9PPj', new
       .getRange(newRow, 1, 1, 16)
       .setValues([[clientIndex, clientName, emailList, clientFolder.getId(), satSheetIds.admin, satSheetIds.student, actSheetIds.admin, actSheetIds.student, dataFolderId, satAdminDataId, satStudentDataId, actAdminDataId, actStudentDataId, revDataId, studentFolderId, studentFolderCount]]);
     newRow++;
-  } else {
+  } //
+  else {
     studentFolderId = clientSheet.getRange(clientIndex + 2, 15).getValue();
     studentFolderCount = getStudentFolderCount(studentFolderId);
     // clientSheet.getRange(clientIndex + 2, 16).setValue(studentFolderCount);

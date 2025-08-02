@@ -24,7 +24,8 @@ async function findNewActScoreReports(students, folderName) {
           file: actAdminFile,
           date: lastUpdated,
         });
-      } else {
+      } //
+      else {
         Logger.log(`${student.name} unchanged`);
       }
     }
@@ -143,7 +144,8 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
 
     if (dataSheet.getRange('V1').getValue() === 'Score report folder ID:' && dataSheet.getRange('W1').getValue() !== '') {
       scoreReportFolderId = dataSheet.getRange('W1').getValue();
-    } else {
+    } //
+    else {
       var parentFolderId = DriveApp.getFileById(spreadsheetId).getParents().next().getId();
       const subfolderIds = getSubFolderIdsByFolderId(parentFolderId);
 
@@ -154,7 +156,8 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
         if (subfolderName.toLowerCase().includes('score report')) {
           scoreReportFolderId = subfolderId;
           break;
-        } else if (subfolderName.includes(studentName)) {
+        } //
+        else if (subfolderName.includes(studentName)) {
           studentFolderId = subfolderId;
         }
       }
@@ -212,7 +215,8 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
           break;
         }
       }
-    } else {
+    } //
+    else {
       Logger.log('No Pivot Table found at the specified range.');
     }
 
@@ -285,7 +289,8 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
         }
         message += '</ul><br>';
       }
-    } else {
+    } //
+    else {
       var message =
         'Hi PARENTNAME, please find the score report from ' + studentFirstName + "'s recent practice test attached. " + currentTestData.total + ' overall (' + currentTestData.eScore + 'E, ' + currentTestData.mScore + 'M, ' + currentTestData.rScore + 'R, ' + currentTestData.sScore + 'S)<br><br>';
     }

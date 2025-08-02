@@ -115,7 +115,8 @@ function addHomeworkSs(
     homeworkSs.getSheetByName('Info').getRange('C17').setValue(studentData.actStudentSsId);
 
     // TODO: Add homeworkSsId to JSON data
-  } else {
+  } //
+  else {
     Logger.log('Homework file not found.');
     return;
   }

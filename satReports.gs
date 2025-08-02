@@ -21,7 +21,8 @@ function findNewSatScoreReports(students, folderName) {
 
       if (now - lastUpdated <= msInTimeLimit) {
         fileList.push(satAdminFile);
-      } else {
+      } //
+      else {
         Logger.log(`${student.name} unchanged`);
       }
     }
@@ -93,7 +94,8 @@ function findNewCompletedSats(fileList) {
               sheetIndex: sheetIndex,
               isNew: isTestNew,
             });
-          } else if (completionCheck !== '?') {
+          } //
+          else if (completionCheck !== '?') {
             Logger.log(`Add scores for ${studentName} on ${testCode}`);
             const email = getOPTPermissionsList(ssId);
             if (email) {
@@ -108,7 +110,8 @@ function findNewCompletedSats(fileList) {
               completionCheckRange.setVerticalAlignment('middle');
             }
           }
-        } else {
+        } //
+        else {
           createStudentFolders.addSatTestSheets(ssId);
         }
       }
@@ -156,7 +159,8 @@ async function sendSatScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
 
     if (practiceDataSheet.getRange('V1').getValue() === 'Score report folder ID:' && practiceDataSheet.getRange('W1').getValue() !== '') {
       scoreReportFolderId = practiceDataSheet.getRange('W1').getValue();
-    } else {
+    } //
+    else {
       var parentId = DriveApp.getFileById(spreadsheetId).getParents().next().getId();
       const subfolderIds = getSubFolderIdsByFolderId(parentId);
 
@@ -217,7 +221,8 @@ async function sendSatScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
         }
         message += '</ul><br>';
       }
-    } else {
+    } //
+    else {
       var message = 'Hi PARENTNAME, please find the score report from ' + studentFirstName + "'s recent practice test attached. " + currentTestData.total + ' overall (' + currentTestData.rw + ' Reading & Writing, ' + currentTestData.m + ' Math)<br><br>';
     }
 

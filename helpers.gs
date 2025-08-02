@@ -67,7 +67,8 @@ function calculateRowHeight(questionId, containerWidth, subject) {
 
   if (subject.toLowerCase() === 'rw') {
     var whitespace = 40;
-  } else {
+  } //
+  else {
     var whitespace = 160;
   }
 
@@ -87,11 +88,14 @@ function getAnswerSheets(folder) {
 
     if (filename.includes('sat admin answer analysis')) {
       satSheetIds.admin = fileId;
-    } else if (filename.includes('sat student answer sheet')) {
+    } //
+    else if (filename.includes('sat student answer sheet')) {
       satSheetIds.student = fileId;
-    } else if (filename.includes('act admin answer analysis')) {
+    } //
+    else if (filename.includes('act admin answer analysis')) {
       actSheetIds.admin = fileId;
-    } else if (filename.includes('act student answer sheet')) {
+    } //
+    else if (filename.includes('act student answer sheet')) {
       actSheetIds.student = fileId;
     }
   }
@@ -200,7 +204,8 @@ function isDark(hex = '#b6d7a8') {
 
   if (luma < 205) {
     return true;
-  } else {
+  } //
+  else {
     return false;
   }
 }
@@ -242,7 +247,8 @@ function renameFolder(folder, currentName, newName, isStudentFolder = true) {
       satAdminSs = SpreadsheetApp.openById(satAdminSsId);
       revBackendSheet = satAdminSs.getSheetByName('Rev sheet backend');
       revBackendSheet.getRange('K2').setValue(newName);
-    } else if (filename.toLowerCase().includes('act admin answer analysis') && isStudentFolder) {
+    } //
+    else if (filename.toLowerCase().includes('act admin answer analysis') && isStudentFolder) {
       actAdminSsId = file.getId();
       actAdminSs = SpreadsheetApp.openById(actAdminSsId);
       actAdminSs.getSheetByName('Student responses').getRange('G1').setValue(newName);
@@ -269,7 +275,8 @@ function renameFolder(folder, currentName, newName, isStudentFolder = true) {
       let ui = SpreadsheetApp.getUi();
       ui.alert('Rev sheet named ' + newName + ' already exists. Please update manually.');
       return;
-    } else {
+    } //
+    else {
       revDataSs.getSheetByName(currentName).setName(newName);
     }
   }
@@ -282,7 +289,8 @@ const showAllSheetsExcept = (spreadsheetId = '1_nRuW80ewwxEcsHLKy8U8o1nIxKNxxrih
       // If sheets are meant to be hidden, leave them hidden
       if (sheetNamesToHide.includes(sh.getName())) {
         sh.hideSheet();
-      } else {
+      } //
+      else {
         sh.showSheet();
       }
     });
@@ -310,7 +318,8 @@ function getActPageBreakRow(sheet) {
   if (0 < mathTotalIndex && mathTotalIndex < 80) {
     Logger.log(`Page break at ${mathTotalIndex + 1}`);
     return mathTotalIndex + 1;
-  } else {
+  } //
+  else {
     return 80;
   }
 }
