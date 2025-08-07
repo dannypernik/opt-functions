@@ -2,6 +2,34 @@
   "timeZone": "America/Chicago",
   "exceptionLogging": "STACKDRIVER",
   "runtimeVersion": "V8",
+  "dependencies": {
+    "enabledAdvancedServices": [
+      {
+        "userSymbol": "Drive",
+        "serviceId": "drive",
+        "version": "v3"
+      }
+    ],
+    "libraries": [
+      {
+        "userSymbol": "ImgApp",
+        "libraryId": "1T03nYHRho6XMWYcaumClcWr6ble65mAT8OLJqRFJ5lukPVogAN2NDl-y",
+        "version": "11"
+      },
+      {
+        "userSymbol": "createStudentFolders",
+        "libraryId": "1aEWWruwxZVm02tF_F3x8lxSlQ-Rn061I-5CarkXLzpPkKTIcLIJNyMUc",
+        "version": "0",
+        "developmentMode": true
+      },
+      {
+        "userSymbol": "Homework",
+        "libraryId": "1Kh3u3lt7IgHRHCfItydhfi1LPNAbe5oqwOu05Fh9h4FHU-JCUXFP6PnL",
+        "version": "0",
+        "developmentMode": true
+      }
+    ]
+  },
   "oauthScopes": [
     "https://www.googleapis.com/auth/script.processes",
     "https://www.googleapis.com/auth/spreadsheets",
@@ -12,32 +40,5 @@
     "https://www.googleapis.com/auth/documents",
     "https://www.googleapis.com/auth/presentations",
     "https://www.googleapis.com/auth/script.scriptapp"
-  ],
-  "dependencies": {
-    "libraries": [
-      {
-        "userSymbol": "ImgApp",
-        "version": "11",
-        "libraryId": "1T03nYHRho6XMWYcaumClcWr6ble65mAT8OLJqRFJ5lukPVogAN2NDl-y"
-      },
-      {
-        "userSymbol": "createStudentFolders",
-        "version": "0",
-        "libraryId": "1aEWWruwxZVm02tF_F3x8lxSlQ-Rn061I-5CarkXLzpPkKTIcLIJNyMUc",
-        "developmentMode": true
-      },
-      {
-        "userSymbol": "Homework",
-        "version": "2",
-        "libraryId": "1Kh3u3lt7IgHRHCfItydhfi1LPNAbe5oqwOu05Fh9h4FHU-JCUXFP6PnL"
-      }
-    ],
-    "enabledAdvancedServices": [
-      {
-        "userSymbol": "Drive",
-        "version": "v3",
-        "serviceId": "drive"
-      }
-    ]
-  }
+  ]
 }

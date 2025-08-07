@@ -3,8 +3,10 @@ function checkAllNewAssignments() {
   const studentsStr = ss.getSheetByName('Clients').getRange(2, 17).getValue();
   const students = studentsStr ? JSON.parse(studentsStr) : [];
 
-  for (s in students) {
-    Homework.checkNewAssignments(s.homeworkSsId);
+  for (s of students) {
+    if (s.homeworkSsId) {
+      Homework.checkNewAssignments(s);
+    }
   }
 }
 
@@ -13,9 +15,11 @@ function checkAllDueAssignments() {
   const studentsStr = ss.getSheetByName('Clients').getRange(2, 17).getValue();
   const students = studentsStr ? JSON.parse(studentsStr) : [];
 
-  for (s in students) {
-    Homework.checkDueTodayAssignments(s.homeworkSsId);
-    Homework.checkPastDueAssignments(s.homeworkSsId);
+  for (s of students) {
+    if (s.homeworkSsId) {
+      Homework.checkDueTodayAssignments(s);
+      Homework.checkPastDueAssignments(s);
+    }
   }
 }
 
@@ -28,8 +32,10 @@ function checkTeamNewAssignments() {
     const studentsStr = teamDataValues[i][3];
     const students = studentsStr ? JSON.parse(studentsStr) : [];
 
-    for (s in students) {
-      Homework.checkNewAssignments(s.homeworkSsId);
+    for (s of students) {
+      if (s.homeworkSsId) {
+        Homework.checkNewAssignments(s);
+      }
     }
   }
 }
@@ -43,9 +49,11 @@ function checkTeamDueAssignments() {
     const studentsStr = teamDataValues[i][3];
     const students = studentsStr ? JSON.parse(studentsStr) : [];
 
-    for (s in students) {
-      Homework.checkDueTodayAssignments(s.homeworkSsId);
-      Homework.checkPastDueAssignments(s.homeworkSsId);
+    for (s of students) {
+      if (s.homeworkSsId) {
+        Homework.checkDueTodayAssignments(s);
+        Homework.checkPastDueAssignments(s);
+      }
     }
   }
 }
@@ -104,6 +112,7 @@ function addHomeworkSs(
     const satStudentSs = SpreadsheetApp.openById(studentData.satStudentSsId);
     const actStudentSs = SpreadsheetApp.openById(studentData.actStudentSsId);
     const homeworkSs = SpreadsheetApp.openById(homeworkSsId);
+    const homeworkInfoSheet = homeworkSs.getSheetByName('Info');
 
     satAdminSs.getSheetByName('Rev sheet backend').getRange('U8').setValue(homeworkSsId);
     satStudentSs.getSheetByName('Question bank data').getRange('U8').setValue(homeworkSsId);
@@ -111,10 +120,16 @@ function addHomeworkSs(
     actAdminSs.getSheetByName('Data').getRange('U2').setValue(homeworkSsId);
     actStudentSs.getSheetByName('Data').getRange('U2').setValue(homeworkSsId);
 
-    homeworkSs.getSheetByName('Info').getRange('C16').setValue(studentData.satStudentSsId);
-    homeworkSs.getSheetByName('Info').getRange('C17').setValue(studentData.actStudentSsId);
+    
+    homeworkInfoSheet.getRange('C16:C17').setValues([
+      [studentData.satStudentSsId],
+      [studentData.actStudentSsId]
+    ]);
 
-    // TODO: Add homeworkSsId to JSON data
+    const studentNameSplit = studentData.name.split(' ', 2)
+    const studentFirstName = studentNameSplit[0];
+    const studentLastName = studentNameSplit[1] || '';
+    homeworkInfoSheet.getRange('C4:D4').setValues([[studentFirstName,studentLastName]])
   } //
   else {
     Logger.log('Homework file not found.');
