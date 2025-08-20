@@ -103,9 +103,9 @@ function getAnswerSheets(folder) {
   return [satSheetIds, actSheetIds];
 }
 
-function getLastFilledRow(sheet, col) {
+function getLastFilledRow(sheet, col, startRow=1) {
   const maxRow = sheet.getMaxRows();
-  const allVals = sheet.getRange(1, col, maxRow).getValues();
+  const allVals = sheet.getRange(startRow, col, maxRow).getValues();
   const lastFilledRow = maxRow - allVals.reverse().findIndex((c) => c[0] != '');
 
   return lastFilledRow;
@@ -226,7 +226,7 @@ function renameFolder(folder, currentName, newName, isStudentFolder = true) {
   let folderName = folder.getName();
   let files = folder.getFiles();
   let subfolders = folder.getFolders();
-  let revDataSsId, revBackendSheet, satAdminSsId, satAdminSs;
+  let revDataSsId, revBackendSheet, satAdminSsId, satAdminSs, homeworkSsId;
 
   if (folderName.includes(currentName) && !folderName.includes(newName)) {
     let newFoldername = folderName.replace(currentName, newName);
@@ -247,11 +247,25 @@ function renameFolder(folder, currentName, newName, isStudentFolder = true) {
       satAdminSs = SpreadsheetApp.openById(satAdminSsId);
       revBackendSheet = satAdminSs.getSheetByName('Rev sheet backend');
       revBackendSheet.getRange('K2').setValue(newName);
+
+      if (!homeworkSsId) {
+        homeworkSsId = revBackendSheet.getRange('U8').getValue();
+        const { newFirstName, newLastName } = getFirstAndLastNames(newName);
+        const homeworkSs = SpreadsheetApp.openById(homeworkSsId);
+        homeworkSs.getSheetByName('Info').getRange('C4:D4').setValues([[newFirstName, newLastName]]);
+      }
     } //
     else if (filename.toLowerCase().includes('act admin answer analysis') && isStudentFolder) {
       actAdminSsId = file.getId();
       actAdminSs = SpreadsheetApp.openById(actAdminSsId);
       actAdminSs.getSheetByName('Student responses').getRange('G1').setValue(newName);
+
+      if (!homeworkSsId) {
+        homeworkSsId = actAdminSs.getSheetByName('Data').getRange('U2').getValue();
+        const { newFirstName, newLastName } = getFirstAndLastNames(newName);
+        const homeworkSs = SpreadsheetApp.openById(homeworkSsId);
+        homeworkSs.getSheetByName('Info').getRange('C4:D4').setValues([[newFirstName, newLastName]]);
+      }
     }
   }
 
@@ -494,6 +508,14 @@ function updateOPTStudentFolderData() {
 
   myStudents = createStudentFolders.getStudentFileIds(myStudentFolderData);
   clientSheet.getRange(2, 17).setValue(JSON.stringify(myStudents));
+}
+
+function getFirstAndLastNames(fullName) {
+  const fullNameSplit = fullName.split(' ', 2);
+  const firstName = fullNameSplit[0];
+  const lastName = fullNameSplit[1] || '';
+  
+  return { firstName, lastName };
 }
 
 function formatDateYYYYMMDD(date) {

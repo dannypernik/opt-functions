@@ -107,24 +107,24 @@ function addHomeworkSs(
   }
 
   if (homeworkSsId) {
-    const satAdminSs = SpreadsheetApp.openById(studentData.satAdminSsId);
-    const actAdminSs = SpreadsheetApp.openById(studentData.actAdminSsId);
-    const satStudentSs = SpreadsheetApp.openById(studentData.satStudentSsId);
-    const actStudentSs = SpreadsheetApp.openById(studentData.actStudentSsId);
     const homeworkSs = SpreadsheetApp.openById(homeworkSsId);
     const homeworkInfoSheet = homeworkSs.getSheetByName('Info');
 
-    satAdminSs.getSheetByName('Rev sheet backend').getRange('U8').setValue(homeworkSsId);
-    satStudentSs.getSheetByName('Question bank data').getRange('U8').setValue(homeworkSsId);
+    if (studentData.satAdminSsId) {
+      const satAdminSs = SpreadsheetApp.openById(studentData.satAdminSsId);
+      const satStudentSs = SpreadsheetApp.openById(studentData.satStudentSsId);
+      satAdminSs.getSheetByName('Rev sheet backend').getRange('U8').setValue(homeworkSsId);
+      satStudentSs.getSheetByName('Question bank data').getRange('U8').setValue(homeworkSsId);
+      homeworkInfoSheet.getRange('C16').setValue(studentData.satStudentSsId);
+    }
 
-    actAdminSs.getSheetByName('Data').getRange('U2').setValue(homeworkSsId);
-    actStudentSs.getSheetByName('Data').getRange('U2').setValue(homeworkSsId);
-
-    
-    homeworkInfoSheet.getRange('C16:C17').setValues([
-      [studentData.satStudentSsId],
-      [studentData.actStudentSsId]
-    ]);
+    if (studentData.actAdminSsId) {
+      const actAdminSs = SpreadsheetApp.openById(studentData.actAdminSsId);
+      const actStudentSs = SpreadsheetApp.openById(studentData.actStudentSsId);
+      actAdminSs.getSheetByName('Data').getRange('U2').setValue(homeworkSsId);
+      actStudentSs.getSheetByName('Data').getRange('U2').setValue(homeworkSsId);
+      homeworkInfoSheet.getRange('C17').setValue(studentData.actStudentSsId);
+    }
 
     const studentNameSplit = studentData.name.split(' ', 2)
     const studentFirstName = studentNameSplit[0];
