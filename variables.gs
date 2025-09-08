@@ -1,4 +1,4 @@
-const satSheetIds = {
+const satSsIds = {
   admin: null,
   student: null,
   studentData: null,
@@ -6,22 +6,11 @@ const satSheetIds = {
   rev: null,
 };
 
-// const satSheetDataUrls = {
-//   admin: null,
-//   student: null,
-//   rev: null,
-// };
-
-const actSheetIds = {
+const actSsIds = {
   admin: null,
   student: null,
   studentData: null,
   adminData: null,
 };
 
-// const actSheetDataUrls = {
-//   admin: null,
-//   student: null,
-// };
-
-const dataLatestDate = createStudentFolders.dataLatestDate;
+const dataLatestDate = TestPrepAnalysis.dataLatestDate;

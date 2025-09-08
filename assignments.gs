@@ -115,7 +115,7 @@ function addHomeworkSs(
       const satStudentSs = SpreadsheetApp.openById(studentData.satStudentSsId);
       satAdminSs.getSheetByName('Rev sheet backend').getRange('U8').setValue(homeworkSsId);
       satStudentSs.getSheetByName('Question bank data').getRange('U8').setValue(homeworkSsId);
-      homeworkInfoSheet.getRange('C16').setValue(studentData.satStudentSsId);
+      homeworkInfoSheet.getRange('C19').setValue(studentData.satStudentSsId);
     }
 
     if (studentData.actAdminSsId) {
@@ -123,7 +123,7 @@ function addHomeworkSs(
       const actStudentSs = SpreadsheetApp.openById(studentData.actStudentSsId);
       actAdminSs.getSheetByName('Data').getRange('U2').setValue(homeworkSsId);
       actStudentSs.getSheetByName('Data').getRange('U2').setValue(homeworkSsId);
-      homeworkInfoSheet.getRange('C17').setValue(studentData.actStudentSsId);
+      homeworkInfoSheet.getRange('C20').setValue(studentData.actStudentSsId);
     }
 
     const studentNameSplit = studentData.name.split(' ', 2)

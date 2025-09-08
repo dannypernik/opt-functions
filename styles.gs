@@ -13,7 +13,7 @@ function styleClientFolder(clientFolder, customStyles = {}) {
       return;
     } //
     else {
-      clientFolderId = createStudentFolders.getIdFromDriveUrl(response);
+      clientFolderId = TestPrepAnalysis.getIdFromDriveUrl(response);
       clientFolder = DriveApp.getFolderById(clientFolderId);
     }
   }
@@ -25,7 +25,7 @@ function styleClientFolder(clientFolder, customStyles = {}) {
   Logger.log('Styling sheets for ' + clientFolder.getName());
   getAnswerSheets(clientFolder);
   processFolders(clientFolder.getFolders(), getAnswerSheets);
-  styleClientSheets(satSheetIds, actSheetIds, customStyles);
+  styleClientSheets(satSsIds, actSsIds, customStyles);
 
   var htmlOutput = HtmlService.createHtmlOutput('<a href="https://drive.google.com/drive/u/0/folders/' + clientFolderId + '" target="_blank" onclick="google.script.host.close()">Client folder</a>')
     .setWidth(250)
@@ -33,8 +33,8 @@ function styleClientFolder(clientFolder, customStyles = {}) {
   SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Styling complete');
 }
 
-function styleClientSheets(satSheetIds, actSheetIds, customStyles) {
-  for (let id of [satSheetIds.admin, satSheetIds.student, actSheetIds.admin, actSheetIds.student]) {
+function styleClientSheets(satSsIds, actSsIds, customStyles) {
+  for (let id of [satSsIds.admin, satSsIds.student, actSsIds.admin, actSsIds.student]) {
     const ss = SpreadsheetApp.openById(id);
     const ssName = ss.getName();
     const satTestSheets = getSatTestCodes();
@@ -188,7 +188,7 @@ function styleSatWorksheets(
     primaryContrastColor: 'white',
   }
 ) {
-  const cats = createStudentFolders.cats;
+  const cats = TestPrepAnalysis.cats;
   cats.push('Reading & Writing'); // styles SLT Uniques header
   var conceptRows = [];
 

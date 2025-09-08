@@ -3,9 +3,10 @@ function findNewSatScoreReports(students, folderName) {
     // if students is null, get OPT data row
     const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
     const clientSheet = clientDataSs.getSheetByName('Clients');
-    const myDataRange = clientSheet.getRange(2, 1, 1, 17).getValues();
-    const myStudentDataValue = myDataRange[0][16];
-    folderName = myDataRange[0][1];
+    const myDataRange = clientSheet.getDataRange().getValues();
+    const myDataRowIndex = getRowByKey(clientSheet, 1, 'Open Path Tutoring');
+    const myStudentDataValue = myDataRange[myDataRowIndex][16];
+    folderName = myDataRange[myDataRowIndex][1];
     students = JSON.parse(myStudentDataValue);
   }
 
@@ -112,7 +113,7 @@ function findNewCompletedSats(fileList) {
           }
         } //
         else {
-          createStudentFolders.addSatTestSheets(ssId);
+          TestPrepAnalysis.addSatTestSheets(ssId);
         }
       }
     }

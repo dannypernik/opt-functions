@@ -87,20 +87,20 @@ function getAnswerSheets(folder) {
     const filename = file.getName().toLowerCase();
 
     if (filename.includes('sat admin answer analysis')) {
-      satSheetIds.admin = fileId;
+      satSsIds.admin = fileId;
     } //
     else if (filename.includes('sat student answer sheet')) {
-      satSheetIds.student = fileId;
+      satSsIds.student = fileId;
     } //
     else if (filename.includes('act admin answer analysis')) {
-      actSheetIds.admin = fileId;
+      actSsIds.admin = fileId;
     } //
     else if (filename.includes('act student answer sheet')) {
-      actSheetIds.student = fileId;
+      actSsIds.student = fileId;
     }
   }
 
-  return [satSheetIds, actSheetIds];
+  return [satSsIds, actSsIds];
 }
 
 function getLastFilledRow(sheet, col, startRow=1) {
@@ -245,8 +245,12 @@ function renameFolder(folder, currentName, newName, isStudentFolder = true) {
     if (filename.toLowerCase().includes('sat admin answer analysis') && isStudentFolder) {
       satAdminSsId = file.getId();
       satAdminSs = SpreadsheetApp.openById(satAdminSsId);
+      satStudentSsId = satAdminSs.getSheetByName('Student responses').getRange('B1').getValue();
+      satStudentSs = SpreadsheetApp.openById(satStudentSsId);
+      satStudentSs.getSheetByName('Question bank data').getRange('U2').setValue(newName);
       revBackendSheet = satAdminSs.getSheetByName('Rev sheet backend');
       revBackendSheet.getRange('K2').setValue(newName);
+      revDataSsId = revBackendSheet.getRange('U3').getValue();
 
       if (!homeworkSsId) {
         homeworkSsId = revBackendSheet.getRange('U8').getValue();
@@ -282,7 +286,7 @@ function renameFolder(folder, currentName, newName, isStudentFolder = true) {
   }
 
   if (satAdminSsId && isStudentFolder && revDataSsId) {
-    revDataSsId = revBackendSheet.getRange('U3');
+    revDataSsId = revBackendSheet.getRange('U3').getValue();
     revDataSs = SpreadsheetApp.openById(revDataSsId);
 
     if (revDataSs.getSheetByName(newName)) {
@@ -391,7 +395,7 @@ function savePdfSheet(
     left: '0.3',
     right: '0.3',
   }
-) {
+  ) {
   try {
     var spreadsheet = spreadsheetId ? SpreadsheetApp.openById(spreadsheetId) : SpreadsheetApp.getActiveSpreadsheet();
     var spreadsheetId = spreadsheetId ? spreadsheetId : spreadsheet.getId();
@@ -489,25 +493,26 @@ function updateOPTStudentFolderData() {
       studentsDataJSON: tutorStudents,
     };
 
-    tutorStudents = createStudentFolders.getStudentFileIds(tutorData);
+    tutorStudents = TestPrepAnalysis.getAllStudentData(tutorData);
 
     teamDataSheet.getRange(tutorIndex + 2, 1, 1, 4).setValues([[tutorIndex, tutorFolderName, tutorFolderId, JSON.stringify(tutorStudents)]]);
     tutorIndex++;
   }
 
   const clientSheet = clientDataSs.getSheetByName('Clients');
-  const myStudentsStr = clientSheet.getRange(2, 17).getValue();
+  const myDataRow = getRowByKey(clientSheet, 1, 'Open Path Tutoring') + 1;
+  const myStudentsStr = clientSheet.getRange(myDataRow, 17).getValue();
   let myStudents = myStudentsStr ? JSON.parse(myStudentsStr) : [];
 
   const myStudentFolderData = {
     index: 0,
     name: 'Open Path Tutoring',
-    studentsFolderId: clientSheet.getRange(2, 15).getValue(),
+    studentsFolderId: clientSheet.getRange(myDataRow, 15).getValue(),
     studentsDataJSON: myStudents,
   };
 
-  myStudents = createStudentFolders.getStudentFileIds(myStudentFolderData);
-  clientSheet.getRange(2, 17).setValue(JSON.stringify(myStudents));
+  myStudents = TestPrepAnalysis.getAllStudentData(myStudentFolderData);
+  clientSheet.getRange(myDataRow, 17).setValue(JSON.stringify(myStudents));
 }
 
 function getFirstAndLastNames(fullName) {
@@ -535,7 +540,7 @@ function addStudentDataToJson(
     actStudentSsId: null,
     homeworkSsId: null,
   }
-) {
+  ) {
   const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
   const myStudentsJsonCell = clientDataSs.getSheetByName('Clients').getRange('Q2');
   let myStudentsStr = myStudentsJsonCell.getValue();
@@ -555,4 +560,14 @@ function addStudentDataToJson(
   myStudentsJson.push(studentData);
   myStudentsStr = JSON.stringify(myStudentsJson);
   myStudentsJsonCell.setValue(myStudentsStr);
+}
+
+function getRowByKey(sheet, keyColIndex=0, searchVal) {
+  const data = sheet.getDataRange().getValues();
+  
+  for (var row = 0; row < data.length; row++) {
+    if (data[row][keyColIndex] === searchVal) {  // Column A is colIndex 0
+      return row; 
+    }
+  }
 }

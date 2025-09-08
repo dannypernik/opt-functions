@@ -17,15 +17,15 @@
         "version": "11"
       },
       {
-        "userSymbol": "createStudentFolders",
-        "libraryId": "1aEWWruwxZVm02tF_F3x8lxSlQ-Rn061I-5CarkXLzpPkKTIcLIJNyMUc",
+        "userSymbol": "Homework",
+        "libraryId": "1Kh3u3lt7IgHRHCfItydhfi1LPNAbe5oqwOu05Fh9h4FHU-JCUXFP6PnL",
         "version": "0",
         "developmentMode": true
       },
       {
-        "userSymbol": "Homework",
-        "libraryId": "1Kh3u3lt7IgHRHCfItydhfi1LPNAbe5oqwOu05Fh9h4FHU-JCUXFP6PnL",
+        "userSymbol": "TestPrepAnalysis",
         "version": "0",
+        "libraryId": "1Zfh73CFwwuB_Q7emfgRlDYpubrYF52ESH-54cqv5oExLzDRYPxwJU0HV",
         "developmentMode": true
       }
     ]
