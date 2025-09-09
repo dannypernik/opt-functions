@@ -10,9 +10,13 @@ function updateOPTStudentFolderData(checkAllKeys = false) {
   let tutorIndex = 0;
 
   while (tutorFolders.hasNext()) {
+    const tutorFolderId = tutorFolder.getId();
+    const tutorDataRow = getRowByKey(teamDataSheet, 2, tutorFolderId);
+
+
+    
     const tutorFolder = tutorFolders.next();
     const tutorFolderName = tutorFolder.getName();
-    const tutorFolderId = tutorFolder.getId();
 
     const tutorStudentsStr = teamDataSheet.getRange(tutorIndex + 2, 4).getValue();
     let tutorStudents = tutorStudentsStr ? JSON.parse(tutorStudentsStr) : [];
@@ -26,7 +30,7 @@ function updateOPTStudentFolderData(checkAllKeys = false) {
 
     tutorStudents = TestPrepAnalysis.getAllStudentData(tutorData, checkAllKeys);
 
-    teamDataSheet.getRange(tutorIndex + 2, 1, 1, 4).setValues([[tutorIndex, tutorFolderName, tutorFolderId, JSON.stringify(tutorStudents)]]);
+    teamDataSheet.getRange(tutorIndex + 2, 1, 1, 4).setValues([[tutorIndex, tutorFolderName, tutorFolderId, JSON.stringify(tutorStudents), 'true']]);
     tutorIndex++;
   }
 
@@ -549,4 +553,6 @@ function getRowByKey(sheet, keyColIndex = 0, searchVal) {
       return row;
     }
   }
+  // If not found, returns index of first empty row
+  return data.length;
 }
