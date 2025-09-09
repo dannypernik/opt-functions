@@ -1,3 +1,129 @@
+function updateAllOPTStudentKeys() {
+  updateOPTStudentFolderData(true);
+}
+
+function updateOPTStudentFolderData(checkAllKeys=false) {
+  const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
+  const teamDataSheet = clientDataSs.getSheetByName('Team OPT');
+  const teamFolder = DriveApp.getFolderById('1tSKajFOa_EVUjH8SKhrQFbHSjDmmopP9');
+  const tutorFolders = teamFolder.getFolders();
+  let tutorIndex = 0;
+
+  while (tutorFolders.hasNext()) {
+    const tutorFolder = tutorFolders.next();
+    const tutorFolderName = tutorFolder.getName();
+    const tutorFolderId = tutorFolder.getId();
+
+    const tutorStudentsStr = teamDataSheet.getRange(tutorIndex + 2, 4).getValue();
+    let tutorStudents = tutorStudentsStr ? JSON.parse(tutorStudentsStr) : [];
+
+    tutorData = {
+      index: tutorIndex,
+      name: tutorFolderName,
+      studentsFolderId: tutorFolderId,
+      studentsDataJSON: tutorStudents,
+    };
+
+    tutorStudents = TestPrepAnalysis.getAllStudentData(tutorData, checkAllKeys);
+
+    teamDataSheet.getRange(tutorIndex + 2, 1, 1, 4).setValues([[tutorIndex, tutorFolderName, tutorFolderId, JSON.stringify(tutorStudents)]]);
+    tutorIndex++;
+  }
+
+  const clientSheet = clientDataSs.getSheetByName('Clients');
+  const myDataRow = getRowByKey(clientSheet, 1, 'Open Path Tutoring') + 1;
+  const myStudentsStr = clientSheet.getRange(myDataRow, 17).getValue();
+  let myStudents = myStudentsStr ? JSON.parse(myStudentsStr) : [];
+
+  const myStudentFolderData = {
+    index: 0,
+    name: 'Open Path Tutoring',
+    studentsFolderId: clientSheet.getRange(myDataRow, 15).getValue(),
+    studentsDataJSON: myStudents,
+  };
+
+  myStudents = TestPrepAnalysis.getAllStudentData(myStudentFolderData, checkAllKeys);
+  clientSheet.getRange(myDataRow, 17).setValue(JSON.stringify(myStudents));
+}
+
+function renameFolder(folder, currentName, newName, isStudentFolder = true) {
+  let folderName = folder.getName();
+  let files = folder.getFiles();
+  let subfolders = folder.getFolders();
+  let revDataSsId, revBackendSheet, satAdminSsId, satAdminSs, homeworkSsId;
+
+  if (folderName.includes(currentName) && !folderName.includes(newName)) {
+    let newFoldername = folderName.replace(currentName, newName);
+    folder.setName(newFoldername);
+  }
+
+  while (files.hasNext()) {
+    let file = files.next();
+    let filename = file.getName();
+
+    if (filename.includes(currentName) && !filename.includes(newName)) {
+      let newFilename = filename.replace(currentName, newName);
+      file.setName(newFilename);
+    }
+
+    if (filename.toLowerCase().includes('sat admin answer analysis') && isStudentFolder) {
+      satAdminSsId = file.getId();
+      satAdminSs = SpreadsheetApp.openById(satAdminSsId);
+      satStudentSsId = satAdminSs.getSheetByName('Student responses').getRange('B1').getValue();
+      satStudentSs = SpreadsheetApp.openById(satStudentSsId);
+      satStudentSs.getSheetByName('Question bank data').getRange('U2').setValue(newName);
+      revBackendSheet = satAdminSs.getSheetByName('Rev sheet backend');
+      revBackendSheet.getRange('K2').setValue(newName);
+      revDataSsId = revBackendSheet.getRange('U3').getValue();
+
+      if (!homeworkSsId) {
+        homeworkSsId = revBackendSheet.getRange('U8').getValue();
+        const { newFirstName, newLastName } = getFirstAndLastNames(newName);
+        const homeworkSs = SpreadsheetApp.openById(homeworkSsId);
+        homeworkSs.getSheetByName('Info').getRange('C4:D4').setValues([[newFirstName, newLastName]]);
+      }
+    } //
+    else if (filename.toLowerCase().includes('act admin answer analysis') && isStudentFolder) {
+      actAdminSsId = file.getId();
+      actAdminSs = SpreadsheetApp.openById(actAdminSsId);
+      actAdminSs.getSheetByName('Student responses').getRange('G1').setValue(newName);
+
+      if (!homeworkSsId) {
+        homeworkSsId = actAdminSs.getSheetByName('Data').getRange('U2').getValue();
+        const { newFirstName, newLastName } = getFirstAndLastNames(newName);
+        const homeworkSs = SpreadsheetApp.openById(homeworkSsId);
+        homeworkSs.getSheetByName('Info').getRange('C4:D4').setValues([[newFirstName, newLastName]]);
+      }
+    }
+  }
+
+  while (subfolders.hasNext()) {
+    let subfolder = subfolders.next();
+    let subfolderName = subfolder.getName();
+
+    if (subfolderName.includes(currentName) && !subfolderName.includes(newName)) {
+      let newSubfolderName = subfolderName.replace(currentName, newName);
+      subfolder.setName(newSubfolderName);
+    }
+
+    renameFolder(subfolder, currentName, newName, isStudentFolder);
+  }
+
+  if (satAdminSsId && isStudentFolder && revDataSsId) {
+    revDataSsId = revBackendSheet.getRange('U3').getValue();
+    revDataSs = SpreadsheetApp.openById(revDataSsId);
+
+    if (revDataSs.getSheetByName(newName)) {
+      let ui = SpreadsheetApp.getUi();
+      ui.alert('Rev sheet named ' + newName + ' already exists. Please update manually.');
+      return;
+    } //
+    else {
+      revDataSs.getSheetByName(currentName).setName(newName);
+    }
+  }
+}
+
 // Rev sheet setup functions
 function getAllRowHeights(sheetName, rwIdRangeA1, mathIdRangeA1) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -222,84 +348,6 @@ function processFolders(folders, folderFunction) {
   }
 }
 
-function renameFolder(folder, currentName, newName, isStudentFolder = true) {
-  let folderName = folder.getName();
-  let files = folder.getFiles();
-  let subfolders = folder.getFolders();
-  let revDataSsId, revBackendSheet, satAdminSsId, satAdminSs, homeworkSsId;
-
-  if (folderName.includes(currentName) && !folderName.includes(newName)) {
-    let newFoldername = folderName.replace(currentName, newName);
-    folder.setName(newFoldername);
-  }
-
-  while (files.hasNext()) {
-    let file = files.next();
-    let filename = file.getName();
-
-    if (filename.includes(currentName) && !filename.includes(newName)) {
-      let newFilename = filename.replace(currentName, newName);
-      file.setName(newFilename);
-    }
-
-    if (filename.toLowerCase().includes('sat admin answer analysis') && isStudentFolder) {
-      satAdminSsId = file.getId();
-      satAdminSs = SpreadsheetApp.openById(satAdminSsId);
-      satStudentSsId = satAdminSs.getSheetByName('Student responses').getRange('B1').getValue();
-      satStudentSs = SpreadsheetApp.openById(satStudentSsId);
-      satStudentSs.getSheetByName('Question bank data').getRange('U2').setValue(newName);
-      revBackendSheet = satAdminSs.getSheetByName('Rev sheet backend');
-      revBackendSheet.getRange('K2').setValue(newName);
-      revDataSsId = revBackendSheet.getRange('U3').getValue();
-
-      if (!homeworkSsId) {
-        homeworkSsId = revBackendSheet.getRange('U8').getValue();
-        const { newFirstName, newLastName } = getFirstAndLastNames(newName);
-        const homeworkSs = SpreadsheetApp.openById(homeworkSsId);
-        homeworkSs.getSheetByName('Info').getRange('C4:D4').setValues([[newFirstName, newLastName]]);
-      }
-    } //
-    else if (filename.toLowerCase().includes('act admin answer analysis') && isStudentFolder) {
-      actAdminSsId = file.getId();
-      actAdminSs = SpreadsheetApp.openById(actAdminSsId);
-      actAdminSs.getSheetByName('Student responses').getRange('G1').setValue(newName);
-
-      if (!homeworkSsId) {
-        homeworkSsId = actAdminSs.getSheetByName('Data').getRange('U2').getValue();
-        const { newFirstName, newLastName } = getFirstAndLastNames(newName);
-        const homeworkSs = SpreadsheetApp.openById(homeworkSsId);
-        homeworkSs.getSheetByName('Info').getRange('C4:D4').setValues([[newFirstName, newLastName]]);
-      }
-    }
-  }
-
-  while (subfolders.hasNext()) {
-    let subfolder = subfolders.next();
-    let subfolderName = subfolder.getName();
-
-    if (subfolderName.includes(currentName) && !subfolderName.includes(newName)) {
-      let newSubfolderName = subfolderName.replace(currentName, newName);
-      subfolder.setName(newSubfolderName);
-    }
-
-    renameFolder(subfolder, currentName, newName, isStudentFolder);
-  }
-
-  if (satAdminSsId && isStudentFolder && revDataSsId) {
-    revDataSsId = revBackendSheet.getRange('U3').getValue();
-    revDataSs = SpreadsheetApp.openById(revDataSsId);
-
-    if (revDataSs.getSheetByName(newName)) {
-      let ui = SpreadsheetApp.getUi();
-      ui.alert('Rev sheet named ' + newName + ' already exists. Please update manually.');
-      return;
-    } //
-    else {
-      revDataSs.getSheetByName(currentName).setName(newName);
-    }
-  }
-}
-
 const showAllSheetsExcept = (spreadsheetId = '1_nRuW80ewwxEcsHLKy8U8o1nIxKNxxrih-IC-T2suJk', sheetNamesToHide = ['RW Rev sheet', 'Math Rev sheet', 'Rev sheet backend']) => {
   SpreadsheetApp.openById(spreadsheetId)
     .getSheets()
@@ -471,50 +519,6 @@ function getStudentsSpreadsheetData(studentName) {
   return studentData;
 }
 
-function updateOPTStudentFolderData() {
-  const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
-  const teamDataSheet = clientDataSs.getSheetByName('Team OPT');
-  const teamFolder = DriveApp.getFolderById('1tSKajFOa_EVUjH8SKhrQFbHSjDmmopP9');
-  const tutorFolders = teamFolder.getFolders();
-  let tutorIndex = 0;
-
-  while (tutorFolders.hasNext()) {
-    const tutorFolder = tutorFolders.next();
-    const tutorFolderName = tutorFolder.getName();
-    const tutorFolderId = tutorFolder.getId();
-
-    const tutorStudentsStr = teamDataSheet.getRange(tutorIndex + 2, 4).getValue();
-    let tutorStudents = tutorStudentsStr ? JSON.parse(tutorStudentsStr) : [];
-
-    tutorData = {
-      index: tutorIndex,
-      name: tutorFolderName,
-      studentsFolderId: tutorFolderId,
-      studentsDataJSON: tutorStudents,
-    };
-
-    tutorStudents = TestPrepAnalysis.getAllStudentData(tutorData);
-
-    teamDataSheet.getRange(tutorIndex + 2, 1, 1, 4).setValues([[tutorIndex, tutorFolderName, tutorFolderId, JSON.stringify(tutorStudents)]]);
-    tutorIndex++;
-  }
-
-  const clientSheet = clientDataSs.getSheetByName('Clients');
-  const myDataRow = getRowByKey(clientSheet, 1, 'Open Path Tutoring') + 1;
-  const myStudentsStr = clientSheet.getRange(myDataRow, 17).getValue();
-  let myStudents = myStudentsStr ? JSON.parse(myStudentsStr) : [];
-
-  const myStudentFolderData = {
-    index: 0,
-    name: 'Open Path Tutoring',
-    studentsFolderId: clientSheet.getRange(myDataRow, 15).getValue(),
-    studentsDataJSON: myStudents,
-  };
-
-  myStudents = TestPrepAnalysis.getAllStudentData(myStudentFolderData);
-  clientSheet.getRange(myDataRow, 17).setValue(JSON.stringify(myStudents));
-}
-
 function getFirstAndLastNames(fullName) {
   const fullNameSplit = fullName.split(' ', 2);
   const firstName = fullNameSplit[0];
@@ -528,38 +532,6 @@ function formatDateYYYYMMDD(date) {
   const dd = String(date.getDate()).padStart(2, '0');
   const yyyy = date.getFullYear();
   return `${yyyy}-${mm}-${dd}`;
-}
-
-function addStudentDataToJson(
-  studentData = {
-    name: null,
-    folderId: null,
-    satAdminSsId: null,
-    satStudentSsId: null,
-    actAdminSsId: null,
-    actStudentSsId: null,
-    homeworkSsId: null,
-  }
-  ) {
-  const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
-  const myStudentsJsonCell = clientDataSs.getSheetByName('Clients').getRange('Q2');
-  let myStudentsStr = myStudentsJsonCell.getValue();
-  const myStudentsJson = myStudentsStr ? JSON.parse(myStudentsStr) : [];
-  if (studentData.name && myStudentsJson.some((s) => s.name === studentData.name)) {
-    const ui = SpreadsheetApp.getUi();
-    const response = ui.alert(`Student "${studentData.name}" already exists in data. Overwrite?`, ui.ButtonSet.YES_NO);
-    if (response !== ui.Button.YES) {
-      return;
-    }
-    // Remove existing entry
-    const idx = myStudentsJson.findIndex((s) => s.name === studentData.name);
-    if (idx !== -1) {
-      myStudentsJson.splice(idx, 1);
-    }
-  }
-  myStudentsJson.push(studentData);
-  myStudentsStr = JSON.stringify(myStudentsJson);
-  myStudentsJsonCell.setValue(myStudentsStr);
 }
 
 function getRowByKey(sheet, keyColIndex=0, searchVal) {
