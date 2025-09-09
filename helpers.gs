@@ -543,10 +543,9 @@ function formatDateYYYYMMDD(date) {
 
 function getRowByKey(sheet, keyColIndex = 0, searchVal) {
   const data = sheet.getDataRange().getValues();
-
   for (var row = 0; row < data.length; row++) {
+    // Column A is colIndex 0
     if (data[row][keyColIndex] === searchVal) {
-      // Column A is colIndex 0
       return row;
     }
   }
