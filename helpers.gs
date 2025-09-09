@@ -2,7 +2,7 @@ function updateAllOPTStudentKeys() {
   updateOPTStudentFolderData(true);
 }
 
-function updateOPTStudentFolderData(checkAllKeys=false) {
+function updateOPTStudentFolderData(checkAllKeys = false) {
   const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
   const teamDataSheet = clientDataSs.getSheetByName('Team OPT');
   const teamFolder = DriveApp.getFolderById('1tSKajFOa_EVUjH8SKhrQFbHSjDmmopP9');
@@ -43,6 +43,7 @@ function updateOPTStudentFolderData(checkAllKeys=false) {
   };
 
   myStudents = TestPrepAnalysis.getAllStudentData(myStudentFolderData, checkAllKeys);
+  myStudents.forEach((student) => (student.updateComplete = false));
   clientSheet.getRange(myDataRow, 17).setValue(JSON.stringify(myStudents));
 }
 
@@ -80,7 +81,10 @@ function renameFolder(folder, currentName, newName, isStudentFolder = true) {
         homeworkSsId = revBackendSheet.getRange('U8').getValue();
         const { newFirstName, newLastName } = getFirstAndLastNames(newName);
         const homeworkSs = SpreadsheetApp.openById(homeworkSsId);
-        homeworkSs.getSheetByName('Info').getRange('C4:D4').setValues([[newFirstName, newLastName]]);
+        homeworkSs
+          .getSheetByName('Info')
+          .getRange('C4:D4')
+          .setValues([[newFirstName, newLastName]]);
       }
     } //
     else if (filename.toLowerCase().includes('act admin answer analysis') && isStudentFolder) {
@@ -92,7 +96,10 @@ function renameFolder(folder, currentName, newName, isStudentFolder = true) {
         homeworkSsId = actAdminSs.getSheetByName('Data').getRange('U2').getValue();
         const { newFirstName, newLastName } = getFirstAndLastNames(newName);
         const homeworkSs = SpreadsheetApp.openById(homeworkSsId);
-        homeworkSs.getSheetByName('Info').getRange('C4:D4').setValues([[newFirstName, newLastName]]);
+        homeworkSs
+          .getSheetByName('Info')
+          .getRange('C4:D4')
+          .setValues([[newFirstName, newLastName]]);
       }
     }
   }
@@ -229,7 +236,7 @@ function getAnswerSheets(folder) {
   return [satSsIds, actSsIds];
 }
 
-function getLastFilledRow(sheet, col, startRow=1) {
+function getLastFilledRow(sheet, col, startRow = 1) {
   const maxRow = sheet.getMaxRows();
   const allVals = sheet.getRange(startRow, col, maxRow).getValues();
   const lastFilledRow = maxRow - allVals.reverse().findIndex((c) => c[0] != '');
@@ -443,7 +450,7 @@ function savePdfSheet(
     left: '0.3',
     right: '0.3',
   }
-  ) {
+) {
   try {
     var spreadsheet = spreadsheetId ? SpreadsheetApp.openById(spreadsheetId) : SpreadsheetApp.getActiveSpreadsheet();
     var spreadsheetId = spreadsheetId ? spreadsheetId : spreadsheet.getId();
@@ -523,7 +530,7 @@ function getFirstAndLastNames(fullName) {
   const fullNameSplit = fullName.split(' ', 2);
   const firstName = fullNameSplit[0];
   const lastName = fullNameSplit[1] || '';
-  
+
   return { firstName, lastName };
 }
 
@@ -534,12 +541,13 @@ function formatDateYYYYMMDD(date) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-function getRowByKey(sheet, keyColIndex=0, searchVal) {
+function getRowByKey(sheet, keyColIndex = 0, searchVal) {
   const data = sheet.getDataRange().getValues();
-  
+
   for (var row = 0; row < data.length; row++) {
-    if (data[row][keyColIndex] === searchVal) {  // Column A is colIndex 0
-      return row; 
+    if (data[row][keyColIndex] === searchVal) {
+      // Column A is colIndex 0
+      return row;
     }
   }
 }
