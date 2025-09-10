@@ -7,18 +7,18 @@ function updateOPTStudentFolderData(checkAllKeys = false) {
   const teamDataSheet = clientDataSs.getSheetByName('Team OPT');
   const teamFolder = DriveApp.getFolderById('1tSKajFOa_EVUjH8SKhrQFbHSjDmmopP9');
   const tutorFolders = teamFolder.getFolders();
-  let tutorIndex = 0;
 
   while (tutorFolders.hasNext()) {
-    const tutorFolderId = tutorFolder.getId();
-    const tutorDataRow = getRowByKey(teamDataSheet, 2, tutorFolderId);
-
-
-    
     const tutorFolder = tutorFolders.next();
-    const tutorFolderName = tutorFolder.getName();
+    const tutorFolderId = tutorFolder.getId();
+    const tutorDataRow = getRowByKey(teamDataSheet, 2, tutorFolderId) + 1;
+    const tutorValues = teamDataSheet.getRange(tutorDataRow, 1, 1, 5).getValues();
 
-    const tutorStudentsStr = teamDataSheet.getRange(tutorIndex + 2, 4).getValue();
+    const tutorIndex = tutorValues[0][0] || tutorDataRow - 2;
+    const tutorFolderName = tutorValues[0][1] || tutorFolder.getName();
+    const tutorStudentsStr = tutorValues[0][3] || [];
+    const tutorUpdateComplete = tutorValues[0][4];
+
     let tutorStudents = tutorStudentsStr ? JSON.parse(tutorStudentsStr) : [];
 
     tutorData = {
@@ -28,10 +28,10 @@ function updateOPTStudentFolderData(checkAllKeys = false) {
       studentsDataJSON: tutorStudents,
     };
 
-    tutorStudents = TestPrepAnalysis.getAllStudentData(tutorData, checkAllKeys);
-
-    teamDataSheet.getRange(tutorIndex + 2, 1, 1, 4).setValues([[tutorIndex, tutorFolderName, tutorFolderId, JSON.stringify(tutorStudents), 'true']]);
-    tutorIndex++;
+    if (!tutorUpdateComplete) {
+      tutorStudents = TestPrepAnalysis.getAllStudentData(tutorData, checkAllKeys);
+      teamDataSheet.getRange(tutorIndex + 2, 1, 1, 5).setValues([[tutorIndex, tutorFolderName, tutorFolderId, JSON.stringify(tutorStudents), 'true']]);
+    }
   }
 
   const clientSheet = clientDataSs.getSheetByName('Clients');
@@ -49,6 +49,7 @@ function updateOPTStudentFolderData(checkAllKeys = false) {
   myStudents = TestPrepAnalysis.getAllStudentData(myStudentFolderData, checkAllKeys);
   myStudents.forEach((student) => (student.updateComplete = false));
   clientSheet.getRange(myDataRow, 17).setValue(JSON.stringify(myStudents));
+  teamDataSheet.getRange('E2:E').clearContent();
 }
 
 function renameFolder(folder, currentName, newName, isStudentFolder = true) {
