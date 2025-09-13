@@ -68,7 +68,6 @@ function addHomeworkSs(
     actStudentSsId: null,
   }
 ) {
-
   const dataSs = SpreadsheetApp.openById(CLIENT_DATA_SS_ID);
   const clientSheet = dataSs.getSheetByName('Clients');
   const myDataRow = getRowByKey(clientSheet, 1, 'Open Path Tutoring') + 1;
@@ -85,12 +84,12 @@ function addHomeworkSs(
       return;
     }
 
-    studentData = allStudentsData.find(student => String(student.name).toLowerCase() === prompt.getResponseText().toLowerCase());
+    studentData = allStudentsData.find((student) => String(student.name).toLowerCase() === prompt.getResponseText().toLowerCase());
   }
 
   const adminFolder = DriveApp.getFolderById(studentData.folderId);
-  let studentFolder = adminFolder
-  
+  let studentFolder = adminFolder;
+
   const adminSubfolders = adminFolder.getFolders();
   while (adminSubfolders.hasNext()) {
     const adminSubfolder = adminSubfolders.next();
@@ -132,11 +131,14 @@ function addHomeworkSs(
 
     newHomeworkFile.moveTo(studentFolder);
     homeworkSsId = newHomeworkFile.getId();
-
   }
 
-  studentData.homeworkSsId = homeworkSsId
-    
+  studentData.homeworkSsId = homeworkSsId;
+  const studentIndex = allStudentsData.findIndex((student) => student.name === studentData.name);
+  if (studentIndex !== -1) {
+    allStudentsData[studentIndex] = studentData;
+  }
+
   allStudentsDataStr = JSON.stringify(allStudentsData);
   allStudentsDataCell.setValue(allStudentsDataStr);
 
@@ -160,10 +162,10 @@ function addHomeworkSs(
       homeworkInfoSheet.getRange('C20').setValue(studentData.actStudentSsId);
     }
 
-    const studentNameSplit = studentData.name.split(' ', 2)
+    const studentNameSplit = studentData.name.split(' ', 2);
     const studentFirstName = studentNameSplit[0];
     const studentLastName = studentNameSplit[1] || '';
-    homeworkInfoSheet.getRange('C4:D4').setValues([[studentFirstName,studentLastName]])
+    homeworkInfoSheet.getRange('C4:D4').setValues([[studentFirstName, studentLastName]]);
   } //
   else {
     Logger.log('Homework file not found.');
