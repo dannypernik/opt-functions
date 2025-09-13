@@ -9,7 +9,7 @@ function styleClientFolder(clientFolder, customStyles = {}) {
     const prompt = ui.prompt('Client folder URL or ID', ui.ButtonSet.OK_CANCEL);
     response = prompt.getResponseText();
 
-    if (prompt.getSelectedButton() == ui.Button.CANCEL) {
+    if (prompt.getSelectedButton() === ui.Button.CANCEL) {
       return;
     } //
     else {

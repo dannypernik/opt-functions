@@ -3,7 +3,7 @@ function newClient(clientTemplateFolderId, clientParentFolderId) {
   const prompt = ui.prompt('Tutor or Business name:', ui.ButtonSet.OK_CANCEL);
   let customStyles, clientName;
 
-  if (prompt.getSelectedButton() == ui.Button.CANCEL) {
+  if (prompt.getSelectedButton() === ui.Button.CANCEL) {
     return;
   } //
   else {

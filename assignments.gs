@@ -68,15 +68,35 @@ function addHomeworkSs(
     actStudentSsId: null,
   }
 ) {
+
+  const dataSs = SpreadsheetApp.openById(CLIENT_DATA_SS_ID);
+  const clientSheet = dataSs.getSheetByName('Clients');
+  const myDataRow = getRowByKey(clientSheet, 1, 'Open Path Tutoring') + 1;
+  const allStudentsDataCell = clientSheet.getRange(myDataRow, 17);
+  let allStudentsDataStr = allStudentsDataCell.getValue();
+  const allStudentsData = JSON.parse(allStudentsDataStr);
+  let homeworkSsId;
+
+  if (!studentData) {
+    const ui = SpreadsheetApp.getUi();
+    const prompt = ui.prompt('Student name', ui.ButtonSet.OK_CANCEL);
+
+    if (prompt.getSelectedButton() === ui.Button.CANCEL) {
+      return;
+    }
+
+    studentData = allStudentsData.find(student => String(student.name).toLowerCase() === prompt.getResponseText().toLowerCase());
+  }
+
   const adminFolder = DriveApp.getFolderById(studentData.folderId);
-  const subfolders = adminFolder.getFolders();
-  let studentFolder, homeworkSsId;
+  let studentFolder = adminFolder
+  
+  const adminSubfolders = adminFolder.getFolders();
+  while (adminSubfolders.hasNext()) {
+    const adminSubfolder = adminSubfolders.next();
 
-  while (subfolders.hasNext()) {
-    const subfolder = subfolders.next();
-
-    if (subfolder.getName().includes(studentData.name)) {
-      studentFolder = subfolder;
+    if (adminSubfolder.getName().includes(studentData.name)) {
+      studentFolder = adminSubfolder;
       break;
     }
   }
@@ -105,6 +125,20 @@ function addHomeworkSs(
       }
     }
   }
+
+  if (!homeworkSsId) {
+    const homeworkTemplate = DriveApp.getFileById(HOMEWORK_TEMPLATE_SS_ID);
+    const newHomeworkFile = homeworkTemplate.makeCopy().setName(`Homework - ${studentData.name}`);
+
+    newHomeworkFile.moveTo(studentFolder);
+    homeworkSsId = newHomeworkFile.getId();
+
+  }
+
+  studentData.homeworkSsId = homeworkSsId
+    
+  allStudentsDataStr = JSON.stringify(allStudentsData);
+  allStudentsDataCell.setValue(allStudentsDataStr);
 
   if (homeworkSsId) {
     const homeworkSs = SpreadsheetApp.openById(homeworkSsId);

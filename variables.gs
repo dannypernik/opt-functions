@@ -1,3 +1,6 @@
+const CLIENT_DATA_SS_ID = PropertiesService.getScriptProperties().getProperty('clientDataSsId');
+const HOMEWORK_TEMPLATE_SS_ID = PropertiesService.getScriptProperties().getProperty('homeworkTemplateSsId');
+
 const satSsIds = {
   admin: null,
   student: null,
