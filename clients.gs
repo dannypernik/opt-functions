@@ -115,8 +115,6 @@ function linkClientSheets(folderId, testType = 'all') {
     linkClientSheets(subFolder.getId(), testType);
   }
 
-  Logger.log(satSsIds.admin);
-
   if (satSsIds.student && satSsIds.admin) {
     let satAdminSheet = SpreadsheetApp.openById(satSsIds.admin);
     satAdminSheet.getSheetByName('Student responses').getRange('B1').setValue(satSsIds.student);

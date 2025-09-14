@@ -66,17 +66,14 @@ function addHomeworkSs(
     actAdminSsId: null,
     satStudentSsId: null,
     actStudentSsId: null,
-  }
+  },
+  allStudentsDataStr='[]'
 ) {
-  const dataSs = SpreadsheetApp.openById(CLIENT_DATA_SS_ID);
-  const clientSheet = dataSs.getSheetByName('Clients');
-  const myDataRow = getRowByKey(clientSheet, 1, 'Open Path Tutoring') + 1;
-  const allStudentsDataCell = clientSheet.getRange(myDataRow, 17);
-  let allStudentsDataStr = allStudentsDataCell.getValue();
+  
   const allStudentsData = JSON.parse(allStudentsDataStr);
   let homeworkSsId;
 
-  if (!studentData) {
+  if (!studentData.folderId) {
     const ui = SpreadsheetApp.getUi();
     const prompt = ui.prompt('Student name', ui.ButtonSet.OK_CANCEL);
 
@@ -137,6 +134,9 @@ function addHomeworkSs(
   const studentIndex = allStudentsData.findIndex((student) => student.name === studentData.name);
   if (studentIndex !== -1) {
     allStudentsData[studentIndex] = studentData;
+  } //
+  else {
+    allStudentsData.push(studentData);
   }
 
   allStudentsDataStr = JSON.stringify(allStudentsData);
