@@ -21,7 +21,7 @@ function updateOPTStudentFolderData(checkAllKeys = false) {
 
     let tutorStudents = tutorStudentsStr ? JSON.parse(tutorStudentsStr) : [];
 
-    tutorData = {
+    const tutorData = {
       index: tutorIndex,
       name: tutorFolderName,
       studentsFolderId: tutorFolderId,
@@ -31,8 +31,8 @@ function updateOPTStudentFolderData(checkAllKeys = false) {
     if (!tutorUpdateComplete) {
       tutorStudents = TestPrepAnalysis.getAllStudentData(tutorData, checkAllKeys);
       tutorStudents.forEach((student) => (student.updateComplete = false));
-      const studentFolderIds = getSubFolderIdsByFolderId(tutorData.studentsFolderId);
-      const currentStudents = tutorStudents.filter(student => studentFolderIds.includes(student.folderId));
+      const currentStudentFolders = DriveApp.getFolderById(tutorData.studentsFolderId).getFolders();
+      const currentStudents = tutorStudents.filter((student) => currentStudentFolders.includes(student.folderId));
       teamDataSheet.getRange(tutorIndex + 2, 1, 1, 5).setValues([[tutorIndex, tutorFolderName, tutorFolderId, JSON.stringify(currentStudents), 'true']]);
     }
   }
@@ -51,8 +51,8 @@ function updateOPTStudentFolderData(checkAllKeys = false) {
 
   myStudents = TestPrepAnalysis.getAllStudentData(myStudentFolderData, checkAllKeys);
   myStudents.forEach((student) => (student.updateComplete = false));
-  const studentFolderIds = getSubFolderIdsByFolderId(myStudentFolderData.studentsFolderId);
-  const currentStudents = tutorStudents.filter(student => studentFolderIds.includes(student.folderId));
+  const currentStudentFolders = DriveApp.getFolderById(myStudentFolderData.studentsFolderId).getFolders();
+  const currentStudents = myStudents.filter((student) => currentStudentFolders.includes(student.folderId));
   clientSheet.getRange(myDataRow, 17).setValue(JSON.stringify(currentStudents));
   teamDataSheet.getRange('E2:E').clearContent();
 }
