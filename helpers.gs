@@ -3,7 +3,7 @@ function updateAllOPTStudentKeys() {
 }
 
 function updateOPTStudentFolderData(checkAllKeys = false) {
-  const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
+  const clientDataSs = SpreadsheetApp.openById(CLIENT_DATA_SS_ID);
   const teamDataSheet = clientDataSs.getSheetByName('Team OPT');
   const teamFolder = DriveApp.getFolderById('1tSKajFOa_EVUjH8SKhrQFbHSjDmmopP9');
   const tutorFolders = teamFolder.getFolders();
@@ -30,7 +30,10 @@ function updateOPTStudentFolderData(checkAllKeys = false) {
 
     if (!tutorUpdateComplete) {
       tutorStudents = TestPrepAnalysis.getAllStudentData(tutorData, checkAllKeys);
-      teamDataSheet.getRange(tutorIndex + 2, 1, 1, 5).setValues([[tutorIndex, tutorFolderName, tutorFolderId, JSON.stringify(tutorStudents), 'true']]);
+      tutorStudents.forEach((student) => (student.updateComplete = false));
+      const studentFolderIds = getSubFolderIdsByFolderId(tutorData.studentsFolderId);
+      const currentStudents = tutorStudents.filter(student => studentFolderIds.includes(student.folderId));
+      teamDataSheet.getRange(tutorIndex + 2, 1, 1, 5).setValues([[tutorIndex, tutorFolderName, tutorFolderId, JSON.stringify(currentStudents), 'true']]);
     }
   }
 
@@ -43,12 +46,14 @@ function updateOPTStudentFolderData(checkAllKeys = false) {
     index: 0,
     name: 'Open Path Tutoring',
     studentsFolderId: clientSheet.getRange(myDataRow, 15).getValue(),
-    studentsDataJSON: myStudents,
+    studentsData: myStudents,
   };
 
   myStudents = TestPrepAnalysis.getAllStudentData(myStudentFolderData, checkAllKeys);
   myStudents.forEach((student) => (student.updateComplete = false));
-  clientSheet.getRange(myDataRow, 17).setValue(JSON.stringify(myStudents));
+  const studentFolderIds = getSubFolderIdsByFolderId(myStudentFolderData.studentsFolderId);
+  const currentStudents = tutorStudents.filter(student => studentFolderIds.includes(student.folderId));
+  clientSheet.getRange(myDataRow, 17).setValue(JSON.stringify(currentStudents));
   teamDataSheet.getRange('E2:E').clearContent();
 }
 
