@@ -18,11 +18,14 @@ function styleClientFolder(clientFolder, customStyles = {}) {
     }
   }
 
+
   if (Object.keys(customStyles).length === 0) {
     customStyles = setCustomStyles();
   }
 
-  Logger.log('Styling sheets for ' + clientFolder.getName());
+  customStyles.clientName = clientFolder.getName();
+
+  Logger.log('Styling sheets for ' + customStyles.clientName);
   getAnswerSheets(clientFolder);
   processFolders(clientFolder.getFolders(), getAnswerSheets);
   styleClientSheets(satSsIds, actSsIds, customStyles);
@@ -85,9 +88,10 @@ function styleClientSheets(satSsIds, actSsIds, customStyles) {
           }
           sh.getRange(correctRange).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
 
-          const imgCell = sh.getRange('B3');
-          if (imgUrl) {
-            imgCell.setValue('=image("' + customStyles.img + '")');
+
+          if (imgUrl && shName === 'test analysis') {
+            const businessNameCell = sh.getRange('B3');
+            businessNameCell.setValue('=image("' + customStyles.img + '")');
           }
 
           applyConditionalFormatting(sh, customStyles);
@@ -136,8 +140,8 @@ function styleClientSheets(satSsIds, actSsIds, customStyles) {
             applyConditionalFormatting(sh, customStyles);
           }
 
-          const imgCell = sh.getRange('B2');
-          if (imgUrl) {
+          if (imgUrl && shNameLower.includes('opportunity')) {
+            const imgCell = sh.getRange('B2');
             imgCell.setValue('=image("' + customStyles.img + '")');
           }
         } //
@@ -340,7 +344,7 @@ function setCustomStyles() {
   }
 
   let imgUrl;
-  if (imgFilename.toLowerCase().includes('www.') || imgFilename === '') {
+  if (imgFilename.toLowerCase().includes('.com/') || imgFilename === '') {
     imgUrl = imgFilename;
   } //
   else {

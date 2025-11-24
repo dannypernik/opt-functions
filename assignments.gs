@@ -5,6 +5,7 @@ function checkAllNewAssignments() {
 
   for (s of students) {
     if (s.homeworkSsId) {
+      s.homeworkSs = SpreadsheetApp.openById(s.homeworkSsId);
       Homework.checkNewAssignments(s);
     }
   }
@@ -17,6 +18,7 @@ function checkAllDueAssignments() {
 
   for (s of students) {
     if (s.homeworkSsId) {
+      s.homeworkSs = SpreadsheetApp.openById(s.homeworkSsId);
       Homework.checkDueTodayAssignments(s);
       Homework.checkPastDueAssignments(s);
     }
@@ -34,6 +36,7 @@ function checkTeamNewAssignments() {
 
     for (s of students) {
       if (s.homeworkSsId) {
+        s.homeworkSs = SpreadsheetApp.openById(s.homeworkSsId);
         Homework.checkNewAssignments(s);
       }
     }
@@ -51,6 +54,7 @@ function checkTeamDueAssignments() {
 
     for (s of students) {
       if (s.homeworkSsId) {
+        s.homeworkSs = SpreadsheetApp.openById(s.homeworkSsId);
         Homework.checkDueTodayAssignments(s);
         Homework.checkPastDueAssignments(s);
       }
@@ -139,9 +143,6 @@ function addHomeworkSs(
     allStudentsData.push(studentData);
   }
 
-  allStudentsDataStr = JSON.stringify(allStudentsData);
-  allStudentsDataCell.setValue(allStudentsDataStr);
-
   if (homeworkSsId) {
     const homeworkSs = SpreadsheetApp.openById(homeworkSsId);
     const homeworkInfoSheet = homeworkSs.getSheetByName('Info');
@@ -169,6 +170,8 @@ function addHomeworkSs(
   } //
   else {
     Logger.log('Homework file not found.');
-    return;
   }
+
+  allStudentsDataStr = JSON.stringify(allStudentsData);
+  return allStudentsDataStr;
 }

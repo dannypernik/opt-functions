@@ -1,8 +1,5 @@
-function updateAllOPTStudentKeys() {
-  updateOPTStudentFolderData(true);
-}
-
-function updateOPTStudentFolderData(checkAllKeys = false) {
+function updateOPTStudentFolderData() {
+  const checkAllKeys = false;
   const clientDataSs = SpreadsheetApp.openById(CLIENT_DATA_SS_ID);
   const teamDataSheet = clientDataSs.getSheetByName('Team OPT');
   const teamFolder = DriveApp.getFolderById('1tSKajFOa_EVUjH8SKhrQFbHSjDmmopP9');
@@ -11,12 +8,14 @@ function updateOPTStudentFolderData(checkAllKeys = false) {
   while (tutorFolders.hasNext()) {
     const tutorFolder = tutorFolders.next();
     const tutorFolderId = tutorFolder.getId();
-    const tutorDataRow = getRowByKey(teamDataSheet, 2, tutorFolderId) + 1;
-    const tutorValues = teamDataSheet.getRange(tutorDataRow, 1, 1, 5).getValues();
+    const tutorFolderName = tutorFolder.getName();
+    let tutorDataRow = getRowByKey(teamDataSheet, 2, tutorFolderId) + 1;
 
+    Logger.log(`Starting ${tutorFolderName}`);
+
+    const tutorValues = teamDataSheet.getRange(tutorDataRow, 1, 1, 5).getValues();
     const tutorIndex = tutorValues[0][0] || tutorDataRow - 2;
-    const tutorFolderName = tutorValues[0][1] || tutorFolder.getName();
-    const tutorStudentsStr = tutorValues[0][3] || [];
+    const tutorStudentsStr = tutorValues[0][3];
     const tutorUpdateComplete = tutorValues[0][4];
 
     let tutorStudents = tutorStudentsStr ? JSON.parse(tutorStudentsStr) : [];
@@ -172,10 +171,19 @@ function getAllRowHeights(sheetName, rwIdRangeA1, mathIdRangeA1) {
 
         sh.getRange(batchStartRow, idCol + 2, slice.length).setValues(slice);
         Logger.log(`${subName} values set for rows ${batchStartRow}-${batchEndRow}`);
+        const output = HtmlService.createHtmlOutput(`${subName} values set for rows ${batchStartRow}-${batchEndRow}`)
+          .setHeight(50)
+          .setWidth(100)
+        SpreadsheetApp.getUi().showModelessDialog(output,'Batch complete')
         lastSetRow = batchEndRow;
       }
     }
   }
+  const output = HtmlService.createHtmlOutput(`Yay!`)
+    .setHeight(50)
+    .setWidth(100)
+  SpreadsheetApp.getUi().showModelessDialog(output,'All rows complete')
+  lastSetRow = batchEndRow;
 }
 
 function calculateRowHeight(questionId, containerWidth, subject) {

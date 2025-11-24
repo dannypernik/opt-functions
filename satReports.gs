@@ -72,7 +72,7 @@ function findNewCompletedSats(fileList) {
       const completedRwQuestionCount = completedRwTestRows.length;
       const completedMathQuestionCount = completedMathTestRows.length;
 
-      if (completedRwQuestionCount > 10 && completedMathQuestionCount > 10) {
+      if (completedRwQuestionCount > 40 && completedMathQuestionCount > 30) {
         let testSheet = ss.getSheetByName(testCode);
 
         if (testSheet) {

@@ -73,9 +73,9 @@ async function findNewCompletedActs(fileList) {
       const completedEnglishCount = allData.filter((row) => row[0] === testCode && row[1] === 'English' && row[7] !== '').length;
       const completedMathCount = allData.filter((row) => row[0] === testCode && row[1] === 'Math' && row[7] !== '').length;
       const completedReadingCount = allData.filter((row) => row[0] === testCode && row[1] === 'Reading' && row[7] !== '').length;
-      const completedScienceCount = allData.filter((row) => row[0] === testCode && row[1] === 'Science' && row[7] !== '').length;
+      // const completedScienceCount = allData.filter((row) => row[0] === testCode && row[1] === 'Science' && row[7] !== '').length;
 
-      if (completedEnglishCount > 37 && completedMathCount > 30 && completedReadingCount > 20 && completedScienceCount > 20) {
+      if (completedEnglishCount > 25 && completedMathCount > 22 && completedReadingCount > 18) {
         let testSheet = ss.getSheetByName(testCode);
 
         if (testSheet) {
@@ -107,6 +107,8 @@ async function findNewCompletedActs(fileList) {
               isNew: isTestNew,
             });
           }
+          
+          scoreSheet.getRange(nextOpenRow, 1, 1, 9).setValues([[studentName, 'Practice', dateSubmitted, totalScore, eScore, mScore, rScore, sScore]]);
         }
       }
     }
