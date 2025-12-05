@@ -29,7 +29,11 @@ function newClient(clientTemplateFolderId, clientParentFolderId) {
   if (useCustomStyle === ui.Button.YES) {
     getAnswerSheets(clientFolder);
     processFolders(clientFolder.getFolders(), getAnswerSheets);
-    styleClientSheets(satSsIds, actSsIds, customStyles);
+    const ssIds = {
+      sat: satSsIds,
+      act: actSsIds
+    }
+    styleClientSheets(satSsIds, actSsIds, customStyles), ssIds;
   }
 
   var htmlOutput = HtmlService.createHtmlOutput(

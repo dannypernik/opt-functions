@@ -67,8 +67,8 @@ function findNewCompletedSats(fileList) {
     Logger.log('Starting new test check for ' + studentName);
 
     for (testCode of testCodes) {
-      const completedRwTestRows = practiceTestData.filter((row) => row[0] === testCode && row[1] === 'Reading & Writing' && row[10] !== '');
-      const completedMathTestRows = practiceTestData.filter((row) => row[0] === testCode && row[1] === 'Math' && row[10] !== '');
+      const completedRwTestRows = practiceTestData.filter((row) => row[0] === testCode && row[1] === 'Reading & Writing' && row[10] !== '' && row[10] !== 'not found');
+      const completedMathTestRows = practiceTestData.filter((row) => row[0] === testCode && row[1] === 'Math' && row[10] !== '' && row[10] !== 'not found');
       const completedRwQuestionCount = completedRwTestRows.length;
       const completedMathQuestionCount = completedMathTestRows.length;
 
