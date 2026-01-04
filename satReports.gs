@@ -54,6 +54,7 @@ function findNewCompletedSats(fileList) {
   const scoreSheet = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('optSheetId')).getSheetByName('SAT scores');
   const lastFilledScoreRow = getLastFilledRow(scoreSheet, 1);
   const currentScoreData = scoreSheet.getRange(1, 1, lastFilledScoreRow, 7).getValues();
+  const newSsScores = []
 
   // Loop through analysis spreadsheets
   for (var i = 0; i < fileList.length; i++) {
@@ -63,7 +64,6 @@ function findNewCompletedSats(fileList) {
     const studentName = ssName.slice(ssName.indexOf('-') + 2);
     const practiceTestData = ss.getSheetByName('Practice test data').getDataRange().getValues();
     let scores = [];
-    let newSsScores = []
 
     // Loop through test sheets within analysis spreadsheet
     Logger.log('Starting new test check for ' + studentName);
@@ -71,7 +71,7 @@ function findNewCompletedSats(fileList) {
     for (testCode of testCodes) {
       const isTestNew = completionCheck !== '✔';
 
-      if (isTestNew) {
+      // if (isTestNew) {
         const completedRwTestRows = practiceTestData.filter((row) => row[0] === testCode && row[1] === 'Reading & Writing' && row[10] !== '' && row[10] !== 'not found');
         const completedMathTestRows = practiceTestData.filter((row) => row[0] === testCode && row[1] === 'Math' && row[10] !== '' && row[10] !== 'not found');
         const completedRwQuestionCount = completedRwTestRows.length;
@@ -88,7 +88,6 @@ function findNewCompletedSats(fileList) {
             const dateSubmitted = testHeaderValues[1][3];
             const completionCheck = testHeaderValues[0][12];
             const sheetIndex = testSheet.getIndex();
-            
 
             if (rwScore && mScore) {
               scores.push({
@@ -101,7 +100,11 @@ function findNewCompletedSats(fileList) {
                 isNew: isTestNew,
               });
 
-              // newSsScores
+              const existingScoreRow = currentScoreData.find(row => row[0] === studentName && row[2] === testCode);
+              if (!existingScoreRow) {
+                newSsScores.push([studentName, dateSubmitted, 'Practice', testCode, rwScore, mScore, totalScore]);
+                Logger.log(`New score added to SS for ${studentName} on ${testCode}`);
+              }
             } //
             else if (completionCheck !== '?') {
               Logger.log(`Add scores for ${studentName} on ${testCode}`);
@@ -120,10 +123,7 @@ function findNewCompletedSats(fileList) {
             }
           }
         }
-      } // temp score add
-      else {
-
-      }
+      // }
     }
 
     scores = scores.sort((a, b) => {
@@ -138,6 +138,10 @@ function findNewCompletedSats(fileList) {
 
     // scores array will include reported scores of all completed tests
     createSatScoreReports(ssId, scores);
+  }
+
+  if (newSsScores) {
+    scoreSheet.getRange(lastFilledScoreRow + 1, 1, newSsScores.length, 7).setValues(newSsScores);
   }
 }
 
