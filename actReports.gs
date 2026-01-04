@@ -108,7 +108,7 @@ async function findNewCompletedActs(fileList) {
             });
           }
           
-          scoreSheet.getRange(nextOpenRow, 1, 1, 9).setValues([[studentName, 'Practice', dateSubmitted, totalScore, eScore, mScore, rScore, sScore]]);
+          scoreSheet.getRange(nextOpenRow, 1, 1, 8).setValues([[studentName, testCode, dateSubmitted, totalScore, eScore, mScore, rScore, sScore]]);
         }
       }
     }
@@ -252,13 +252,16 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
       analysisSheetMargin.bottom = String(Math.floor(bottomMargin * 1000) / 1000);
     }
 
-    Logger.log(analysisSheetMargin.bottom);
     const analysisFileId = savePdfSheet(spreadsheetId, analysisSheetId, studentName, analysisSheetMargin);
 
     const fileIdsToMerge = [analysisFileId, answerFileId];
 
     const mergedFile = await mergePDFs(fileIdsToMerge, scoreReportFolderId, pdfName);
     const mergedBlob = mergedFile.getBlob();
+
+    for (let id of fileIdsToMerge) {
+      DriveApp.getFileById(id).setTrashed(true);
+    }
 
     const studentFirstName = studentName.split(' ')[0];
     const studentData = getStudentsSpreadsheetData(studentName);

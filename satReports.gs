@@ -52,7 +52,8 @@ function findTeamSatScoreReports() {
 function findNewCompletedSats(fileList) {
   const testCodes = getSatTestCodes();
   const scoreSheet = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('optSheetId')).getSheetByName('SAT scores');
-  let nextOpenRow = getLastFilledRow(scoreSheet, 1) + 1;
+  const lastFilledScoreRow = getLastFilledRow(scoreSheet, 1);
+  const currentScoreData = scoreSheet.getRange(1, 1, lastFilledScoreRow, 7).getValues();
 
   // Loop through analysis spreadsheets
   for (var i = 0; i < fileList.length; i++) {
@@ -62,59 +63,66 @@ function findNewCompletedSats(fileList) {
     const studentName = ssName.slice(ssName.indexOf('-') + 2);
     const practiceTestData = ss.getSheetByName('Practice test data').getDataRange().getValues();
     let scores = [];
+    let newSsScores = []
 
     // Loop through test sheets within analysis spreadsheet
     Logger.log('Starting new test check for ' + studentName);
 
     for (testCode of testCodes) {
-      const completedRwTestRows = practiceTestData.filter((row) => row[0] === testCode && row[1] === 'Reading & Writing' && row[10] !== '' && row[10] !== 'not found');
-      const completedMathTestRows = practiceTestData.filter((row) => row[0] === testCode && row[1] === 'Math' && row[10] !== '' && row[10] !== 'not found');
-      const completedRwQuestionCount = completedRwTestRows.length;
-      const completedMathQuestionCount = completedMathTestRows.length;
+      const isTestNew = completionCheck !== '✔';
 
-      if (completedRwQuestionCount > 40 && completedMathQuestionCount > 30) {
-        let testSheet = ss.getSheetByName(testCode);
+      if (isTestNew) {
+        const completedRwTestRows = practiceTestData.filter((row) => row[0] === testCode && row[1] === 'Reading & Writing' && row[10] !== '' && row[10] !== 'not found');
+        const completedMathTestRows = practiceTestData.filter((row) => row[0] === testCode && row[1] === 'Math' && row[10] !== '' && row[10] !== 'not found');
+        const completedRwQuestionCount = completedRwTestRows.length;
+        const completedMathQuestionCount = completedMathTestRows.length;
 
-        if (testSheet) {
-          const testHeaderValues = testSheet.getRange('A1:M2').getValues();
-          const rwScore = parseInt(testHeaderValues[0][6]) || 0;
-          const mScore = parseInt(testHeaderValues[0][8]) || 0;
-          const totalScore = rwScore + mScore;
-          const dateSubmitted = testHeaderValues[1][3];
-          const completionCheck = testHeaderValues[0][12];
-          const sheetIndex = testSheet.getIndex();
-          const isTestNew = completionCheck !== '✔';
+        if (completedRwQuestionCount > 40 && completedMathQuestionCount > 30) {
+          let testSheet = ss.getSheetByName(testCode);
 
-          if (rwScore && mScore) {
-            scores.push({
-              test: testCode,
-              rw: rwScore,
-              m: mScore,
-              total: totalScore,
-              date: dateSubmitted,
-              sheetIndex: sheetIndex,
-              isNew: isTestNew,
-            });
-          } //
-          else if (completionCheck !== '?') {
-            Logger.log(`Add scores for ${studentName} on ${testCode}`);
-            const email = getOPTPermissionsList(ssId);
-            if (email) {
-              MailApp.sendEmail({
-                to: email,
-                subject: `Enter scores for ${studentName}`,
-                htmlBody:
-                  `It appears that ${testCode} was completed for ${studentName}, but scores are missing. Please add them asap to generate a score analysis. \n` + `<a href="https://docs.google.com/spreadsheets/d/${ssId}/edit?gid=${testSheet.getSheetId()}">${studentName}'s admin spreadsheet</a>`,
+          if (testSheet) {
+            const testHeaderValues = testSheet.getRange('A1:M2').getValues();
+            const rwScore = parseInt(testHeaderValues[0][6]) || 0;
+            const mScore = parseInt(testHeaderValues[0][8]) || 0;
+            const totalScore = rwScore + mScore;
+            const dateSubmitted = testHeaderValues[1][3];
+            const completionCheck = testHeaderValues[0][12];
+            const sheetIndex = testSheet.getIndex();
+            
+
+            if (rwScore && mScore) {
+              scores.push({
+                test: testCode,
+                rw: rwScore,
+                m: mScore,
+                total: totalScore,
+                date: dateSubmitted,
+                sheetIndex: sheetIndex,
+                isNew: isTestNew,
               });
-              const completionCheckRange = testSheet.getRange('M1');
-              completionCheckRange.setValue('?');
-              completionCheckRange.setVerticalAlignment('middle');
+
+              // newSsScores
+            } //
+            else if (completionCheck !== '?') {
+              Logger.log(`Add scores for ${studentName} on ${testCode}`);
+              const email = getOPTPermissionsList(ssId);
+              if (email) {
+                MailApp.sendEmail({
+                  to: email,
+                  subject: `Enter scores for ${studentName}`,
+                  htmlBody:
+                    `It appears that ${testCode} was completed for ${studentName}, but scores are missing. Please add them asap to generate a score analysis. \n` + `<a href="https://docs.google.com/spreadsheets/d/${ssId}/edit?gid=${testSheet.getSheetId()}">${studentName}'s admin spreadsheet</a>`,
+                });
+                const completionCheckRange = testSheet.getRange('M1');
+                completionCheckRange.setValue('?');
+                completionCheckRange.setVerticalAlignment('middle');
+              }
             }
           }
-        } //
-        else {
-          TestPrepAnalysis.addSatTestSheets(ssId);
         }
+      } // temp score add
+      else {
+
       }
     }
 

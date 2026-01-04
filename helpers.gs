@@ -25,6 +25,7 @@ function updateOPTStudentFolderData() {
       name: tutorFolderName,
       studentsFolderId: tutorFolderId,
       studentsData: tutorStudents,
+      studentsDataCell: teamDataSheet.getRange(tutorDataRow, 4)
     };
 
     if (!tutorUpdateComplete) {
@@ -45,6 +46,7 @@ function updateOPTStudentFolderData() {
     name: 'Open Path Tutoring',
     studentsFolderId: clientSheet.getRange(myDataRow, 15).getValue(),
     studentsData: myStudents,
+    studentsDataCell: clientSheet.getRange(myDataRow, 17)
   };
 
   myStudents = TestPrepAnalysis.getAllStudentData(myStudentFolderData, checkAllKeys);
@@ -397,7 +399,6 @@ function getActPageBreakRow(sheet) {
 
   const grandTotalIndex = grandColData.indexOf('Grand Total');
   if (0 < grandTotalIndex && grandTotalIndex < 80) {
-    Logger.log(`Single page ending at ${grandTotalIndex + 1}`);
     sheet.hideRows(grandTotalIndex + 2, 111);
     SpreadsheetApp.flush();
     return 80;
