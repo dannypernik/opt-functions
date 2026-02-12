@@ -10,30 +10,39 @@ function findNewSatScoreReports(students, folderName) {
     students = JSON.parse(myStudentDataValue);
   }
 
-  const fileList = [];
+  const testSearchFileList = [];
+  const dataSyncFileIds = [];
 
   for (student of students) {
     if (student.satAdminSsId && !student.name.toLowerCase().includes('template')) {
       const satAdminFile = DriveApp.getFileById(student.satAdminSsId);
       const satStudentFile = DriveApp.getFileById(student.satStudentSsId);
-      const lastUpdated = Math.max(satAdminFile.getLastUpdated(), satStudentFile.getLastUpdated());
+      const adminLastUpdated = satAdminFile.getLastUpdated();
+      const studentLastUpdated = satStudentFile.getLastUpdated();
+      const lastUpdated = Math.max(adminLastUpdated, studentLastUpdated);
       const now = new Date();
-      const msInTimeLimit = 5 * 24 * 60 * 60 * 1000;
+      const msPerDay = 24 * 60 * 60 * 1000;
+      const testSearchTimeLimit = 5 * msPerDay;
+      const dataSyncTimeLimit = 1 * msPerDay;
 
-      if (now - lastUpdated <= msInTimeLimit) {
-        fileList.push(satAdminFile);
+      if (now - lastUpdated <= testSearchTimeLimit) {
+        testSearchFileList.push(satAdminFile);
       } //
       else {
         Logger.log(`${student.name} unchanged`);
+      }
+
+      if (now - adminLastUpdated <= dataSyncTimeLimit) {
+        dataSyncFileIds.push(student.satAdminSsId);
       }
     }
   }
 
   // Sort by most recently updated first
-  fileList.sort((a, b) => b.getLastUpdated() - a.getLastUpdated());
-  Logger.log(`${folderName}: ${fileList}`);
+  testSearchFileList.sort((a, b) => b.getLastUpdated() - a.getLastUpdated());
+  Logger.log(`Recently modified for ${folderName}: ${testSearchFileList}`);
 
-  findNewCompletedSats(fileList);
+  findNewCompletedSats(testSearchFileList);
 }
 
 function findTeamSatScoreReports() {
@@ -69,24 +78,25 @@ function findNewCompletedSats(fileList) {
     Logger.log('Starting new test check for ' + studentName);
 
     for (testCode of testCodes) {
-      const isTestNew = completionCheck !== '✔';
+      let testSheet = ss.getSheetByName(testCode);
 
-      // if (isTestNew) {
-        const completedRwTestRows = practiceTestData.filter((row) => row[0] === testCode && row[1] === 'Reading & Writing' && row[10] !== '' && row[10] !== 'not found');
-        const completedMathTestRows = practiceTestData.filter((row) => row[0] === testCode && row[1] === 'Math' && row[10] !== '' && row[10] !== 'not found');
-        const completedRwQuestionCount = completedRwTestRows.length;
-        const completedMathQuestionCount = completedMathTestRows.length;
+      if (testSheet) {
+        const testHeaderValues = testSheet.getRange('A1:M2').getValues();
+        const completionCheck = testHeaderValues[0][12];
+        const isTestReported = completionCheck === '✔';
 
-        if (completedRwQuestionCount > 40 && completedMathQuestionCount > 30) {
-          let testSheet = ss.getSheetByName(testCode);
+        if (!isTestReported) {
+          const completedRwTestRows = practiceTestData.filter((row) => row[0] === testCode && row[1] === 'Reading & Writing' && row[10] !== '' && row[10] !== 'not found');
+          const completedMathTestRows = practiceTestData.filter((row) => row[0] === testCode && row[1] === 'Math' && row[10] !== '' && row[10] !== 'not found');
+          const completedRwQuestionCount = completedRwTestRows.length;
+          const completedMathQuestionCount = completedMathTestRows.length;
 
-          if (testSheet) {
-            const testHeaderValues = testSheet.getRange('A1:M2').getValues();
+          if (completedRwQuestionCount > 40 && completedMathQuestionCount > 30) {
             const rwScore = parseInt(testHeaderValues[0][6]) || 0;
             const mScore = parseInt(testHeaderValues[0][8]) || 0;
             const totalScore = rwScore + mScore;
             const dateSubmitted = testHeaderValues[1][3];
-            const completionCheck = testHeaderValues[0][12];
+            
             const sheetIndex = testSheet.getIndex();
 
             if (rwScore && mScore) {
@@ -97,7 +107,7 @@ function findNewCompletedSats(fileList) {
                 total: totalScore,
                 date: dateSubmitted,
                 sheetIndex: sheetIndex,
-                isNew: isTestNew,
+                isNew: isTestReported,
               });
 
               const existingScoreRow = currentScoreData.find(row => row[0] === studentName && row[2] === testCode);
@@ -123,7 +133,7 @@ function findNewCompletedSats(fileList) {
             }
           }
         }
-      // }
+      }
     }
 
     scores = scores.sort((a, b) => {
@@ -140,7 +150,7 @@ function findNewCompletedSats(fileList) {
     createSatScoreReports(ssId, scores);
   }
 
-  if (newSsScores) {
+  if (newSsScores.length > 0) {
     scoreSheet.getRange(lastFilledScoreRow + 1, 1, newSsScores.length, 7).setValues(newSsScores);
   }
 }

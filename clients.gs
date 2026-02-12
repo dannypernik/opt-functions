@@ -1,40 +1,54 @@
 function newClient(clientTemplateFolderId, clientParentFolderId) {
-  const ui = SpreadsheetApp.getUi();
-  const prompt = ui.prompt('Tutor or Business name:', ui.ButtonSet.OK_CANCEL);
-  let customStyles, clientName;
+  const progressSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Tech');
+  const progressCell = progressSheet.getRange('I1');
+  const styleCell = progressSheet.getRange('J1');
+  const ssIdsCell = progressSheet.getRange('K1');
+  let customStyles, clientName, ssIds;
 
-  if (prompt.getSelectedButton() === ui.Button.CANCEL) {
-    return;
+  if (progressCell.getValue()) {
+    customStyles = JSON.parse(styleCell.getValue() || '[]');
+    clientName = customStyles.clientName;
+    clientFolderId = customStyles.clientFolderId;
+    
+    ssIds = JSON.parse(ssIdsCell.getValue() || '[]');
+    satSsIds = ssIds.satSsIds;
+    actSsIds = ssIds.actSsIds;
   } //
   else {
-    clientName = prompt.getResponseText();
-  }
+    const ui = SpreadsheetApp.getUi();
+    const prompt = ui.prompt('Tutor or Business name:', ui.ButtonSet.OK_CANCEL);
 
-  const useCustomStyle = ui.alert('Apply custom styles?', ui.ButtonSet.YES_NO);
-
-  if (useCustomStyle === ui.Button.YES) {
-    customStyles = setCustomStyles();
-  }
-
-  var clientTemplateFolder = DriveApp.getFolderById(clientTemplateFolderId);
-  var clientParentFolder = DriveApp.getFolderById(clientParentFolderId);
-  let clientFolder = clientParentFolder.createFolder(clientName);
-  let clientFolderId = clientFolder.getId();
-
-  copyClientFolder(clientTemplateFolder, clientFolder, clientName);
-  linkClientSheets(clientFolderId);
-  setClientDataUrls(clientFolderId);
-  addClientData(clientFolderId);
-
-  if (useCustomStyle === ui.Button.YES) {
-    getAnswerSheets(clientFolder);
-    processFolders(clientFolder.getFolders(), getAnswerSheets);
-    const ssIds = {
-      sat: satSsIds,
-      act: actSsIds
+    if (prompt.getSelectedButton() === ui.Button.CANCEL) {
+      return;
+    } //
+    else {
+      clientName = prompt.getResponseText();
     }
-    styleClientSheets(satSsIds, actSsIds, customStyles), ssIds;
+
+    const useCustomStyle = ui.alert('Apply custom styles?', ui.ButtonSet.YES_NO);
+
+    if (useCustomStyle === ui.Button.YES) {
+      customStyles = setCustomStyles();
+    }
+
+    var clientTemplateFolder = DriveApp.getFolderById(clientTemplateFolderId);
+    var clientParentFolder = DriveApp.getFolderById(clientParentFolderId);
+    let clientFolder = clientParentFolder.createFolder(clientName);
+    let clientFolderId = clientFolder.getId();
+
+    copyClientFolder(clientTemplateFolder, clientFolder, clientName);
+    ssIds = linkClientSheets(clientFolderId);
+    setClientDataUrls(clientFolderId);
+    addClientData(clientFolderId);
+    progressSheet.getRange('I1:K1').setValues([[1, customStyles, ssIds]]);
+    Logger.log('Client folder functionality complete');
   }
+
+  if (customStyles || useCustomStyle === ui.Button.YES) {
+    styleClientSheets(customStyles);
+  }
+
+  progressSheet.getRange('I1:K1').clearContent();
 
   var htmlOutput = HtmlService.createHtmlOutput(
     '<a href="https://drive.google.com/drive/u/0/folders/' +
@@ -127,6 +141,14 @@ function linkClientSheets(folderId, testType = 'all') {
   if (actSsIds.student && actSsIds.admin) {
     SpreadsheetApp.openById(actSsIds.admin).getSheetByName('Student responses').getRange('B1').setValue(actSsIds.student);
   }
+
+  const ssIds = {
+    satSsIds: satSsIds,
+    actSsIds: actSsIds
+  }
+  SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Tech').getRange('K1').setValue(JSON.stringify(ssIds));
+
+  return ssIds;
 }
 
 function setClientDataUrls(folderId) {

@@ -51,10 +51,75 @@ function updateOPTStudentFolderData() {
 
   myStudents = TestPrepAnalysis.getAllStudentData(myStudentFolderData, checkAllKeys);
   const currentStudents = myStudents.filter(student => student.updateComplete);
+  const removedStudents = myStudents.filter(student => !student.updateComplete);
+  const removedStudentsList = []
   currentStudents.forEach((student) => (student.updateComplete = false));
+  removedStudents.forEach((student) => (removedStudentsList.push(student.name)));
+
+  if (removedStudentsList) {
+    Logger.log(`Removed ${removedStudentsList.join(', ')}`)
+  }
+  
   clientSheet.getRange(myDataRow, 17).setValue(JSON.stringify(currentStudents));
   teamDataSheet.getRange('E2:E').clearContent();
 }
+
+
+function syncRecentSatStudentData() {
+  const startTime = new Date().getTime();
+  const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
+  const clientSheet = clientDataSs.getSheetByName('Clients');
+  const myDataRange = clientSheet.getDataRange().getValues();
+  const myDataRowIndex = getRowByKey(clientSheet, 1, 'Open Path Tutoring');
+  const myStudentDataValue = myDataRange[myDataRowIndex][16];
+  const now = new Date();
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const dataSyncTimeLimit = 3 * msPerDay;
+  const lastSyncTimeLimit = 2 * msPerDay;
+  const myStudents = JSON.parse(myStudentDataValue);
+
+  for (student of myStudents) {
+    if (student.satAdminSsId && !student.name.toLowerCase().includes('template')) {
+      const satAdminFile = DriveApp.getFileById(student.satAdminSsId);
+      const adminLastUpdated = satAdminFile.getLastUpdated();
+
+      if (now - adminLastUpdated <= dataSyncTimeLimit) {
+        const satAdminSs = SpreadsheetApp.openById(student.satAdminSsId);
+        const lastSyncedCell = satAdminSs.getSheetByName('Rev sheet backend').getRange('U10');
+        const lastSyncedDate = lastSyncedCell.getValue();
+        if (now - lastSyncedDate > lastSyncTimeLimit) {
+          Logger.log(`Starting sync for ${student.name}`)
+          TestPrepAnalysis.syncSatStudentData(student.satAdminSsId, startTime);
+          lastSyncedCell.setValue(now);
+          Logger.log(`Completed sync for ${student.name}`)
+        }
+        else {
+          Logger.log(`${student.name} last synced on ${lastSyncedDate}, skipping`)
+        }
+      }
+    }
+  }
+
+  const teamSheet = clientDataSs.getSheetByName('Team OPT');
+  const teamStudentDataCol = teamSheet.getRange(2, 4, getLastFilledRow(teamSheet, 1, 2)).getValues();
+
+  for (studentDataVal of teamStudentDataCol) {
+    const studentData = JSON.parse(studentDataVal)
+    for (student of studentData) {
+      if (student.satAdminSsId) {
+        const satAdminFile = DriveApp.getFileById(student.satAdminSsId);
+        const adminLastUpdated = satAdminFile.getLastUpdated();
+
+        if (now - adminLastUpdated <= dataSyncTimeLimit) {
+          Logger.log(`Starting sync for ${student.name}`)
+          TestPrepAnalysis.syncSatStudentData(student.satAdminSsId, startTime);
+          Logger.log(`Completed sync for ${student.name}`)
+        }
+      }
+    }
+  }
+}
+
 
 function renameFolder(folder, currentName, newName, isStudentFolder = true) {
   let folderName = folder.getName();
@@ -254,9 +319,10 @@ function getAnswerSheets(folder) {
   return [satSsIds, actSsIds];
 }
 
-function getLastFilledRow(sheet, col, startRow = 1) {
+
+function getLastFilledRow(sheet, col = 1, startRowOffset = 1) {
   const maxRow = sheet.getMaxRows();
-  const allVals = sheet.getRange(startRow, col, maxRow).getValues();
+  const allVals = sheet.getRange(startRowOffset, col, maxRow).getValues();
   const lastFilledRow = maxRow - allVals.reverse().findIndex((c) => c[0] != '');
 
   return lastFilledRow;

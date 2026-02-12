@@ -7,7 +7,6 @@ function styleClientFolder(clientFolder, customStyles = {}) {
   const ssIdsStr = progressRange.getValues()[0][2] || '[]';
   let ssIds = JSON.parse(ssIdsStr);
 
-  
   if (Object.keys(customStyles).length === 0) {
     customStyles = JSON.parse(styleDataStr);
 
@@ -20,8 +19,8 @@ function styleClientFolder(clientFolder, customStyles = {}) {
     clientFolderId = customStyles.clientFolderId;
     clientFolder = DriveApp.getFolderById(clientFolderId);
     SpreadsheetApp.getUi().showModalDialog(HtmlService.createHtmlOutput(`<p>Continuing ${clientFolder.getName()}</p>`).setHeight(50), 'Folder in progress');
-    satSsIds = ssIds.sat;
-    actSsIds = ssIds.act;
+    satSsIds = ssIds.satSsIds;
+    actSsIds = ssIds.actSsIds;
   } //
   else if (clientFolder) {
     clientFolderId = clientFolder.getId();
@@ -49,15 +48,15 @@ function styleClientFolder(clientFolder, customStyles = {}) {
     processFolders(clientFolder.getFolders(), getAnswerSheets);
 
     ssIds = {
-      sat: satSsIds,
-      act: actSsIds
+      satSsIds: satSsIds,
+      actSsIds: actSsIds
     }
 
     progressValue = 1;
     progressRange.setValues([[progressValue, JSON.stringify(customStyles), JSON.stringify(ssIds)]]);
   }
 
-  styleClientSheets(satSsIds, actSsIds, customStyles, ssIds);
+  styleClientSheets(customStyles);
   progressRange.clearContent();
 
   var htmlOutput = HtmlService.createHtmlOutput('<a href="https://drive.google.com/drive/u/0/folders/' + clientFolderId + '" target="_blank" onclick="google.script.host.close()">Client folder</a>')
@@ -66,7 +65,12 @@ function styleClientFolder(clientFolder, customStyles = {}) {
   SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Styling complete');
 }
 
-function styleClientSheets(satSsIds, actSsIds, customStyles, ssIds) {
+function styleClientSheets(customStyles) {
+  ssIds = {
+    satSsIds: satSsIds,
+    actSsIds, actSsIds
+  }
+
   for (let ids of [satSsIds, actSsIds]) {
     for (let role of ['admin', 'student']) {
       const ssCompleteKey = role + 'SsComplete';
@@ -101,9 +105,7 @@ function styleClientSheets(satSsIds, actSsIds, customStyles, ssIds) {
 
               if (actTestCodes.includes(shName)) {
                 sh.getRange('A1:P4').setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
-
                 sh.getRangeList(['B3', 'F3', 'J3', 'N3']).setBorder(true, true, true, true, true, true, '#93c47d', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-
                 sh.getRange('F1').setBackground('#93c47d');
               } //
               else if (shName === 'test analysis' || shName === 'opportunity areas') {
@@ -122,8 +124,8 @@ function styleClientSheets(satSsIds, actSsIds, customStyles, ssIds) {
                 sh.getRange(correctRange).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
 
                 if (imgUrl && shName === 'test analysis') {
-                  const businessNameCell = sh.getRange('B3');
-                  businessNameCell.setValue('=image("' + customStyles.img + '")');
+                  const imgCell = sh.getRange('B3');
+                  imgCell.setValue('=image("' + customStyles.img + '")');
                 }
 
                 applyConditionalFormatting(sh, customStyles);
@@ -316,8 +318,22 @@ function applyConditionalFormatting(sheet = SpreadsheetApp.openById('1nwG8o6Rd0A
     .whenFormulaSatisfied('=sum($F7:$I7)>0')
     .setBackground('#f5f7f9')
     .setRanges([sheet.getRange('B7:I177')]);
+  
+  var connectDataRule = SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=iserror(E1)')
+    .setBackground('#990000')
+    .setFontColor('#ffffff')
+    .setBold(true)
+    .setRanges([sheet.getRange('E1')]);
+  
+  var connectDataLabelRule = SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=iserror(E1)')
+    .setBackground('#ffffff')
+    .setFontColor('#990000')
+    .setBold(true)
+    .setRanges([sheet.getRange('D1')]);
 
-  newRules.push(grandTotalRule, subTotalRule, domainTotalRule, backgroundColorRule);
+  newRules.push(grandTotalRule, subTotalRule, domainTotalRule, backgroundColorRule, connectDataRule, connectDataLabelRule);
   sheet.clearConditionalFormatRules();
   sheet.setConditionalFormatRules(newRules);
 
