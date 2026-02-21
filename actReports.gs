@@ -4,7 +4,7 @@ async function findNewActScoreReports(students, folderName) {
     const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
     const clientSheet = clientDataSs.getSheetByName('Clients');
     const myDataRange = clientSheet.getDataRange().getValues();
-    const myDataRow = getRowByKey(clientSheet, 1, 'Open Path Tutoring');
+    const myDataRow = getRowByColSearch(clientSheet, 2, 'Open Path Tutoring') - 1;
     const myStudentDataValue = myDataRange[myDataRow][16];
     folderName = myDataRange[myDataRow][1];
     students = JSON.parse(myStudentDataValue);

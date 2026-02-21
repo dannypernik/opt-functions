@@ -68,7 +68,7 @@ function styleClientFolder(clientFolder, customStyles = {}) {
 function styleClientSheets(customStyles) {
   ssIds = {
     satSsIds: satSsIds,
-    actSsIds, actSsIds
+    actSsIds: actSsIds
   }
 
   for (let ids of [satSsIds, actSsIds]) {
@@ -77,6 +77,9 @@ function styleClientSheets(customStyles) {
       const sheetsCompleteKey = role + 'SheetsComplete';
 
       if (!ids[ssCompleteKey]) {
+        ids[ssCompleteKey] = []
+        ids[sheetsCompleteKey] = []
+        
         const ss = SpreadsheetApp.openById(ids[role]);
         const ssName = ss.getName();
         const satTestSheets = getSatTestCodes();
@@ -341,86 +344,105 @@ function applyConditionalFormatting(sheet = SpreadsheetApp.openById('1nwG8o6Rd0A
 }
 
 function setCustomStyles() {
-  let ui = SpreadsheetApp.getUi();
-  let primaryColor = ui.prompt('Primary background color', ui.ButtonSet.OK_CANCEL).getResponseText();
-  let secondaryColor = ui.prompt('Secondary background color', ui.ButtonSet.OK_CANCEL).getResponseText();
-  let tertiaryColor = ui.prompt('Tertiary background color', ui.ButtonSet.OK_CANCEL).getResponseText();
-  let fontColor = ui.prompt('Font color (leave blank to use primary color)', ui.ButtonSet.OK_CANCEL).getResponseText();
-  let imgFilename = ui.prompt('Image URL or filename', ui.ButtonSet.OK_CANCEL).getResponseText();
-  let sameHeaderColor = ui.alert('Same color header?', ui.ButtonSet.YES_NO);
+  const progressSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Tech');
+  let styleCell;
 
-  if (primaryColor === '') {
-    primaryColor = '#1c4d65';
+  if (progressSheet) {
+    styleCell = progressSheet.getRange('J1');
   }
 
-  if (secondaryColor === '') {
-    secondaryColor = '#ffa874';
-  }
+  const customStylesStr = styleCell.getValue();
 
-  if (tertiaryColor === '') {
-    tertiaryColor = '#c4f0f7';
+  if (customStylesStr) {
+    customStyles = JSON.parse(customStylesStr);
+    return customStyles;
   }
-
-  if (fontColor === '') {
-    fontColor = primaryColor;
-  }
-
-  if (isDark(primaryColor)) {
-    var primaryContrastColor = 'white';
-  } //
-  else if (isDark(fontColor)) {
-    primaryContrastColor = fontColor;
-  } //
   else {
-    primaryContrastColor = 'black';
+    let ui = SpreadsheetApp.getUi();
+    let primaryColor = ui.prompt('Primary background color', ui.ButtonSet.OK_CANCEL).getResponseText();
+    let secondaryColor = ui.prompt('Secondary background color', ui.ButtonSet.OK_CANCEL).getResponseText();
+    let tertiaryColor = ui.prompt('Tertiary background color', ui.ButtonSet.OK_CANCEL).getResponseText();
+    let fontColor = ui.prompt('Font color (leave blank to use primary color)', ui.ButtonSet.OK_CANCEL).getResponseText();
+    let imgFilename = ui.prompt('Image URL or filename', ui.ButtonSet.OK_CANCEL).getResponseText();
+    let sameHeaderColor = ui.alert('Same color header?', ui.ButtonSet.YES_NO);
+
+    if (primaryColor === '') {
+      primaryColor = '#1c4d65';
+    }
+
+    if (secondaryColor === '') {
+      secondaryColor = '#ffa874';
+    }
+
+    if (tertiaryColor === '') {
+      tertiaryColor = '#c4f0f7';
+    }
+
+    if (fontColor === '') {
+      fontColor = primaryColor;
+    }
+
+    if (isDark(primaryColor)) {
+      var primaryContrastColor = 'white';
+    } //
+    else if (isDark(fontColor)) {
+      primaryContrastColor = fontColor;
+    } //
+    else {
+      primaryContrastColor = 'black';
+    }
+
+    if (isDark(secondaryColor)) {
+      var secondaryContrastColor = 'white';
+    } //
+    else if (isDark(fontColor)) {
+      secondaryContrastColor = fontColor;
+    } //
+    else {
+      secondaryContrastColor = 'black';
+    }
+
+    if (isDark(tertiaryColor)) {
+      var tertiaryContrastColor = 'white';
+    } //
+    else if (isDark(fontColor)) {
+      tertiaryContrastColor = fontColor;
+    } //
+    else {
+      tertiaryContrastColor = 'black';
+    }
+
+    if (sameHeaderColor === ui.Button.YES) {
+      sameHeaderColor = true;
+    } //
+    else {
+      sameHeaderColor = false;
+    }
+
+    let imgUrl;
+    if (imgFilename.toLowerCase().includes('.com/')) {
+      imgUrl = imgFilename;
+    } //
+    else {
+      imgUrl = 'https://www.openpathtutoring.com/static/img/orgs/' + imgFilename;
+    }
+
+    let customStyles = {
+      primaryColor: primaryColor,
+      primaryContrastColor: primaryContrastColor,
+      secondaryColor: secondaryColor,
+      secondaryContrastColor: secondaryContrastColor,
+      tertiaryColor: tertiaryColor,
+      tertiaryContrastColor: tertiaryContrastColor,
+      fontColor: fontColor,
+      img: imgUrl,
+      sameHeaderColor: sameHeaderColor,
+    };
+
+    return customStyles;
   }
+}
 
-  if (isDark(secondaryColor)) {
-    var secondaryContrastColor = 'white';
-  } //
-  else if (isDark(fontColor)) {
-    secondaryContrastColor = fontColor;
-  } //
-  else {
-    secondaryContrastColor = 'black';
-  }
+function styleBasicTemplates() {
 
-  if (isDark(tertiaryColor)) {
-    var tertiaryContrastColor = 'white';
-  } //
-  else if (isDark(fontColor)) {
-    tertiaryContrastColor = fontColor;
-  } //
-  else {
-    tertiaryContrastColor = 'black';
-  }
-
-  if (sameHeaderColor === ui.Button.YES) {
-    sameHeaderColor = true;
-  } //
-  else {
-    sameHeaderColor = false;
-  }
-
-  let imgUrl;
-  if (imgFilename.toLowerCase().includes('.com/') || imgFilename === '') {
-    imgUrl = imgFilename;
-  } //
-  else {
-    imgUrl = 'https://www.openpathtutoring.com/static/img/orgs/' + imgFilename;
-  }
-
-  let customStyles = {
-    primaryColor: primaryColor,
-    primaryContrastColor: primaryContrastColor,
-    secondaryColor: secondaryColor,
-    secondaryContrastColor: secondaryContrastColor,
-    tertiaryColor: tertiaryColor,
-    tertiaryContrastColor: tertiaryContrastColor,
-    fontColor: fontColor,
-    img: imgUrl,
-    sameHeaderColor: sameHeaderColor,
-  };
-
-  return customStyles;
 }

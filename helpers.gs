@@ -9,7 +9,7 @@ function updateOPTStudentFolderData() {
     const tutorFolder = tutorFolders.next();
     const tutorFolderId = tutorFolder.getId();
     const tutorFolderName = tutorFolder.getName();
-    let tutorDataRow = getRowByKey(teamDataSheet, 2, tutorFolderId) + 1;
+    let tutorDataRow = getRowByColSearch(teamDataSheet, 3, tutorFolderId);
 
     Logger.log(`Starting ${tutorFolderName}`);
 
@@ -37,7 +37,7 @@ function updateOPTStudentFolderData() {
   }
 
   const clientSheet = clientDataSs.getSheetByName('Clients');
-  const myDataRow = getRowByKey(clientSheet, 1, 'Open Path Tutoring') + 1;
+  const myDataRow = getRowByColSearch(clientSheet, 2, 'Open Path Tutoring');
   const myStudentsStr = clientSheet.getRange(myDataRow, 17).getValue();
   let myStudents = myStudentsStr ? JSON.parse(myStudentsStr) : [];
 
@@ -70,7 +70,7 @@ function syncRecentSatStudentData() {
   const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
   const clientSheet = clientDataSs.getSheetByName('Clients');
   const myDataRange = clientSheet.getDataRange().getValues();
-  const myDataRowIndex = getRowByKey(clientSheet, 1, 'Open Path Tutoring');
+  const myDataRowIndex = getRowByColSearch(clientSheet, 2, 'Open Path Tutoring');
   const myStudentDataValue = myDataRange[myDataRowIndex][16];
   const now = new Date();
   const msPerDay = 24 * 60 * 60 * 1000;
@@ -206,50 +206,42 @@ function renameFolder(folder, currentName, newName, isStudentFolder = true) {
 }
 
 // Rev sheet setup functions
-function getAllRowHeights(sheetName, rwIdRangeA1, mathIdRangeA1) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sh = ss.getSheetByName(sheetName);
+function getAllRowHeights(idRange, isRw) {
+  const ids = idRange.getValues();
+  const subName = isRw ? 'rw' : 'math';
+  const startCell = idRange.getCell(1, 1);
+  const idStartRow = startCell.getRow();
+  const idCol = startCell.getColumn();
+  const heights = [];
+  let lastSetRow = idStartRow - 1;
+  let batchEndRow;
 
-  const subjectRanges = [
-    { name: 'rw', idRange: sh.getRange(rwIdRangeA1) },
-    { name: 'math', idRange: sh.getRange(mathIdRangeA1) },
-  ];
+  for (let rowOffset = 0; rowOffset < ids.length; rowOffset++) {
+    const id = ids[rowOffset][0]; // Get the ID from the current row
+    const height = calculateRowHeight(id, 1000, subName); // Calculate height based on ID
+    heights.push([height]);
 
-  for (let subject of subjectRanges) {
-    const subName = subject.name;
-    const subRange = subject.idRange;
-    const ids = subRange.getValues();
-    const startCell = subRange.getCell(1, 1);
-    const idStartRow = startCell.getRow();
-    const idCol = startCell.getColumn();
-    const heights = [];
-    let lastSetRow = idStartRow - 1;
+    // Batch process every 100 rows
+    if ((rowOffset + 1) % 100 === 0 || rowOffset === ids.length - 1) {
+      const batchStartRow = lastSetRow + 1;
+      const batchEndRow = idStartRow + rowOffset;
+      const slice = heights.slice(lastSetRow - idStartRow + 1); // Slice only new rows
 
-    for (let rowOffset = 0; rowOffset < ids.length; rowOffset++) {
-      const id = ids[rowOffset][0]; // Get the ID from the current row
-      const height = calculateRowHeight(id, 1000, subName); // Calculate height based on ID
-      heights.push([height]);
-
-      // Batch process every 100 rows
-      if ((rowOffset + 1) % 100 === 0 || rowOffset === ids.length - 1) {
-        const batchStartRow = lastSetRow + 1;
-        const batchEndRow = idStartRow + rowOffset;
-        const slice = heights.slice(lastSetRow - idStartRow + 1); // Slice only new rows
-
-        sh.getRange(batchStartRow, idCol + 2, slice.length).setValues(slice);
-        Logger.log(`${subName} values set for rows ${batchStartRow}-${batchEndRow}`);
-        const output = HtmlService.createHtmlOutput(`${subName} values set for rows ${batchStartRow}-${batchEndRow}`)
-          .setHeight(50)
-          .setWidth(100)
-        SpreadsheetApp.getUi().showModelessDialog(output,'Batch complete')
-        lastSetRow = batchEndRow;
-      }
+      sh.getRange(batchStartRow, idCol + 2, slice.length).setValues(slice);
+      Logger.log(`${subName} values set for rows ${batchStartRow}-${batchEndRow}`);
+      const output = HtmlService.createHtmlOutput(`${subName} values set for rows ${batchStartRow}-${batchEndRow}`)
+        .setHeight(50)
+        .setWidth(100)
+      SpreadsheetApp.getUi().showModelessDialog(output,'Batch complete')
+      lastSetRow = batchEndRow;
     }
   }
+
   const output = HtmlService.createHtmlOutput(`Yay!`)
     .setHeight(50)
     .setWidth(100)
   SpreadsheetApp.getUi().showModelessDialog(output,'All rows complete')
+
   lastSetRow = batchEndRow;
 }
 
@@ -624,14 +616,14 @@ function formatDateYYYYMMDD(date) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-function getRowByKey(sheet, keyColIndex = 0, searchVal) {
+function getRowByColSearch(sheet, searchCol = 1, searchVal) {
   const data = sheet.getDataRange().getValues();
   for (var row = 0; row < data.length; row++) {
     // Column A is colIndex 0
-    if (data[row][keyColIndex] === searchVal) {
-      return row;
+    if (data[row][searchCol - 1] === searchVal) {
+      return row + 1;
     }
   }
-  // If not found, returns index of first empty row
-  return data.length;
+  // If not found, returns row num after last value
+  return data.length + 1;
 }

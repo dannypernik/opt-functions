@@ -4,7 +4,7 @@ function findNewSatScoreReports(students, folderName) {
     const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
     const clientSheet = clientDataSs.getSheetByName('Clients');
     const myDataRange = clientSheet.getDataRange().getValues();
-    const myDataRowIndex = getRowByKey(clientSheet, 1, 'Open Path Tutoring');
+    const myDataRowIndex = getRowByColSearch(clientSheet, 2, 'Open Path Tutoring') - 1;
     const myStudentDataValue = myDataRange[myDataRowIndex][16];
     folderName = myDataRange[myDataRowIndex][1];
     students = JSON.parse(myStudentDataValue);

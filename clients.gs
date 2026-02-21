@@ -1,18 +1,14 @@
 function newClient(clientTemplateFolderId, clientParentFolderId) {
   const progressSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Tech');
   const progressCell = progressSheet.getRange('I1');
-  const styleCell = progressSheet.getRange('J1');
   const ssIdsCell = progressSheet.getRange('K1');
-  let customStyles, clientName, ssIds;
+  let customStyles, clientFolderId, clientName, ssIds;
 
   if (progressCell.getValue()) {
-    customStyles = JSON.parse(styleCell.getValue() || '[]');
-    clientName = customStyles.clientName;
-    clientFolderId = customStyles.clientFolderId;
-    
     ssIds = JSON.parse(ssIdsCell.getValue() || '[]');
     satSsIds = ssIds.satSsIds;
     actSsIds = ssIds.actSsIds;
+    customStyles = setCustomStyles();
   } //
   else {
     const ui = SpreadsheetApp.getUi();
@@ -30,12 +26,10 @@ function newClient(clientTemplateFolderId, clientParentFolderId) {
     if (useCustomStyle === ui.Button.YES) {
       customStyles = setCustomStyles();
     }
-
     var clientTemplateFolder = DriveApp.getFolderById(clientTemplateFolderId);
     var clientParentFolder = DriveApp.getFolderById(clientParentFolderId);
     let clientFolder = clientParentFolder.createFolder(clientName);
-    let clientFolderId = clientFolder.getId();
-
+    clientFolderId = clientFolder.getId();
     copyClientFolder(clientTemplateFolder, clientFolder, clientName);
     ssIds = linkClientSheets(clientFolderId);
     setClientDataUrls(clientFolderId);

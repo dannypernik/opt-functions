@@ -74,20 +74,28 @@ function addHomeworkSs(
   allStudentsDataStr='[]'
 ) {
   
-  const allStudentsData = JSON.parse(allStudentsDataStr);
-  let homeworkSsId;
+  let ui, studentName, homeworkSsId; 
 
-  if (!studentData.folderId) {
-    const ui = SpreadsheetApp.getUi();
+  if (!studentData.name) {
+    ui = SpreadsheetApp.getUi();
     const prompt = ui.prompt('Student name', ui.ButtonSet.OK_CANCEL);
 
     if (prompt.getSelectedButton() === ui.Button.CANCEL) {
       return;
     }
-
-    studentData = allStudentsData.find((student) => String(student.name).toLowerCase() === prompt.getResponseText().toLowerCase());
+    studentName = prompt.getResponseText();
   }
 
+  let allStudentsData = JSON.parse(allStudentsDataStr);
+
+  if (allStudentsData.length === 0) {
+    const clientSheet = SpreadsheetApp.openById(CLIENT_DATA_SS_ID).getSheetByName('Clients');
+    allStudentsDataStr = clientSheet.getRange(getRowByColSearch(clientSheet, 2, 'Open Path Tutoring'), 17).getValue();
+    allStudentsData = JSON.parse(allStudentsDataStr);
+  }
+
+  studentData = allStudentsData.find((student) => String(student.name).toLowerCase() === studentName.toLowerCase());
+  
   const adminFolder = DriveApp.getFolderById(studentData.folderId);
   let studentFolder = adminFolder;
 
