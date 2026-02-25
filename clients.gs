@@ -470,3 +470,40 @@ function getStudentFolderCount(studentsFolderId) {
 
   return studentFolderCount;
 }
+
+
+function newBasicTemplates(destinationFolderId=CLIENT_PARENT_FOLDER_ID) {
+  const progressSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Tech');
+  const ssIdsCell = progressSheet.getRange('K1');
+  const ssIdsStr = ssIdsCell.getValue();
+  let ssIds;
+
+  if (ssIdsStr) {
+    // ssIds = JSON.parse(ssIdsStr);
+    // satSsIds.admin = ssIds.satSsIds.admin;
+    // actSsIds.admin = ssIds.actSsIds.admin;
+  }
+  else {
+    const ui = SpreadsheetApp.getUi();
+    const prompt = ui.prompt('Client name:', ui.ButtonSet.OK_CANCEL);
+    const clientName = prompt.getResponseText();
+
+    let newSatTemplate, newActTemplate;
+
+    if (prompt.getSelectedButton() === ui.Button.OK) {
+      const destinationFolder = DriveApp.getFolderById(destinationFolderId);
+      const satTemplate = DriveApp.getFileById('1nwG8o6Rd0ArGQMzrfUjRP16FkSw9urEIK-V7UD2ayJM');
+      const actTemplate = DriveApp.getFileById('1oPZcTzThMwn43Va4CpY6kcjM2sWfr3wUR3Ir_iHG5lY');
+
+      newSatTemplate = satTemplate.makeCopy(`SAT admin answer analysis - Standard template for ${clientName}`, destinationFolder);
+      newActTemplate = actTemplate.makeCopy(`ACT admin answer analysis - Standard template for ${clientName}`, destinationFolder);
+    }
+
+    satSsIds.admin = newSatTemplate.getId();
+    actSsIds.admin = newActTemplate.getId();
+  }
+
+  const customStyles = setCustomStyles();
+  styleClientSheets(customStyles);
+  progressSheet.getRange('I1:K1').clearContent();
+}

@@ -70,7 +70,7 @@ function syncRecentSatStudentData() {
   const clientDataSs = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('clientDataSsId'));
   const clientSheet = clientDataSs.getSheetByName('Clients');
   const myDataRange = clientSheet.getDataRange().getValues();
-  const myDataRowIndex = getRowByColSearch(clientSheet, 2, 'Open Path Tutoring');
+  const myDataRowIndex = getRowByColSearch(clientSheet, 2, 'Open Path Tutoring') - 1;
   const myStudentDataValue = myDataRange[myDataRowIndex][16];
   const now = new Date();
   const msPerDay = 24 * 60 * 60 * 1000;

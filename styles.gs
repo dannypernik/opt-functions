@@ -66,9 +66,19 @@ function styleClientFolder(clientFolder, customStyles = {}) {
 }
 
 function styleClientSheets(customStyles) {
-  ssIds = {
-    satSsIds: satSsIds,
-    actSsIds: actSsIds
+  let ssIds;
+  const ssIdsCell = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Tech').getRange('K1');
+  if(ssIdsCell.getValue()) {
+    ssIds = JSON.parse(ssIdsCell.getValue());
+    Logger.log(ssIds);
+    satSsIds = ssIds.satSsIds;
+    actSsIds = ssIds.actSsIds;
+  }
+  else {
+    ssIds = {
+      satSsIds: satSsIds,
+      actSsIds: actSsIds
+    }
   }
 
   for (let ids of [satSsIds, actSsIds]) {
@@ -77,10 +87,13 @@ function styleClientSheets(customStyles) {
       const sheetsCompleteKey = role + 'SheetsComplete';
 
       if (!ids[ssCompleteKey]) {
-        ids[ssCompleteKey] = []
-        ids[sheetsCompleteKey] = []
-        
-        const ss = SpreadsheetApp.openById(ids[role]);
+        let ss;
+        try {
+          ss = SpreadsheetApp.openById(ids[role]);
+        }
+        catch {
+          continue;
+        }
         const ssName = ss.getName();
         const satTestSheets = getSatTestCodes();
         const satDataSheets = ['question bank data', 'practice test data', 'rev sheet backend'];
@@ -97,7 +110,8 @@ function styleClientSheets(customStyles) {
         if (ssName.includes('ACT')) {
           for (let j in ss.getSheets()) {
             const sh = ss.getSheets()[j];
-            const shName = sh.getName().toLowerCase();
+            const shName = sh.getName();
+            const shNameLower = shName.toLowerCase();
 
             if (!ids[sheetsCompleteKey].includes(shName)) {
               Logger.log(`Starting ${shName}`);
@@ -109,16 +123,16 @@ function styleClientSheets(customStyles) {
               if (actTestCodes.includes(shName)) {
                 sh.getRange('A1:P4').setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
                 sh.getRangeList(['B3', 'F3', 'J3', 'N3']).setBorder(true, true, true, true, true, true, '#93c47d', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-                sh.getRange('F1').setBackground('#93c47d');
+                sh.getRange('F1').setBackground('#93c47d').setFontColor('#ffffff').setHorizontalAlignment('center').setFontWeight('bold');
               } //
-              else if (shName === 'test analysis' || shName === 'opportunity areas') {
+              else if (shNameLower === 'test analysis' || shNameLower === 'opportunity areas') {
                 sh.getRange(1, 1, 8, sh.getMaxColumns())
                   .setBackground(primaryColor)
                   .setFontColor(primaryContrastColor)
                   .setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID)
                   .setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
 
-                if (shName === 'test analysis') {
+                if (shNameLower === 'test analysis') {
                   var correctRange = 'F6:J6';
                 } //
                 else {
@@ -126,17 +140,17 @@ function styleClientSheets(customStyles) {
                 }
                 sh.getRange(correctRange).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
 
-                if (imgUrl && shName === 'test analysis') {
+                if (imgUrl && shNameLower === 'test analysis') {
                   const imgCell = sh.getRange('B3');
                   imgCell.setValue('=image("' + customStyles.img + '")');
                 }
 
                 applyConditionalFormatting(sh, customStyles);
               } //
-              else if (actDataSheets.includes(shName)) {
+              else if (actDataSheets.includes(shNameLower)) {
                 sh.getRange(1, 1, 1, sh.getMaxColumns()).setBackground(primaryColor).setFontColor(primaryContrastColor);
               } //
-              else if (shName === 'student responses') {
+              else if (shNameLower === 'student responses') {
                 sh.getRange(1, 1, 3, sh.getMaxColumns()).setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
               }
           
@@ -439,10 +453,8 @@ function setCustomStyles() {
       sameHeaderColor: sameHeaderColor,
     };
 
+    styleCell.setValue(customStyles);
+
     return customStyles;
   }
-}
-
-function styleBasicTemplates() {
-
 }
