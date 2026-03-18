@@ -1,6 +1,6 @@
 function styleClientFolder(clientFolder, customStyles = {}) {
   let clientFolderId;
-  const techSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Tech');
+  const techSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Tech revenue');
   const progressRange = techSheet.getRange('I1:K1');
   let progressValue = progressRange.getValues()[0][0];
   const styleDataStr = progressRange.getValues()[0][1] || '[]';
@@ -67,10 +67,9 @@ function styleClientFolder(clientFolder, customStyles = {}) {
 
 function styleClientSheets(customStyles) {
   let ssIds;
-  const ssIdsCell = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Tech').getRange('K1');
+  const ssIdsCell = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Tech revenue').getRange('K1');
   if(ssIdsCell.getValue()) {
     ssIds = JSON.parse(ssIdsCell.getValue());
-    Logger.log(ssIds);
     satSsIds = ssIds.satSsIds;
     actSsIds = ssIds.actSsIds;
   }
@@ -80,6 +79,18 @@ function styleClientSheets(customStyles) {
       actSsIds: actSsIds
     }
   }
+
+  const satTestSheets = getSatTestCodes();
+  const satDataSheets = ['question bank data', 'practice test data', 'rev sheet backend'];
+  const actDataSheets = ['data', 'scoring'];
+  const actTestCodes = getActTestCodes();
+
+  const primaryColor = customStyles.primaryColor;
+  const primaryContrastColor = customStyles.primaryContrastColor;
+  const secondaryColor = customStyles.secondaryColor;
+  const secondaryContrastColor = customStyles.secondaryContrastColor;
+  const fontColor = customStyles.fontColor;
+  const imgUrl = customStyles.img;
 
   for (let ids of [satSsIds, actSsIds]) {
     for (let role of ['admin', 'student']) {
@@ -95,28 +106,17 @@ function styleClientSheets(customStyles) {
           continue;
         }
         const ssName = ss.getName();
-        const satTestSheets = getSatTestCodes();
-        const satDataSheets = ['question bank data', 'practice test data', 'rev sheet backend'];
-        const actDataSheets = ['data', 'scoring'];
-        const actTestCodes = getActTestCodes();
 
-        const primaryColor = customStyles.primaryColor;
-        const primaryContrastColor = customStyles.primaryContrastColor;
-        const secondaryColor = customStyles.secondaryColor;
-        const secondaryContrastColor = customStyles.secondaryContrastColor;
-        const fontColor = customStyles.fontColor;
-        const imgUrl = customStyles.img;
+        for (let j in ss.getSheets()) {
+          const sh = ss.getSheets()[j];
+          const shRange = sh.getDataRange();
+          const shName = sh.getName();
+          const shNameLower = shName.toLowerCase();
 
-        if (ssName.includes('ACT')) {
-          for (let j in ss.getSheets()) {
-            const sh = ss.getSheets()[j];
-            const shName = sh.getName();
-            const shNameLower = shName.toLowerCase();
-
-            if (!ids[sheetsCompleteKey].includes(shName)) {
-              Logger.log(`Starting ${shName}`);
-
-              const shRange = sh.getDataRange();
+          if (!ids[sheetsCompleteKey].includes(shName)) {
+            Logger.log(`Starting ${shName}`);
+            
+            if (ssName.includes('ACT')) {
               shRange.setBackground('white');
               shRange.setFontColor(fontColor);
 
@@ -131,14 +131,6 @@ function styleClientSheets(customStyles) {
                   .setFontColor(primaryContrastColor)
                   .setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID)
                   .setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-
-                if (shNameLower === 'test analysis') {
-                  var correctRange = 'F6:J6';
-                } //
-                else {
-                  var correctRange = 'E6:I6';
-                }
-                sh.getRange(correctRange).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
 
                 if (imgUrl && shNameLower === 'test analysis') {
                   const imgCell = sh.getRange('B3');
@@ -155,89 +147,81 @@ function styleClientSheets(customStyles) {
               }
           
               ids[sheetsCompleteKey].push(shName);
-              SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Tech').getRange('K1').setValue(JSON.stringify(ssIds));
-            }
-          }
-        } //
-        else if (ssName.includes('SAT')) {
-          for (let j in ss.getSheets()) {
-            const sh = ss.getSheets()[j];
-            const shRange = sh.getRange(1, 1, sh.getMaxRows(), sh.getMaxColumns());
-            const shName = sh.getName();
-            const shNameLower = shName.toLowerCase();
-
-            Logger.log(`Starting ${shName}`);
-
-            if (!shNameLower.includes('rev sheet')) {
-              shRange.setFontColor(fontColor);
-            }
-
-            // practice SAT answer sheets
-            if (satTestSheets.includes(shName)) {
-              shRange.setBackground('white');
-              if (customStyles.sameHeaderColor) {
-                sh.getRangeList(['B2:L4', 'B33:L35']).setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
-              } //
-              else {
-                sh.getRangeList(['B2:L4', 'B33:L35']).setBackground(secondaryColor).setFontColor(secondaryContrastColor).setBorder(true, true, true, true, true, true, secondaryColor, SpreadsheetApp.BorderStyle.SOLID);
-              }
-              sh.getRangeList(['A1:A', 'E5:E', 'I5:I']).setFontColor('white');
+              SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Tech revenue').getRange('K1').setValue(JSON.stringify(ssIds));
             } //
-            else if (shNameLower.includes('analysis') || shNameLower.includes('opportunity')) {
-              if (shNameLower === 'rev analysis' || shNameLower === 'opportunity areas') {
-                sh.getRange('A1:K7').setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-              } //
-              else if (shNameLower === 'time series analysis') {
-                sh.getRange('A1:K6').setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-                sh.getRange('D5:E6').setFontColor(fontColor);
-              } //
-              else {
-                sh.getRange('A1:K6').setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-                sh.getRange('A7:A8').setFontColor('white');
-                applyConditionalFormatting(sh, customStyles);
+
+            else if (ssName.includes('SAT')) {
+              if (!shNameLower.includes('rev sheet')) {
+                shRange.setFontColor(fontColor);
               }
 
-              if (imgUrl && shNameLower.includes('opportunity')) {
-                const imgCell = sh.getRange('B2');
-                imgCell.setValue('=image("' + customStyles.img + '")');
-              }
-            } //
-            else if (shNameLower === 'reading & writing') {
-              styleSatWorksheets(sh, 6, 11, customStyles);
-            } //
-            else if (shNameLower === 'math') {
-              styleSatWorksheets(sh, 9, 11, customStyles);
-            } //
-            else if (shNameLower === 'slt uniques') {
-              styleSatWorksheets(sh, 1, 7, customStyles);
-            } //
-            else if (satDataSheets.includes(shNameLower)) {
-              sh.getRange(1, 1, 1, sh.getMaxColumns()).setBackground(primaryColor).setFontColor(primaryContrastColor);
-            } //
-            else if (shNameLower === 'student responses') {
-              sh.getRange(1, 1, 3, sh.getMaxColumns()).setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
-            } //
-            else if (shNameLower === 'rev sheets') {
-              let revSheetHeaderRange;
-              if (ssName.toLowerCase().includes('admin answer analysis')) {
-                revSheetHeaderRange = sh.getRangeList(['B2:E4', 'G2:J4']);
+              // practice SAT answer sheets
+              if (satTestSheets.includes(shName)) {
+                shRange.setBackground('white');
+                if (customStyles.sameHeaderColor) {
+                  sh.getRangeList(['B2:L4', 'B33:L35']).setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
+                } //
+                else {
+                  sh.getRangeList(['B2:L4', 'B33:L35']).setBackground(secondaryColor).setFontColor(secondaryContrastColor).setBorder(true, true, true, true, true, true, secondaryColor, SpreadsheetApp.BorderStyle.SOLID);
+                }
+                sh.getRangeList(['A1:A', 'E5:E', 'I5:I']).setFontColor('white');
               } //
-              else {
-                revSheetHeaderRange = sh.getRangeList(['B2:D4', 'F2:I4']);
-              }
+              else if (shNameLower.includes('analysis') || shNameLower.includes('opportunity')) {
+                if (shNameLower === 'rev analysis' || shNameLower === 'opportunity areas') {
+                  sh.getRange('A1:K7').setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+                } //
+                else if (shNameLower === 'time series analysis') {
+                  sh.getRange('A1:K6').setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+                  sh.getRange('D5:E6').setFontColor(fontColor);
+                } //
+                else {
+                  sh.getRange('A1:K6').setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, false, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID).setBorder(null, null, true, null, null, null, 'white', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+                  sh.getRange('A7:A8').setFontColor('white');
+                  applyConditionalFormatting(sh, customStyles);
+                }
 
-              if (customStyles.sameHeaderColor) {
-                revSheetHeaderRange.setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
+                if (imgUrl && shNameLower.includes('opportunity')) {
+                  const imgCell = sh.getRange('B2');
+                  imgCell.setValue('=image("' + customStyles.img + '")');
+                }
               } //
-              else {
-                revSheetHeaderRange.setBackground(secondaryColor).setFontColor(secondaryContrastColor).setBorder(true, true, true, true, true, true, secondaryColor, SpreadsheetApp.BorderStyle.SOLID);
+              else if (shNameLower === 'reading & writing') {
+                styleSatWorksheets(sh, 6, 11, customStyles);
+              } //
+              else if (shNameLower === 'math') {
+                styleSatWorksheets(sh, 9, 11, customStyles);
+              } //
+              else if (shNameLower === 'slt uniques') {
+                styleSatWorksheets(sh, 1, 7, customStyles);
+              } //
+              else if (satDataSheets.includes(shNameLower)) {
+                sh.getRange(1, 1, 1, sh.getMaxColumns()).setBackground(primaryColor).setFontColor(primaryContrastColor);
+              } //
+              else if (shNameLower === 'student responses') {
+                sh.getRange(1, 1, 3, sh.getMaxColumns()).setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
+              } //
+              else if (shNameLower === 'rev sheets') {
+                let revSheetHeaderRange;
+                if (ssName.toLowerCase().includes('admin answer analysis')) {
+                  revSheetHeaderRange = sh.getRangeList(['B2:E4', 'G2:J4']);
+                } //
+                else {
+                  revSheetHeaderRange = sh.getRangeList(['B2:D4', 'F2:I4']);
+                }
+
+                if (customStyles.sameHeaderColor) {
+                  revSheetHeaderRange.setBackground(primaryColor).setFontColor(primaryContrastColor).setBorder(true, true, true, true, true, true, primaryColor, SpreadsheetApp.BorderStyle.SOLID);
+                } //
+                else {
+                  revSheetHeaderRange.setBackground(secondaryColor).setFontColor(secondaryContrastColor).setBorder(true, true, true, true, true, true, secondaryColor, SpreadsheetApp.BorderStyle.SOLID);
+                }
               }
             }
           }
-        }
+        }        
 
         ids[ssCompleteKey] = true;
-        SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Tech').getRange('K1').setValue(JSON.stringify(ssIds));
+        ssIdsCell.setValue(JSON.stringify(ssIds));
         Logger.log(ssCompleteKey);
       }
     }
@@ -358,14 +342,13 @@ function applyConditionalFormatting(sheet = SpreadsheetApp.openById('1nwG8o6Rd0A
 }
 
 function setCustomStyles() {
-  const progressSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Tech');
-  let styleCell;
+  const progressSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Tech revenue');
+  let styleCell, customStylesStr;
 
   if (progressSheet) {
     styleCell = progressSheet.getRange('J1');
+    customStylesStr = styleCell.getValue();
   }
-
-  const customStylesStr = styleCell.getValue();
 
   if (customStylesStr) {
     customStyles = JSON.parse(customStylesStr);
@@ -453,7 +436,7 @@ function setCustomStyles() {
       sameHeaderColor: sameHeaderColor,
     };
 
-    styleCell.setValue(customStyles);
+    styleCell.setValue(JSON.stringify(customStyles));
 
     return customStyles;
   }

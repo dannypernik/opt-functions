@@ -77,9 +77,10 @@ function syncRecentSatStudentData() {
   const dataSyncTimeLimit = 3 * msPerDay;
   const lastSyncTimeLimit = 2 * msPerDay;
   const myStudents = JSON.parse(myStudentDataValue);
+  let continueSync = true;
 
   for (student of myStudents) {
-    if (student.satAdminSsId && !student.name.toLowerCase().includes('template')) {
+    if (continueSync && student.satAdminSsId && !student.name.toLowerCase().includes('template')) {
       const satAdminFile = DriveApp.getFileById(student.satAdminSsId);
       const adminLastUpdated = satAdminFile.getLastUpdated();
 
@@ -89,7 +90,7 @@ function syncRecentSatStudentData() {
         const lastSyncedDate = lastSyncedCell.getValue();
         if (now - lastSyncedDate > lastSyncTimeLimit) {
           Logger.log(`Starting sync for ${student.name}`)
-          TestPrepAnalysis.syncSatStudentData(student.satAdminSsId, startTime);
+          continueSync = TestPrepAnalysis.syncSatStudentData(student.satAdminSsId, startTime);
           lastSyncedCell.setValue(now);
           Logger.log(`Completed sync for ${student.name}`)
         }

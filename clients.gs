@@ -1,5 +1,5 @@
 function newClient(clientTemplateFolderId, clientParentFolderId) {
-  const progressSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Tech');
+  const progressSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Tech revenue');
   const progressCell = progressSheet.getRange('I1');
   const ssIdsCell = progressSheet.getRange('K1');
   let customStyles, clientFolderId, clientName, ssIds;
@@ -34,7 +34,7 @@ function newClient(clientTemplateFolderId, clientParentFolderId) {
     ssIds = linkClientSheets(clientFolderId);
     setClientDataUrls(clientFolderId);
     addClientData(clientFolderId);
-    progressSheet.getRange('I1:K1').setValues([[1, customStyles, ssIds]]);
+    progressSheet.getRange('I1:K1').setValues([[1, JSON.stringify(customStyles), JSON.stringify(ssIds)]]);
     Logger.log('Client folder functionality complete');
   }
 
@@ -140,7 +140,7 @@ function linkClientSheets(folderId, testType = 'all') {
     satSsIds: satSsIds,
     actSsIds: actSsIds
   }
-  SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Tech').getRange('K1').setValue(JSON.stringify(ssIds));
+  SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Tech revenue').getRange('K1').setValue(JSON.stringify(ssIds));
 
   return ssIds;
 }
@@ -473,7 +473,7 @@ function getStudentFolderCount(studentsFolderId) {
 
 
 function newBasicTemplates(destinationFolderId=CLIENT_PARENT_FOLDER_ID) {
-  const progressSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Tech');
+  const progressSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Tech revenue');
   const ssIdsCell = progressSheet.getRange('K1');
   const ssIdsStr = ssIdsCell.getValue();
   let ssIds;

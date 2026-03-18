@@ -1,4 +1,4 @@
-CLIENT_DATA_SS_ID = PropertiesService.getScriptProperties().getProperty('clientDataSsId');
+var CLIENT_DATA_SS_ID = PropertiesService.getScriptProperties().getProperty('clientDataSsId');
 const HOMEWORK_TEMPLATE_SS_ID = PropertiesService.getScriptProperties().getProperty('homeworkTemplateSsId');
 const CLIENT_PARENT_FOLDER_ID = PropertiesService.getScriptProperties().getProperty('clientParentFolderId');
 
@@ -10,8 +10,8 @@ let satSsIds = {
   rev: null,
   adminSsComplete: null,
   studentSsComplete: null,
-  adminSheetsComplete: null,
-  studentSheetsComplete: null
+  adminSheetsComplete: [],
+  studentSheetsComplete: []
 };
 
 let actSsIds = {
@@ -21,8 +21,8 @@ let actSsIds = {
   adminData: null,
   adminSsComplete: null,
   studentSsComplete: null,
-  adminSheetsComplete: null,
-  studentSheetsComplete: null
+  adminSheetsComplete: [],
+  studentSheetsComplete: []
 };
 
 const dataLatestDate = TestPrepAnalysis.dataLatestDate;
