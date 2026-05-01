@@ -64,9 +64,12 @@ function checkTeamDueAssignments() {
 
 function addHomeworkSs(studentData) {
     homeworkSsId = studentData.homeworkSsId
+    const homeworkTemplate = DriveApp.getFileById(HOMEWORK_TEMPLATE_SS_ID);
+    const templateAssignmentsSheet = SpreadsheetApp.openById(HOMEWORK_TEMPLATE_SS_ID).getSheetByName('Assignments');
+    const templateAssignmentsProtection = templateAssignmentsSheet.getProtections(SpreadsheetApp.ProtectionType.RANGE)[0];
+    const templateEditors = templateAssignmentsProtection.getEditors();
 
     if (!homeworkSsId) {
-      const homeworkTemplate = DriveApp.getFileById(HOMEWORK_TEMPLATE_SS_ID);
       const newHomeworkFile = homeworkTemplate.makeCopy().setName(`Homework - ${studentData.name}`)
 
       if (!studentData.studentFolderId) {
@@ -83,9 +86,13 @@ function addHomeworkSs(studentData) {
       studentData.homeworkSsId = newHomeworkFile.getId();
     }
 
-    const homeworkSs = SpreadsheetApp.openById(homeworkSsId);
+    const homeworkSs = SpreadsheetApp.openById(studentData.homeworkSsId);
     const homeworkInfoSheet = homeworkSs.getSheetByName('Info');
+    const homeworkAssignmentsSheet = homeworkSs.getSheetByName('Assignments');
 
+    const assignmentsProtection = homeworkAssignmentsSheet.getProtections(SpreadsheetApp.ProtectionType.RANGE)[0];
+    assignmentsProtection.addEditors(templateEditors);
+    
     if (studentData.satAdminSsId) {
       const satAdminSs = SpreadsheetApp.openById(studentData.satAdminSsId);
       const satStudentSs = SpreadsheetApp.openById(studentData.satStudentSsId);

@@ -14,6 +14,7 @@ async function findNewActScoreReports(students, folderName) {
 
   for (student of students) {
     if (student.actAdminSsId && !student.name.toLowerCase().includes('template')) {
+      Logger.log(`Checking ${student.name}`);
       const actAdminFile = DriveApp.getFileById(student.actAdminSsId);
       const actStudentFile = DriveApp.getFileById(student.actStudentSsId);
       const lastUpdated = new Date(Math.max(actAdminFile.getLastUpdated(), actStudentFile.getLastUpdated()));

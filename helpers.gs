@@ -9,30 +9,33 @@ function updateOPTStudentFolderData() {
     const tutorFolder = tutorFolders.next();
     const tutorFolderId = tutorFolder.getId();
     const tutorFolderName = tutorFolder.getName();
-    let tutorDataRow = getRowByColSearch(teamDataSheet, 3, tutorFolderId);
 
-    Logger.log(`Starting ${tutorFolderName}`);
+    if (!tutorFolderName.includes('Ξ')) {
+      let tutorDataRow = getRowByColSearch(teamDataSheet, 3, tutorFolderId);
 
-    const tutorValues = teamDataSheet.getRange(tutorDataRow, 1, 1, 5).getValues();
-    const tutorIndex = tutorValues[0][0] || tutorDataRow - 2;
-    const tutorStudentsStr = tutorValues[0][3];
-    const tutorUpdateComplete = tutorValues[0][4];
+      Logger.log(`Starting ${tutorFolderName}`);
 
-    let tutorStudents = tutorStudentsStr ? JSON.parse(tutorStudentsStr) : [];
+      const tutorValues = teamDataSheet.getRange(tutorDataRow, 1, 1, 5).getValues();
+      const tutorIndex = tutorValues[0][0] || tutorDataRow - 2;
+      const tutorStudentsStr = tutorValues[0][3];
+      const tutorUpdateComplete = tutorValues[0][4];
 
-    const tutorData = {
-      index: tutorIndex,
-      name: tutorFolderName,
-      studentsFolderId: tutorFolderId,
-      studentsData: tutorStudents,
-      studentsDataCell: teamDataSheet.getRange(tutorDataRow, 4)
-    };
+      let tutorStudents = tutorStudentsStr ? JSON.parse(tutorStudentsStr) : [];
 
-    if (!tutorUpdateComplete) {
-      tutorStudents = TestPrepAnalysis.getAllStudentData(tutorData, checkAllKeys);
-      const currentStudents = tutorStudents.filter(student => student.updateComplete);
-      currentStudents.forEach((student) => (student.updateComplete = false));
-      teamDataSheet.getRange(tutorIndex + 2, 1, 1, 5).setValues([[tutorIndex, tutorFolderName, tutorFolderId, JSON.stringify(currentStudents), 'true']]);
+      const tutorData = {
+        index: tutorIndex,
+        name: tutorFolderName,
+        studentsFolderId: tutorFolderId,
+        studentsData: tutorStudents,
+        studentsDataCell: teamDataSheet.getRange(tutorDataRow, 4)
+      };
+
+      if (!tutorUpdateComplete) {
+        tutorStudents = TestPrepAnalysis.getAllStudentData(tutorData, checkAllKeys);
+        const currentStudents = tutorStudents.filter(student => student.updateComplete);
+        currentStudents.forEach((student) => (student.updateComplete = false));
+        teamDataSheet.getRange(tutorIndex + 2, 1, 1, 5).setValues([[tutorIndex, tutorFolderName, tutorFolderId, JSON.stringify(currentStudents), 'true']]);
+      }
     }
   }
 
@@ -74,50 +77,58 @@ function syncRecentSatStudentData() {
   const myStudentDataValue = myDataRange[myDataRowIndex][16];
   const now = new Date();
   const msPerDay = 24 * 60 * 60 * 1000;
-  const dataSyncTimeLimit = 3 * msPerDay;
+  const lastUpdatedTimeLimit = 3 * msPerDay;
   const lastSyncTimeLimit = 2 * msPerDay;
   const myStudents = JSON.parse(myStudentDataValue);
   let continueSync = true;
 
-  for (student of myStudents) {
-    if (continueSync && student.satAdminSsId && !student.name.toLowerCase().includes('template')) {
-      const satAdminFile = DriveApp.getFileById(student.satAdminSsId);
-      const adminLastUpdated = satAdminFile.getLastUpdated();
-
-      if (now - adminLastUpdated <= dataSyncTimeLimit) {
-        const satAdminSs = SpreadsheetApp.openById(student.satAdminSsId);
-        const lastSyncedCell = satAdminSs.getSheetByName('Rev sheet backend').getRange('U10');
-        const lastSyncedDate = lastSyncedCell.getValue();
-        if (now - lastSyncedDate > lastSyncTimeLimit) {
-          Logger.log(`Starting sync for ${student.name}`)
-          continueSync = TestPrepAnalysis.syncSatStudentData(student.satAdminSsId, startTime);
-          lastSyncedCell.setValue(now);
-          Logger.log(`Completed sync for ${student.name}`)
-        }
-        else {
-          Logger.log(`${student.name} last synced on ${lastSyncedDate}, skipping`)
-        }
-      }
+  const tutorData = [
+    {
+      name: 'Danny',
+      studentData: myStudents
     }
-  }
+  ]
 
   const teamSheet = clientDataSs.getSheetByName('Team OPT');
-  const teamStudentDataCol = teamSheet.getRange(2, 4, getLastFilledRow(teamSheet, 1, 2)).getValues();
+  const teamData = teamSheet.getRange(2,1,getLastFilledRow(teamSheet, 1, 2),5).getValues();
 
-  for (studentDataVal of teamStudentDataCol) {
-    const studentData = JSON.parse(studentDataVal)
-    for (student of studentData) {
-      if (student.satAdminSsId) {
-        const satAdminFile = DriveApp.getFileById(student.satAdminSsId);
-        const adminLastUpdated = satAdminFile.getLastUpdated();
+  for (let tutorRow of teamData) {
+    const tutorName = tutorRow[1].split(' ')[0];
+    const studentData = JSON.parse(tutorRow[3]);
 
-        if (now - adminLastUpdated <= dataSyncTimeLimit) {
-          Logger.log(`Starting sync for ${student.name}`)
-          TestPrepAnalysis.syncSatStudentData(student.satAdminSsId, startTime);
-          Logger.log(`Completed sync for ${student.name}`)
+    tutorData.push({
+      name: tutorName,
+      studentData: studentData
+    })
+  }
+
+  for (let tutor of tutorData) {
+    if (continueSync) {
+      Logger.log(`Starting students for ${tutor.name}`)
+      for (let student of tutor.studentData) {
+        if (continueSync && student.satAdminSsId && !student.name.toLowerCase().includes('template')) {
+          const satAdminFile = DriveApp.getFileById(student.satAdminSsId);
+          const adminLastUpdated = satAdminFile.getLastUpdated();
+
+          if (now - adminLastUpdated <= lastUpdatedTimeLimit) {
+            const satAdminSs = SpreadsheetApp.openById(student.satAdminSsId);
+            const lastSyncedCell = satAdminSs.getSheetByName('Rev sheet backend').getRange('U10');
+            const lastSyncedDate = lastSyncedCell.getValue();
+            if (now - lastSyncedDate > lastSyncTimeLimit) {
+              Logger.log(`Starting sync for ${student.name}`)
+              continueSync = TestPrepAnalysis.syncSatStudentData(student.satAdminSsId, startTime);
+              lastSyncedCell.setValue(now);
+              Logger.log(`Completed sync for ${student.name}`)
+            }
+            else {
+              Logger.log(`${student.name} last synced on ${lastSyncedDate}, skipping`)
+            }
+          }
         }
       }
     }
+
+    Logger.log(`${tutor.name}'s students complete`);
   }
 }
 
