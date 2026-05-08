@@ -117,7 +117,6 @@ function syncRecentSatStudentData() {
             if (now - lastSyncedDate > lastSyncTimeLimit) {
               Logger.log(`Starting sync for ${student.name}`)
               continueSync = TestPrepAnalysis.syncSatStudentData(student.satAdminSsId, startTime);
-              lastSyncedCell.setValue(now);
               Logger.log(`Completed sync for ${student.name}`)
             }
             else {
