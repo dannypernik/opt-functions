@@ -4,17 +4,18 @@
 //   driveApprovalFolderIds      - JSON array of folder IDs to auto-approve, oldest to newest.
 //                                 The last ID is treated as the "latest" duplicate folder.
 //                                 New duplicates are appended here automatically.
-//   driveApprovalSourceFolderId - (optional) folder whose contents new duplicates mirror.
-//                                 Defaults to DRIVE_APPROVAL_SOURCE_FOLDER_ID below.
+//   driveApprovalSourceFolderId - (optional) original folder whose contents new duplicates
+//                                 link to. Defaults to DRIVE_APPROVAL_SOURCE_FOLDER_ID below.
 //   driveApprovalParentFolderId - (optional) folder to create new duplicates in.
-//                                 Defaults to the source folder's own parent.
+//                                 Defaults to DRIVE_APPROVAL_PARENT_FOLDER_ID below.
 //   adminEmail                  - (optional) email to notify when a request can't be
 //                                 handled automatically.
 //
 // Set up a daily time-driven trigger for autoApproveDriveShareRequests() from the
 // Apps Script editor (Triggers > Add trigger > Time-driven > Day timer).
 
-const DRIVE_APPROVAL_SOURCE_FOLDER_ID = '1sog6KC9BaCP1ljVABTlF2E6fpYdajLRo';
+const DRIVE_APPROVAL_SOURCE_FOLDER_ID = '1A2POcp4ZdQJroOiZT1pCLaVhgjo8Wm6I';
+const DRIVE_APPROVAL_PARENT_FOLDER_ID = '1tHGGSB3Echzw8lnjXh5poWJ0cazQWB_1';
 
 function autoApproveDriveShareRequests() {
   const folderIds = getDriveApprovalFolderIds();
@@ -122,24 +123,21 @@ function createDuplicateFolder() {
   const sourceFolderId = getDriveApprovalSourceFolderId();
 
   try {
-    const source = Drive.Files.get(sourceFolderId, { fields: 'id, name, parents' });
-    const parentId = getDriveApprovalParentFolderId() || (source.parents && source.parents[0]);
+    const source = Drive.Files.get(sourceFolderId, { fields: 'id, name' });
     const version = getDriveApprovalFolderIds().length + 1;
 
-    const resource = {
+    const newFolder = Drive.Files.create({
       name: `${source.name} (${version})`,
       mimeType: 'application/vnd.google-apps.folder',
-    };
-    if (parentId) resource.parents = [parentId];
-
-    const newFolder = Drive.Files.create(resource);
+      parents: [getDriveApprovalParentFolderId()],
+    });
     copyFolderAsShortcuts(sourceFolderId, newFolder.id);
     appendDriveApprovalFolderId(newFolder.id);
 
-    Logger.log(`Created duplicate resources folder ${resource.name} (${newFolder.id})`);
+    Logger.log(`Created duplicate resources folder ${newFolder.name} (${newFolder.id})`);
     notifyDriveApprovalAdmin(
       `The previous resources folder filled up, so a new duplicate was created: ` +
-      `<a href="https://drive.google.com/drive/folders/${newFolder.id}">${resource.name}</a>. ` +
+      `<a href="https://drive.google.com/drive/folders/${newFolder.id}">${newFolder.name}</a>. ` +
       `It was added to driveApprovalFolderIds and new requests are being sent there.`
     );
 
@@ -162,8 +160,8 @@ function copyFolderAsShortcuts(sourceFolderId, destinationFolderId) {
     });
 
     (response.files || []).forEach((file) => {
-      // The source folder holds shortcuts itself, and Drive won't point a shortcut
-      // at another shortcut, so follow it through to the original item.
+      // Drive won't point a shortcut at another shortcut, so if the original folder
+      // ever holds one, follow it through to the item it targets.
       const targetId = file.shortcutDetails ? file.shortcutDetails.targetId : file.id;
 
       Drive.Files.create({
@@ -231,7 +229,7 @@ function getDriveApprovalSourceFolderId() {
 }
 
 function getDriveApprovalParentFolderId() {
-  return PropertiesService.getScriptProperties().getProperty('driveApprovalParentFolderId');
+  return PropertiesService.getScriptProperties().getProperty('driveApprovalParentFolderId') || DRIVE_APPROVAL_PARENT_FOLDER_ID;
 }
 
 function appendDriveApprovalFolderId(folderId) {
