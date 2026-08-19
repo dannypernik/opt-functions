@@ -1,13 +1,20 @@
 // Daily auto-approval of pending Drive access ("share") requests.
 //
 // Script properties:
-//   driveApprovalFolderIds  - JSON array of folder IDs to auto-approve, oldest to newest.
-//                             The last ID is treated as the "latest" duplicate folder.
-//   adminEmail              - (optional) email to notify when a request can't be
-//                             handled automatically (e.g. the latest folder is also full).
+//   driveApprovalFolderIds      - JSON array of folder IDs to auto-approve, oldest to newest.
+//                                 The last ID is treated as the "latest" duplicate folder.
+//                                 New duplicates are appended here automatically.
+//   driveApprovalSourceFolderId - (optional) folder whose contents new duplicates mirror.
+//                                 Defaults to DRIVE_APPROVAL_SOURCE_FOLDER_ID below.
+//   driveApprovalParentFolderId - (optional) folder to create new duplicates in.
+//                                 Defaults to the source folder's own parent.
+//   adminEmail                  - (optional) email to notify when a request can't be
+//                                 handled automatically.
 //
 // Set up a daily time-driven trigger for autoApproveDriveShareRequests() from the
 // Apps Script editor (Triggers > Add trigger > Time-driven > Day timer).
+
+const DRIVE_APPROVAL_SOURCE_FOLDER_ID = '1sog6KC9BaCP1ljVABTlF2E6fpYdajLRo';
 
 function autoApproveDriveShareRequests() {
   const folderIds = getDriveApprovalFolderIds();
@@ -16,7 +23,7 @@ function autoApproveDriveShareRequests() {
     return;
   }
 
-  const latestFolderId = folderIds[folderIds.length - 1];
+  let latestFolderId = folderIds[folderIds.length - 1];
 
   folderIds.forEach((folderId) => {
     let proposals;
@@ -27,7 +34,11 @@ function autoApproveDriveShareRequests() {
       return;
     }
 
-    proposals.forEach((proposal) => resolveDriveAccessProposal(proposal, folderId, latestFolderId));
+    // A duplicate created part way through this run becomes the target for the
+    // requests still to be processed.
+    proposals.forEach((proposal) => {
+      latestFolderId = resolveDriveAccessProposal(proposal, folderId, latestFolderId);
+    });
   });
 }
 
@@ -38,42 +49,137 @@ function resolveDriveAccessProposal(proposal, folderId, latestFolderId) {
     Drive.Accessproposals.resolve({ action: 'ACCEPT', role: ['reader'], sendNotification: false }, folderId, proposal.proposalId);
     Logger.log(`Approved ${requesterEmail} as viewer on ${folderId}`);
     sendApprovalEmail(requesterEmail);
+    return latestFolderId;
   } catch (err) {
     if (!isCollaboratorLimitError(err)) {
       Logger.log(`autoApproveDriveShareRequests: unexpected error approving ${requesterEmail} on ${folderId}: ${err.message}`);
       notifyDriveApprovalAdmin(`Could not approve ${requesterEmail}'s request on folder ${folderId}:<br>${err.message}`);
-      return;
+      return latestFolderId;
     }
 
-    redirectToLatestFolder(proposal, folderId, latestFolderId);
+    return redirectToLatestFolder(proposal, folderId, latestFolderId);
   }
 }
 
+// Moves a request off a full folder and onto the newest duplicate, creating that
+// duplicate first if there isn't one to move to. Returns the latest folder ID,
+// which changes whenever a duplicate is created.
 function redirectToLatestFolder(proposal, folderId, latestFolderId) {
   const requesterEmail = proposal.requesterEmailAddress;
+  let targetFolderId = latestFolderId;
 
-  if (folderId === latestFolderId) {
-    Logger.log(`autoApproveDriveShareRequests: ${folderId} is already the latest folder and is full; leaving ${requesterEmail}'s request pending`);
-    notifyDriveApprovalAdmin(`${requesterEmail} requested access to ${folderId}, which is full and has no newer duplicate to redirect to. Their request was left pending for manual review.`);
-    return;
+  if (targetFolderId === folderId) {
+    targetFolderId = createDuplicateFolder();
+    if (!targetFolderId) {
+      Logger.log(`redirectToLatestFolder: ${folderId} is full and creating a duplicate failed; leaving ${requesterEmail}'s request pending`);
+      notifyDriveApprovalAdmin(`${requesterEmail} requested access to ${folderId}, which is full, and creating a new duplicate folder failed. Their request was left pending for manual review.`);
+      return latestFolderId;
+    }
   }
 
   try {
-    Drive.Permissions.create({ role: 'reader', type: 'user', emailAddress: requesterEmail }, latestFolderId, { sendNotificationEmail: false });
+    addReaderToFolder(requesterEmail, targetFolderId);
   } catch (err) {
-    Logger.log(`autoApproveDriveShareRequests: failed to add ${requesterEmail} to latest folder ${latestFolderId}: ${err.message}`);
-    notifyDriveApprovalAdmin(`${requesterEmail} requested access to full folder ${folderId}. Tried to add them to the latest duplicate ${latestFolderId} instead, but that failed too:<br>${err.message}`);
-    return;
+    if (!isCollaboratorLimitError(err)) {
+      Logger.log(`redirectToLatestFolder: failed to add ${requesterEmail} to ${targetFolderId}: ${err.message}`);
+      notifyDriveApprovalAdmin(`${requesterEmail} requested access to full folder ${folderId}. Tried to add them to the latest duplicate ${targetFolderId} instead, but that failed too:<br>${err.message}`);
+      return targetFolderId;
+    }
+
+    // The latest duplicate is full as well, so start another one and try once more.
+    const newFolderId = createDuplicateFolder();
+    if (!newFolderId) {
+      Logger.log(`redirectToLatestFolder: ${targetFolderId} is also full and creating a duplicate failed; leaving ${requesterEmail}'s request pending`);
+      notifyDriveApprovalAdmin(`${requesterEmail} requested access to full folder ${folderId}. The latest duplicate ${targetFolderId} is full too, and creating a new one failed. Their request was left pending for manual review.`);
+      return targetFolderId;
+    }
+
+    targetFolderId = newFolderId;
+
+    try {
+      addReaderToFolder(requesterEmail, targetFolderId);
+    } catch (retryErr) {
+      Logger.log(`redirectToLatestFolder: failed to add ${requesterEmail} to new folder ${targetFolderId}: ${retryErr.message}`);
+      notifyDriveApprovalAdmin(`Created duplicate folder ${targetFolderId} for ${requesterEmail}, but adding them to it failed:<br>${retryErr.message}`);
+      return targetFolderId;
+    }
   }
 
   try {
     Drive.Accessproposals.resolve({ action: 'DENY', sendNotification: false }, folderId, proposal.proposalId);
   } catch (err) {
-    Logger.log(`autoApproveDriveShareRequests: added ${requesterEmail} to ${latestFolderId} but failed to decline original request on ${folderId}: ${err.message}`);
+    Logger.log(`redirectToLatestFolder: added ${requesterEmail} to ${targetFolderId} but failed to decline original request on ${folderId}: ${err.message}`);
   }
 
-  sendDuplicateFolderEmail(requesterEmail, latestFolderId);
-  Logger.log(`${requesterEmail} redirected from full folder ${folderId} to latest folder ${latestFolderId}`);
+  sendDuplicateFolderEmail(requesterEmail, targetFolderId);
+  Logger.log(`${requesterEmail} redirected from full folder ${folderId} to latest folder ${targetFolderId}`);
+  return targetFolderId;
+}
+
+// Creates the next duplicate of the resources folder and registers it as the latest.
+// Returns the new folder ID, or null if it couldn't be created.
+function createDuplicateFolder() {
+  const sourceFolderId = getDriveApprovalSourceFolderId();
+
+  try {
+    const source = Drive.Files.get(sourceFolderId, { fields: 'id, name, parents' });
+    const parentId = getDriveApprovalParentFolderId() || (source.parents && source.parents[0]);
+    const version = getDriveApprovalFolderIds().length + 1;
+
+    const resource = {
+      name: `${source.name} (${version})`,
+      mimeType: 'application/vnd.google-apps.folder',
+    };
+    if (parentId) resource.parents = [parentId];
+
+    const newFolder = Drive.Files.create(resource);
+    copyFolderAsShortcuts(sourceFolderId, newFolder.id);
+    appendDriveApprovalFolderId(newFolder.id);
+
+    Logger.log(`Created duplicate resources folder ${resource.name} (${newFolder.id})`);
+    notifyDriveApprovalAdmin(
+      `The previous resources folder filled up, so a new duplicate was created: ` +
+      `<a href="https://drive.google.com/drive/folders/${newFolder.id}">${resource.name}</a>. ` +
+      `It was added to driveApprovalFolderIds and new requests are being sent there.`
+    );
+
+    return newFolder.id;
+  } catch (err) {
+    Logger.log(`createDuplicateFolder: failed to duplicate ${sourceFolderId}: ${err.message}`);
+    return null;
+  }
+}
+
+function copyFolderAsShortcuts(sourceFolderId, destinationFolderId) {
+  let pageToken = null;
+
+  do {
+    const response = Drive.Files.list({
+      q: `'${sourceFolderId}' in parents and trashed = false`,
+      fields: 'nextPageToken, files(id, name, mimeType, shortcutDetails)',
+      pageSize: 100,
+      pageToken: pageToken,
+    });
+
+    (response.files || []).forEach((file) => {
+      // The source folder holds shortcuts itself, and Drive won't point a shortcut
+      // at another shortcut, so follow it through to the original item.
+      const targetId = file.shortcutDetails ? file.shortcutDetails.targetId : file.id;
+
+      Drive.Files.create({
+        name: file.name,
+        mimeType: 'application/vnd.google-apps.shortcut',
+        parents: [destinationFolderId],
+        shortcutDetails: { targetId: targetId },
+      });
+    });
+
+    pageToken = response.nextPageToken;
+  } while (pageToken);
+}
+
+function addReaderToFolder(requesterEmail, folderId) {
+  Drive.Permissions.create({ role: 'reader', type: 'user', emailAddress: requesterEmail }, folderId, { sendNotificationEmail: false });
 }
 
 function sendDuplicateFolderEmail(requesterEmail, latestFolderId) {
@@ -118,4 +224,18 @@ function isCollaboratorLimitError(err) {
 function getDriveApprovalFolderIds() {
   const raw = PropertiesService.getScriptProperties().getProperty('driveApprovalFolderIds');
   return raw ? JSON.parse(raw) : [];
+}
+
+function getDriveApprovalSourceFolderId() {
+  return PropertiesService.getScriptProperties().getProperty('driveApprovalSourceFolderId') || DRIVE_APPROVAL_SOURCE_FOLDER_ID;
+}
+
+function getDriveApprovalParentFolderId() {
+  return PropertiesService.getScriptProperties().getProperty('driveApprovalParentFolderId');
+}
+
+function appendDriveApprovalFolderId(folderId) {
+  const folderIds = getDriveApprovalFolderIds();
+  folderIds.push(folderId);
+  PropertiesService.getScriptProperties().setProperty('driveApprovalFolderIds', JSON.stringify(folderIds));
 }
