@@ -81,6 +81,7 @@ function syncRecentSatStudentData() {
   const lastSyncTimeLimit = 2 * msPerDay;
   const myStudents = JSON.parse(myStudentDataValue);
   let continueSync = true;
+  const foundSpreadsheets = [];
 
   const tutorData = [
     {
@@ -107,6 +108,7 @@ function syncRecentSatStudentData() {
       Logger.log(`Starting students for ${tutor.name}`)
       for (let student of tutor.studentData) {
         if (continueSync && student.satAdminSsId && !student.name.toLowerCase().includes('template')) {
+          foundSpreadsheets.push(`${student.name} (${tutor.name}): ${student.satAdminSsId}`);
           const satAdminFile = DriveApp.getFileById(student.satAdminSsId);
           const adminLastUpdated = satAdminFile.getLastUpdated();
 
@@ -129,6 +131,8 @@ function syncRecentSatStudentData() {
 
     Logger.log(`${tutor.name}'s students complete`);
   }
+
+  Logger.log(`Found ${foundSpreadsheets.length} spreadsheet(s):\n${foundSpreadsheets.join('\n')}`);
 }
 
 
