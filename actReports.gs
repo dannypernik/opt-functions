@@ -304,12 +304,13 @@ async function sendActScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
 
     const email = getOPTPermissionsList(spreadsheetId);
     if (email) {
-      MailApp.sendEmail({
-        to: email,
-        subject: 'ACT ' + currentTestData.test + ' score report for ' + studentFirstName,
-        htmlBody: message,
-        attachments: [mergedBlob],
-      });
+      sendEmail(
+        email,
+        'ACT ' + currentTestData.test + ' score report for ' + studentFirstName,
+        message,
+        undefined,
+        [mergedBlob],
+      );
     }
 
     const testSheet = spreadsheet.getSheetByName(currentTestData.test);

@@ -24,5 +24,3 @@ let actSsIds = {
   adminSheetsComplete: [],
   studentSheetsComplete: []
 };
-
-const dataLatestDate = TestPrepAnalysis.dataLatestDate;

@@ -118,14 +118,13 @@ function findNewCompletedSats(fileList) {
             } //
             else if (completionCheck !== '?') {
               Logger.log(`Add scores for ${studentName} on ${testCode}`);
-              const email = getOPTPermissionsList(ssId);
-              if (email) {
-                MailApp.sendEmail({
-                  to: email,
-                  subject: `Enter scores for ${studentName}`,
-                  htmlBody:
-                    `It appears that ${testCode} was completed for ${studentName}, but scores are missing. Please add them asap to generate a score analysis. \n` + `<a href="https://docs.google.com/spreadsheets/d/${ssId}/edit?gid=${testSheet.getSheetId()}">${studentName}'s admin spreadsheet</a>`,
-                });
+              const recipients = getOPTPermissionsList(ssId);
+              if (recipients) {
+                sendEmail(
+                  recipients,
+                  `Enter scores for ${studentName}`,
+                  `It appears that ${testCode} was completed for ${studentName}, but scores are missing. Please add them asap to generate a score analysis. \n` + `<a href="https://docs.google.com/spreadsheets/d/${ssId}/edit?gid=${testSheet.getSheetId()}">${studentName}'s admin spreadsheet</a>`,
+                );
                 const completionCheckRange = testSheet.getRange('M1');
                 completionCheckRange.setValue('?');
                 completionCheckRange.setVerticalAlignment('middle');
@@ -251,12 +250,13 @@ async function sendSatScoreReportPdf(spreadsheetId, currentTestData, pastTestDat
 
     const email = getOPTPermissionsList(spreadsheetId);
     if (email) {
-      MailApp.sendEmail({
-        to: email,
-        subject: currentTestData.test + ' score report for ' + studentFirstName,
-        htmlBody: message,
-        attachments: [mergedBlob],
-      });
+      sendEmail(
+        recipients,
+        currentTestData.test + ' score report for ' + studentFirstName,
+        message,
+        undefined,
+        [mergedBlob],
+      );
     }
 
     const testSheet = spreadsheet.getSheetByName(currentTestData.test);

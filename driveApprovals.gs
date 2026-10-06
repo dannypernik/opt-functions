@@ -183,35 +183,35 @@ function addReaderToFolder(requesterEmail, folderId) {
 function sendDuplicateFolderEmail(requesterEmail, latestFolderId) {
   const link = `https://drive.google.com/drive/folders/${latestFolderId}`;
 
-  MailApp.sendEmail({
-    to: requesterEmail,
-    subject: 'Your Drive access request',
-    htmlBody:
-      'Hi,<br><br>The folder you requested access to has reached its maximum number of collaborators, ' +
+  const htmlBody = 'Hi,<br><br>The folder you requested access to has reached its maximum number of collaborators, ' +
       'so we\'ve added you to a duplicate version of it instead.<br><br>' +
-      `<a href="${link}">Access the folder here</a><br><br>Thanks!`,
-  });
+      `<a href="${link}">Access the folder here</a><br><br>Thanks!`;
+
+  sendEmail(
+    requesterEmail,
+    'Your Drive access request',
+    htmlBody
+  );
 }
 
 function sendApprovalEmail(requesterEmail) {
-  MailApp.sendEmail({
-    to: requesterEmail,
-    subject: 'SAT resources folder access approved',
-    htmlBody:
-      'Here you go! Please let me know if you have any questions. You may want to check out the ' +
+  sendEmail(
+    requesterEmail,
+    'SAT resources folder access approved',
+    'Here you go! Please let me know if you have any questions. You may want to check out the ' +
       'answer analysis spreadsheet to track progress. Are you a tutor?<br><br>All the best,<br>Danny',
-  });
+  );
 }
 
 function notifyDriveApprovalAdmin(message) {
   const adminEmail = PropertiesService.getScriptProperties().getProperty('adminEmail');
   if (!adminEmail) return;
 
-  MailApp.sendEmail({
-    to: adminEmail,
-    subject: 'Drive share request needs attention',
-    htmlBody: message,
-  });
+  sendEmail(
+    adminEmail,
+    'Drive share request needs attention',
+    message,
+  );
 }
 
 function isCollaboratorLimitError(err) {

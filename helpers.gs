@@ -245,8 +245,8 @@ function getAllRowHeights(idRange, isRw) {
       sh.getRange(batchStartRow, idCol + 2, slice.length).setValues(slice);
       Logger.log(`${subName} values set for rows ${batchStartRow}-${batchEndRow}`);
       const output = HtmlService.createHtmlOutput(`${subName} values set for rows ${batchStartRow}-${batchEndRow}`)
-        .setHeight(50)
-        .setWidth(100)
+        .setHeight(100)
+        .setWidth(200)
       SpreadsheetApp.getUi().showModelessDialog(output,'Batch complete')
       lastSetRow = batchEndRow;
     }
@@ -369,7 +369,7 @@ function getSubFolderIdsByFolderId(folderId, result = []) {
 }
 
 function getSatTestCodes() {
-  const practiceTestDataSheet = SpreadsheetApp.openById('1XoANqHEGfOCdO1QBVnbA3GH-z7-_FMYwoy7Ft4ojulE').getSheetByName(`Practice test data updated ${dataLatestDate}`);
+  const practiceTestDataSheet = SpreadsheetApp.openById('1XoANqHEGfOCdO1QBVnbA3GH-z7-_FMYwoy7Ft4ojulE').getSheetByName(`Practice test data`);
   const lastFilledRow = getLastFilledRow(practiceTestDataSheet, 1);
   const testCodeCol = practiceTestDataSheet
     .getRange(2, 1, lastFilledRow - 1)
@@ -641,4 +641,57 @@ function getRowByColSearch(sheet, searchCol = 1, searchVal) {
   }
   // If not found, returns row num after last value
   return data.length + 1;
+}
+
+/**
+ * Sends an email to the specified recipients.
+ * @param {Array} recipients - List of recipients.
+ * @param {string} subject - Subject of the email.
+ * @param {string} message - Email body.
+ * @param {Object} [tutorInfo] - Reply-to name and email.
+ * @param {GoogleAppsScript.Base.Blob[]} [attachments] - Files to attach.
+ */
+function sendEmail(
+    recipients,
+    subject,
+    htmlBody,
+    tutorInfo = { name: 'Open Path Tutoring', email: ADMIN_EMAIL },
+    attachments = []
+  ) {
+  try {
+    const payload = {
+      from: `"${SENDER_NAME}" hello@openpathtutoring.com`, // must be an existing alias on the domain
+      to: Array.isArray(recipients) ? recipients.join(',') : recipients,
+      subject: subject,
+      html: htmlBody
+    };
+    if (tutorInfo && tutorInfo.email) payload.replyTo = tutorInfo.email;
+    if (attachments && attachments.length) {
+      payload.attachments = attachments.map(blob => ({
+        filename: blob.getName(),
+        content: Utilities.base64Encode(blob.getBytes()),
+        encoding: 'base64',
+        contentType: blob.getContentType()
+      }));
+    };
+
+    const token = PropertiesService.getScriptProperties().getProperty('forwardEmailApiKey');
+
+    const response = UrlFetchApp.fetch('https://api.forwardemail.net/v1/emails', {
+      method: 'post',
+      headers: { Authorization: 'Basic ' + Utilities.base64Encode(token + ':') },
+      contentType: 'application/json',
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+
+    const code = response.getResponseCode();
+    if (code >= 200 && code < 300) {
+      Logger.log(`Email sent to ${Array.isArray(recipients) ? recipients.join(', ') : recipients} with subject: "${subject}"`);
+    } else {
+      Logger.log(`Email send failed (HTTP ${code}): ${response.getContentText()}`);
+    }
+  } catch (e) {
+    Logger.log(`Failed to send email: ${e.message}`);
+  }
 }
